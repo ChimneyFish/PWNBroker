@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Threat Intelligence — PwnBroker{% endblock %}
+{% block page_title %}Threat Intelligence{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.lookup') }}" class="btn btn-sm btn-primary">
+  <i class="bi bi-search me-1"></i>IOC Lookup
+</a>
+<a href="{{ url_for('threat.agents_list') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-pc-display-horizontal me-1"></i>Agents
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('threat.lookup') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ total_lookups }}</div>
+          <div class="stat-label">IOCs Checked</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-search"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('threat.lookup') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value text-danger">{{ malicious_count }}</div>
+          <div class="stat-label">Malicious / <span class="text-warning">{{ suspicious_count }} Suspicious</span></div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171">
+          <i class="bi bi-shield-x"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('threat.agents_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if agents_online > 0 %}text-success{% else %}text-muted{% endif %}">
+            {{ agents_online }}<span class="fs-6 fw-normal text-muted"> / {{ agents_total }}</span>
+          </div>
+          <div class="stat-label">Agents Online</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#4ade80">
+          <i class="bi bi-pc-display-horizontal"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('threat.agents_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if unacked > 0 %}text-warning{% endif %}">{{ unacked }}</div>
+          <div class="stat-label">Unread Alerts</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#fcd34d">
+          <i class="bi bi-bell{% if unacked > 0 %}-fill{% endif %}"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Quick lookup -->
+  <div class="col-lg-4">
+    <div class="form-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-search me-2" style="color:var(--accent)"></i>Quick Lookup</h6>
+      <form action="{{ url_for('threat.lookup') }}" method="POST">
+        <div class="mb-3">
+          <input type="text" name="indicator" class="form-control"
+                 placeholder="IP, domain, URL, or file hash…" required autofocus>
+          <div class="form-text">Type auto-detected</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mb-3">
+          <i class="bi bi-send me-1"></i>Check Indicator
+        </button>
+      </form>
+      <hr class="border-secondary">
+      <div class="d-grid gap-2">
+        <a href="{{ url_for('threat.feed') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-rss me-1"></i>OTX Threat Feed
+        </a>
+        <a href="{{ url_for('threat.agents_list') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-pc-display-horizontal me-1"></i>Endpoint Agents
+        </a>
+        <a href="{{ url_for('threat.download') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-download me-1"></i>Deploy Agent
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent IOC lookups -->
+  <div class="col-lg-8">
+    <div class="data-table">
+      <div class="section-header px-3 pt-3 pb-2">
+        <span class="section-title">Recent IOC Lookups</span>
+        <a href="{{ url_for('threat.lookup') }}" class="btn btn-sm btn-outline-secondary">All History</a>
+      </div>
+      <table class="table table-dark table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Indicator</th>
+            <th>Type</th>
+            <th>Verdict</th>
+            <th>Score</th>
+            <th>When</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in recent_lookups %}
+          <tr style="cursor:pointer" onclick="document.getElementById('lookup-form').querySelector('input').value='{{ rec.indicator }}'; document.getElementById('lookup-form').submit()">
+            <td class="font-monospace small">{{ rec.indicator[:45] }}{% if rec.indicator|length > 45 %}…{% endif %}</td>
+            <td><span class="badge bg-secondary text-uppercase" style="font-size:0.65rem">{{ rec.ioc_type }}</span></td>
+            <td>
+              {% if rec.verdict == "malicious" %}<span class="badge bg-danger">Malicious</span>
+              {% elif rec.verdict == "suspicious" %}<span class="badge bg-warning text-dark">Suspicious</span>
+              {% elif rec.verdict == "clean" %}<span class="badge bg-success">Clean</span>
+              {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:4px;max-width:60px">
+                  <div class="progress-bar {% if rec.threat_score >= 60 %}bg-danger{% elif rec.threat_score >= 30 %}bg-warning{% else %}bg-success{% endif %}"
+                       style="width:{{ rec.threat_score }}%"></div>
+                </div>
+                <small class="text-muted">{{ rec.threat_score }}</small>
+              </div>
+            </td>
+            <td class="text-muted small">{{ rec.created_at | localdt('%m/%d %H:%M') if rec.created_at else '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No lookups yet — use the form to check an IOC</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden form for row click -->
+<form id="lookup-form" action="{{ url_for('threat.lookup') }}" method="POST" style="display:none">
+  <input type="text" name="indicator">
+</form>
+
+<!-- Recent Alerts -->
+<div class="data-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Recent Agent Alerts</span>
+    <a href="{{ url_for('threat.agents_list') }}" class="btn btn-sm btn-outline-secondary">View Agents</a>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Severity</th>
+        <th>Agent</th>
+        <th>Title</th>
+        <th>IOC</th>
+        <th>Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in recent_alerts %}
+      <tr>
+        <td><span class="badge-severity sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
+        <td class="small">{{ alert.agent.hostname if alert.agent else '?' }}</td>
+        <td class="small">{{ alert.title }}</td>
+        <td class="font-monospace small" style="color:var(--accent-orange)">{{ alert.ioc or '—' }}</td>
+        <td class="text-muted small">{{ alert.created_at | localdt('%m/%d %H:%M') if alert.created_at else '—' }}</td>
+        <td>
+          {% if alert.acknowledged %}<span class="badge bg-secondary">Acked</span>
+          {% else %}<span class="badge bg-warning text-dark pulse">New</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No agent alerts yet</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

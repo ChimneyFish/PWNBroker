@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Scans — PwnBroker{% endblock %}
+{% block page_title %}Scans{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('scans.schedule_new') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-clock me-1"></i>Schedule Scan
+  </a>
+  <a href="{{ url_for('scans.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>New Scan
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Active scans -->
+<div class="section-header"><span class="section-title">Scan History</span></div>
+<div class="data-table mb-4">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Name</th><th>Target</th><th>Type</th><th>Status</th><th>Findings</th><th>Duration</th><th>Started</th><th></th></tr></thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr>
+        <td><a href="{{ url_for('scans.view', scan_id=scan.id) }}" class="text-decoration-none fw-semibold">{{ scan.name }}</a></td>
+        <td class="text-muted">{{ scan.target.host }}</td>
+        <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ scan.scan_type }}</span></td>
+        <td><span class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span></td>
+        <td>
+          {% if scan.critical_count > 0 %}<span class="badge-severity sev-critical me-1">{{ scan.critical_count }}C</span>{% endif %}
+          <span class="text-muted">{{ scan.vuln_count }}</span>
+        </td>
+        <td class="text-muted small">{% if scan.duration %}{{ scan.duration }}s{% else %}—{% endif %}</td>
+        <td class="text-muted small">{{ scan.created_at | localdt('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('scans.delete', scan_id=scan.id) }}" data-confirm="Delete this scan and all results?">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No scans yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Scheduled scans -->
+<div class="section-header mt-2">
+  <span class="section-title">Scheduled Scans</span>
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('scans.schedule_new') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Add Schedule
+  </a>
+  {% endif %}
+</div>
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Name</th><th>Target</th><th>Type</th><th>Schedule</th><th>Next Run</th><th>Last Run</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for s in scheduled %}
+      <tr>
+        <td class="fw-semibold">{{ s.name }}</td>
+        <td class="text-muted">
+          {% if s.asset_group_id and s.asset_group_id in group_map %}
+            {% set g = group_map[s.asset_group_id] %}
+            <i class="bi bi-collection me-1 text-info"></i>{{ g.name }}
+          {% elif s.target %}
+            {{ s.target.host }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ s.scan_type }}</span></td>
+        <td>
+          <span class="text-primary">{{ cron_to_human(s.cron_expression) }}</span>
+          <code class="text-muted d-block" style="font-size:0.7rem;opacity:0.5">{{ s.cron_expression }}</code>
+        </td>
+        <td class="text-muted small">{{ s.next_run | localdt('%Y-%m-%d %H:%M') if s.next_run else '—' }}</td>
+        <td class="text-muted small">{{ s.last_run | localdt('%Y-%m-%d %H:%M') if s.last_run else 'Never' }}</td>
+        <td>
+          <span class="badge-status status-{{ 'done' if s.active else 'pending' }} cursor-pointer"
+                data-toggle-sched="{{ s.id }}">{{ 'ACTIVE' if s.active else 'PAUSED' }}</span>
+        </td>
+        <td>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('scans.schedule_delete', sched_id=s.id) }}" data-confirm="Delete this schedule?">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No scheduled scans.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

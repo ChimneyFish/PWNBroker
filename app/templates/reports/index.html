@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% from "reports/_gen_modal.html" import gen_modal %}
+{% block title %}Reports — PwnBroker{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('reports.schedule_new') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-clock me-1"></i>Schedule Report
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Latest Scan Banner ── -->
+{% if latest_scan %}
+<div class="stat-card mb-4" style="border-color:{% if latest_scan.critical_count > 0 %}var(--critical){% elif latest_scan.vuln_count > 0 %}var(--high){% else %}var(--success){% endif %}">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing:0.08em">Latest Completed Scan</div>
+      <div class="fw-bold fs-5 mt-1">
+        <a href="{{ url_for('scans.view', scan_id=latest_scan.id) }}" class="text-decoration-none text-light">
+          {{ latest_scan.name }}
+        </a>
+      </div>
+      <div class="text-muted small mt-1">
+        <i class="bi bi-bullseye me-1"></i>{{ latest_scan.target.host }}
+        &nbsp;·&nbsp;
+        <i class="bi bi-clock me-1"></i>{{ latest_scan.completed_at | localdt('%Y-%m-%d %H:%M') if latest_scan.completed_at else '—' }}
+        {% if latest_scan.duration %}&nbsp;·&nbsp; {{ latest_scan.duration }}s{% endif %}
+      </div>
+    </div>
+
+    <!-- Severity pills -->
+    <div class="d-flex gap-2 flex-wrap">
+      {% set counts = {
+        'critical': latest_scan.results.filter_by(result_type='vulnerability', severity='critical').count(),
+        'high':     latest_scan.results.filter_by(result_type='vulnerability', severity='high').count(),
+        'medium':   latest_scan.results.filter_by(result_type='vulnerability', severity='medium').count(),
+        'low':      latest_scan.results.filter_by(result_type='vulnerability', severity='low').count(),
+      } %}
+      {% for sev, cnt in counts.items() %}
+      <div class="text-center px-3 py-2 rounded" style="background:rgba(255,255,255,0.04);min-width:56px">
+        <div class="fw-bold {% if sev == 'critical' %}text-danger{% elif sev == 'high' %}text-warning{% elif sev == 'medium' %}text-warning-emphasis{% else %}text-info{% endif %}">{{ cnt }}</div>
+        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">{{ sev }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Action buttons -->
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#genModal{{ latest_scan.id }}">
+        <i class="bi bi-file-earmark-arrow-down me-1"></i>Generate Report
+      </button>
+      {% if current_user.is_admin and confluence_enabled %}
+      <form method="POST" action="{{ url_for('atlassian.confluence_publish', scan_id=latest_scan.id) }}"
+            data-confirm="Publish '{{ latest_scan.name }}' to Confluence?">
+        <button class="btn btn-outline-info">
+          <i class="bi bi-cloud-upload me-1"></i>Publish to Confluence
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{{ gen_modal(latest_scan, cloud_enabled) }}
+{% endif %}
+
+<!-- ── Saved Local Reports ── -->
+<div class="section-header mt-2">
+  <span class="section-title">Saved Reports</span>
+</div>
+<div class="data-table mb-4">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Filename</th><th>Scan</th><th>Format</th><th>Size</th><th>Delivery</th><th>Cloud</th><th>Generated</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for r in saved %}
+      <tr>
+        <td class="small fw-semibold font-monospace">{{ r.filename }}</td>
+        <td class="text-muted small">
+          <a href="{{ url_for('scans.view', scan_id=r.scan_id) }}" class="text-decoration-none text-muted">{{ r.scan.name }}</a>
+        </td>
+        <td><span class="badge bg-secondary bg-opacity-25 text-light text-uppercase">{{ r.file_format }}</span></td>
+        <td class="text-muted small">{% if r.file_size %}{{ "%.1f"|format(r.file_size / 1024) }} KB{% else %}—{% endif %}</td>
+        <td>
+          <span class="badge-status status-{% if r.delivery == 'both' %}done{% elif r.delivery == 'cloud' %}running{% else %}pending{% endif %}">
+            {{ r.delivery.upper() }}
+          </span>
+        </td>
+        <td>
+          {% if r.cloud_status == 'ok' %}
+            <span class="badge-severity sev-info text-success"><i class="bi bi-check-circle"></i> Sent</span>
+          {% elif r.cloud_status == 'error' %}
+            <span class="badge-severity sev-high" title="{{ r.cloud_response }}"><i class="bi bi-x-circle"></i> Error</span>
+          {% else %}
+            <span class="text-muted small">—</span>
+          {% endif %}
+        </td>
+        <td class="text-muted small">{{ r.generated_at | localdt('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          <div class="d-flex gap-1">
+            <a href="{{ url_for('reports.download_saved', report_id=r.id) }}"
+               class="btn btn-sm btn-outline-secondary py-0 px-2" title="Download">
+              <i class="bi bi-download"></i>
+            </a>
+            {% if current_user.is_admin and cloud_enabled and r.cloud_status != 'ok' %}
+            <form method="POST" action="{{ url_for('reports.push_saved', report_id=r.id) }}"
+                  data-confirm="Push '{{ r.filename }}' to cloud API?">
+              <button class="btn btn-sm btn-outline-primary py-0 px-2" title="Push to cloud">
+                <i class="bi bi-cloud-upload"></i>
+              </button>
+            </form>
+            {% endif %}
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('reports.delete_saved', report_id=r.id) }}"
+                  data-confirm="Delete this report file permanently?">
+              <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No reports generated yet. Use Generate Report on any completed scan.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── All Completed Scans (generate on-demand) ── -->
+<div class="section-header">
+  <span class="section-title">All Completed Scans</span>
+</div>
+<div class="data-table mb-4">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Scan</th><th>Target</th><th>Findings</th><th>Completed</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr>
+        <td><a href="{{ url_for('scans.view', scan_id=scan.id) }}" class="text-decoration-none fw-semibold">{{ scan.name }}</a></td>
+        <td class="text-muted small">{{ scan.target.host }}</td>
+        <td>
+          {% if scan.critical_count > 0 %}<span class="badge-severity sev-critical me-1">{{ scan.critical_count }}C</span>{% endif %}
+          <span class="text-muted">{{ scan.vuln_count }} vulns</span>
+        </td>
+        <td class="text-muted small">{{ scan.completed_at | localdt('%Y-%m-%d %H:%M') if scan.completed_at else '—' }}</td>
+        <td>
+          <div class="d-flex gap-1 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                    data-bs-toggle="modal" data-bs-target="#genModal{{ scan.id }}">
+              <i class="bi bi-file-earmark-plus me-1"></i>Generate
+            </button>
+            {% if current_user.is_admin and confluence_enabled %}
+            <form method="POST" action="{{ url_for('atlassian.confluence_publish', scan_id=scan.id) }}"
+                  data-confirm="Publish '{{ scan.name }}' to Confluence?">
+              <button class="btn btn-sm btn-outline-info py-0 px-2" title="Publish to Confluence">
+                <i class="bi bi-cloud-upload"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {{ gen_modal(scan, cloud_enabled) }}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-center text-muted py-4">No completed scans available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Scheduled Email Reports ── -->
+{% if current_user.is_admin %}
+<div class="section-header">
+  <span class="section-title">Scheduled Email Reports</span>
+  <a href="{{ url_for('reports.schedule_new') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Add
+  </a>
+</div>
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Name</th><th>Target</th><th>Recipients</th><th>Schedule</th><th>Format</th><th>Last Sent</th><th>Next Send</th><th></th></tr></thead>
+    <tbody>
+      {% for s in scheduled %}
+      <tr>
+        <td class="fw-semibold">{{ s.name }}</td>
+        <td class="text-muted small">{{ s.target.host if s.target else 'All' }}</td>
+        <td class="text-muted small">{{ s.recipients }}</td>
+        <td><code class="text-primary">{{ s.cron_expression }}</code></td>
+        <td><span class="badge bg-secondary bg-opacity-25 text-light">{{ s.report_format.upper() }}</span></td>
+        <td class="text-muted small">{{ s.last_sent | localdt('%Y-%m-%d') if s.last_sent else 'Never' }}</td>
+        <td class="text-muted small">{{ s.next_send | localdt('%Y-%m-%d %H:%M') if s.next_send else '—' }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('reports.schedule_delete', sched_id=s.id) }}"
+                data-confirm="Delete this scheduled report?">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No scheduled email reports.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

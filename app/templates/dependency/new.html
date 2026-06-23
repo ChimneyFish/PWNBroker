@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}New Dependency Scan — PwnBroker{% endblock %}
+{% block page_title %}New Dependency Scan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="form-card">
+      <h5 class="fw-bold mb-1">Scan Remote Dependencies via SSH</h5>
+      <p class="text-muted small mb-4">
+        PwnBroker will SSH into the target, locate all dependency lockfiles under the
+        specified path, and check them against the
+        <a href="https://osv.dev" target="_blank" class="text-primary">OSV vulnerability database</a>.
+      </p>
+
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Scan Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. API Server — Dependencies" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Target</label>
+          <div class="d-flex gap-2">
+            <select name="target_id" class="form-select" id="target_select" required>
+              <option value="">— Select a target —</option>
+              {% for t in targets %}
+              <option value="{{ t.id }}"
+                      data-has-ssh="{{ 'true' if t.ssh_username else 'false' }}"
+                      data-host="{{ t.host }}">
+                {{ t.name }} ({{ t.host }})
+                {% if not t.ssh_username %}<span class="text-muted"> — no SSH</span>{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="ssh_test_btn"
+                    style="display:none" title="Test SSH connection">
+              <i class="bi bi-plug me-1"></i>Test SSH
+            </button>
+          </div>
+          <div id="ssh_warning" class="form-text text-warning mt-1" style="display:none">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            This target has no SSH credentials.
+            <a href="{{ url_for('targets.index') }}" class="text-warning">Configure SSH on the target first.</a>
+          </div>
+          <div id="ssh_test_result" class="mt-1 small" style="display:none"></div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Remote Path to Scan</label>
+          <input type="text" name="scan_path" class="form-control font-monospace"
+                 placeholder="/home/appuser/myproject" required>
+          <div class="form-text text-muted">
+            Absolute path on the <strong>remote machine</strong> to search for lockfiles.
+            Subdirectories are scanned recursively (node_modules, .git, venv excluded).
+          </div>
+        </div>
+
+        <div class="p-3 rounded mb-4" style="background:rgba(var(--bs-info-rgb),0.06);border:1px solid rgba(var(--bs-info-rgb),0.18)">
+          <div class="small fw-semibold text-info mb-2"><i class="bi bi-file-earmark-text me-1"></i>Supported Lockfiles</div>
+          <div class="row g-1 small text-muted">
+            <div class="col-6"><code>requirements.txt</code> → PyPI</div>
+            <div class="col-6"><code>Pipfile.lock</code> → PyPI</div>
+            <div class="col-6"><code>poetry.lock</code> → PyPI</div>
+            <div class="col-6"><code>package.json</code> → npm</div>
+            <div class="col-6"><code>go.mod</code> → Go</div>
+            <div class="col-6"><code>Cargo.lock</code> → crates.io</div>
+            <div class="col-6"><code>Gemfile.lock</code> → RubyGems</div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-play-fill me-1"></i>Start Scan
+          </button>
+          <a href="{{ url_for('dependency.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const sel     = document.getElementById('target_select');
+const warning = document.getElementById('ssh_warning');
+const testBtn = document.getElementById('ssh_test_btn');
+const testRes = document.getElementById('ssh_test_result');
+
+sel.addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  const hasSsh = opt.dataset.hasSsh === 'true';
+  warning.style.display = hasSsh ? 'none' : (this.value ? '' : 'none');
+  testBtn.style.display = hasSsh ? '' : 'none';
+  testRes.style.display = 'none';
+});
+
+testBtn.addEventListener('click', function() {
+  const tid = sel.value;
+  if (!tid) return;
+  testBtn.disabled = true;
+  testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testing…';
+  testRes.style.display = 'none';
+  fetch(`/dependency/ssh-test/${tid}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      testRes.style.display = '';
+      testRes.className = 'mt-1 small ' + (data.ok ? 'text-success' : 'text-danger');
+      testRes.innerHTML = (data.ok ? '<i class="bi bi-check-circle me-1"></i>' : '<i class="bi bi-x-circle me-1"></i>') + data.message;
+    })
+    .finally(() => {
+      testBtn.disabled = false;
+      testBtn.innerHTML = '<i class="bi bi-plug me-1"></i>Test SSH';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+{% block title %}{{ scan.name }} — Dependency Scanner — PwnBroker{% endblock %}
+{% block page_title %}{{ scan.name }}{% endblock %}
+
+{% block header_actions %}
+  {% if current_user.is_admin and jira_enabled and scan.status == 'done' %}
+  <form method="POST" action="{{ url_for('atlassian.jira_create', scan_id=scan.id) }}" class="d-inline"
+        data-confirm="Create Jira tickets for all untracked vulnerabilities above threshold?">
+    <button class="btn btn-outline-warning btn-sm">
+      <i class="bi bi-ticket-detailed me-1"></i>Create Jira Tickets
+    </button>
+  </form>
+  {% endif %}
+  {% if current_user.is_admin %}
+  <form method="POST" action="{{ url_for('dependency.delete', scan_id=scan.id) }}" class="d-inline"
+        data-confirm="Delete this scan and all findings?">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% set vulns = results | selectattr('result_type', 'equalto', 'vulnerability') | list %}
+{% set info_results = results | selectattr('result_type', 'equalto', 'info') | list %}
+
+<!-- Stats bar -->
+<div class="row g-3 mb-4">
+  <div class="col-auto">
+    <a href="{{ url_for('targets.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Target</div>
+      <div class="fw-semibold">{{ scan.target.host }}</div>
+    </a>
+  </div>
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Remote Path</div>
+      <div class="fw-semibold font-monospace small">{{ scan.scan_path or '—' }}</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <span id="scan-status-badge" class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span>
+    </div>
+  </div>
+  <div class="col-auto">
+    <a href="#dep-results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Vulnerabilities</div>
+      <div class="fw-semibold" data-stat="vulns">{{ vulns | length }}</div>
+    </a>
+  </div>
+  <div class="col-auto">
+    <a href="#dep-results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Critical</div>
+      <div class="fw-semibold text-danger" data-stat="critical">
+        {{ vulns | selectattr('severity', 'equalto', 'critical') | list | length }}
+      </div>
+    </a>
+  </div>
+  {% if scan.status == 'done' %}
+  <div class="col-auto">
+    <a href="#dep-results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Remediated</div>
+      <div class="fw-semibold text-success" id="remediated-count">
+        {{ vulns | selectattr('is_remediated') | list | length }} / {{ vulns | length }}
+      </div>
+    </a>
+  </div>
+  {% endif %}
+  {% if scan.duration %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Duration</div>
+      <div class="fw-semibold">{{ scan.duration }}s</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if scan.status in ('pending', 'running') %}
+<div class="alert alert-primary d-flex align-items-center gap-2">
+  <span class="pulse text-primary"><i class="bi bi-circle-fill" style="font-size:0.6rem"></i></span>
+  Scan is <strong>{{ scan.status }}</strong> — connecting via SSH and checking dependencies…
+</div>
+{% endif %}
+
+<!-- Scanner info banner -->
+{% if info_results %}
+<div class="alert py-2 mb-3 small" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-color)">
+  <i class="bi bi-info-circle me-1 text-primary"></i>
+  {% for r in info_results %}{{ r.description | replace('\n', ' · ') }}{% endfor %}
+</div>
+{% endif %}
+
+<!-- Findings -->
+{% if vulns %}
+<div class="section-header mt-2 mb-3" id="dep-results">
+  <span class="section-title">Vulnerable Packages ({{ vulns | length }})</span>
+  {% if current_user.is_admin %}
+  <span class="text-muted small">Click <i class="bi bi-check2-circle"></i> to mark a finding as remediated</span>
+  {% endif %}
+</div>
+
+{% for sev in ['critical','high','medium','low','info'] %}
+{% set sev_items = vulns | selectattr('severity', 'equalto', sev) | list %}
+{% if sev_items %}
+<div class="mb-1 mt-3 text-uppercase fw-bold small
+  {% if sev == 'critical' %}text-danger
+  {% elif sev == 'high' %}text-warning
+  {% elif sev == 'medium' %}text-warning-emphasis
+  {% elif sev == 'low' %}text-info
+  {% else %}text-muted{% endif %}" style="letter-spacing:0.08em">
+  {{ sev }} — {{ sev_items | length }} package{% if sev_items | length != 1 %}s{% endif %}
+</div>
+
+{% for r in sev_items %}
+<div class="mb-3 p-3 rounded osv-finding {% if r.is_remediated %}osv-remediated{% endif %}"
+     id="finding-{{ r.id }}"
+     style="background:var(--bg-card);border:1px solid {% if r.is_remediated %}var(--success)
+       {% elif sev == 'critical' %}var(--critical)
+       {% elif sev == 'high' %}rgba(255,171,0,0.4)
+       {% elif sev == 'medium' %}rgba(255,171,0,0.2)
+       {% else %}var(--border-color){% endif %}">
+
+  <div class="d-flex align-items-start justify-content-between gap-3">
+    <div class="flex-grow-1">
+
+      <!-- Package header row -->
+      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+        <span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span>
+        {% if r.ecosystem %}
+        <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.7rem">{{ r.ecosystem }}</span>
+        {% endif %}
+        <span class="fw-semibold fs-6">{{ r.package_name or r.title.split(' — ')[0] }}</span>
+        {% if r.package_version %}
+        <span class="text-muted font-monospace" style="font-size:0.8rem">v{{ r.package_version }}</span>
+        {% endif %}
+        {% if r.fixed_version %}
+        <span class="text-success small fw-semibold">
+          <i class="bi bi-arrow-up-right-circle me-1"></i>Fix available: v{{ r.fixed_version }}
+        </span>
+        {% endif %}
+        {% if r.cve_id %}
+        <a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank"
+           class="badge bg-danger bg-opacity-20 text-danger text-decoration-none" style="font-size:0.7rem">
+          {{ r.cve_id }}
+        </a>
+        {% endif %}
+        {% if r.cvss_score %}
+        <span class="badge bg-secondary bg-opacity-15 text-muted" style="font-size:0.7rem">CVSS {{ r.cvss_score }}</span>
+        {% endif %}
+        {% if existing_tickets.get(r.id) %}
+        <a href="{{ existing_tickets[r.id].ticket_url }}" target="_blank"
+           class="badge bg-warning bg-opacity-20 text-warning text-decoration-none" style="font-size:0.65rem">
+          <i class="bi bi-ticket-detailed me-1"></i>{{ existing_tickets[r.id].ticket_key }}
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- OSV ID -->
+      {% set osv_parts = r.title.split(' — ') %}
+      {% if osv_parts | length > 1 %}
+      <div class="small text-muted mb-2">
+        OSV: <code class="text-primary">{{ osv_parts[-1] }}</code>
+      </div>
+      {% endif %}
+
+      <!-- Description -->
+      {% if r.description %}
+      <div class="small text-muted mb-3" style="max-width:680px;line-height:1.5">{{ r.description }}</div>
+      {% endif %}
+
+      <!-- Remediation command -->
+      {% if r.remediation %}
+      <div>
+        <div class="small fw-semibold text-success mb-1">
+          <i class="bi bi-terminal me-1"></i>Remediation Command
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <code class="px-3 py-2 rounded flex-grow-1 text-success"
+                id="cmd-{{ r.id }}"
+                style="background:rgba(0,200,83,0.07);border:1px solid rgba(0,200,83,0.2);font-size:0.85rem;word-break:break-all">{{ r.remediation }}</code>
+          <button class="btn btn-sm btn-outline-secondary py-1 px-2 flex-shrink-0"
+                  onclick="navigator.clipboard.writeText(document.getElementById('cmd-{{ r.id }}').textContent).then(()=>{this.innerHTML='<i class=\'bi bi-check2\'></i>';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard\'></i>'},1500)})"
+                  title="Copy">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Remediate toggle (admin only) -->
+    {% if current_user.is_admin %}
+    <div class="flex-shrink-0 text-center pt-1" style="min-width:64px">
+      <button class="btn btn-sm {% if r.is_remediated %}btn-success{% else %}btn-outline-secondary{% endif %} remediate-btn"
+              data-scan="{{ scan.id }}" data-result="{{ r.id }}"
+              title="{% if r.is_remediated %}Mark as open{% else %}Mark as fixed{% endif %}">
+        <i class="bi {% if r.is_remediated %}bi-check2-circle-fill{% else %}bi-check2-circle{% endif %}"></i>
+      </button>
+      <div class="text-muted mt-1" style="font-size:0.65rem">
+        {% if r.is_remediated %}Fixed{% else %}Open{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% elif scan.status == 'done' %}
+<div class="text-center py-5">
+  <i class="bi bi-shield-check fs-1 d-block mb-2 text-success"></i>
+  <div class="fw-semibold text-success">No vulnerable dependencies found.</div>
+  <div class="text-muted small mt-1">All packages are clean against the OSV database.</div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if scan.status in ('pending', 'running') %}
+<script>pollScanStatus({{ scan.id }});</script>
+{% endif %}
+{% if current_user.is_admin and scan.status == 'done' %}
+<script>
+document.querySelectorAll('.remediate-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const scanId   = this.dataset.scan;
+    const resultId = this.dataset.result;
+    this.disabled  = true;
+    fetch(`/dependency/${scanId}/remediate/${resultId}`, {method: 'POST'})
+      .then(r => r.json())
+      .then(data => {
+        const card  = document.getElementById('finding-' + resultId);
+        const icon  = this.querySelector('i');
+        const label = this.nextElementSibling;
+        if (data.remediated) {
+          this.classList.replace('btn-outline-secondary', 'btn-success');
+          icon.classList.replace('bi-check2-circle', 'bi-check2-circle-fill');
+          label.textContent = 'Fixed';
+          card.style.borderColor = 'var(--success)';
+          card.classList.add('osv-remediated');
+        } else {
+          this.classList.replace('btn-success', 'btn-outline-secondary');
+          icon.classList.replace('bi-check2-circle-fill', 'bi-check2-circle');
+          label.textContent = 'Open';
+          card.style.borderColor = '';
+          card.classList.remove('osv-remediated');
+        }
+        const counter = document.getElementById('remediated-count');
+        if (counter) {
+          const fixed = document.querySelectorAll('.osv-finding.osv-remediated').length;
+          const total = document.querySelectorAll('.osv-finding').length;
+          counter.textContent = fixed + ' / ' + total;
+        }
+      })
+      .finally(() => { this.disabled = false; });
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

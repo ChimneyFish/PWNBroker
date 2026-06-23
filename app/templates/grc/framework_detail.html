@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% block title %}{{ fw.short_name }} — Compliance — PwnBroker{% endblock %}
+{% block page_title %}{{ fw.name }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('grc.compliance_report', framework_id=fw.id) }}"
+   class="btn btn-sm btn-outline-success">
+  <i class="bi bi-file-earmark-pdf me-1"></i>Download Audit Report
+</a>
+<a href="{{ url_for('grc.compliance') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Frameworks
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% set all_controls = by_cat.values() | sum(start=[]) %}
+{% set assessed    = all_controls | selectattr('assessment') | list %}
+{% set compliant   = assessed | selectattr('assessment.status','equalto','compliant') | list %}
+
+<!-- Progress strip -->
+<div class="form-card mb-4">
+  <div class="d-flex gap-4 align-items-center flex-wrap">
+    <div>
+      <div class="fw-semibold">{{ compliant | length }} / {{ all_controls | length }}</div>
+      <div class="text-muted small">Controls Compliant</div>
+    </div>
+    <div class="flex-grow-1">
+      <div class="progress" style="height:8px;background:rgba(255,255,255,0.08)">
+        <div class="progress-bar bg-success"
+             style="width:{{ (compliant | length / all_controls | length * 100) | round | int if all_controls else 0 }}%"></div>
+      </div>
+    </div>
+    <div class="d-flex gap-3 small">
+      <span class="text-success">✓ {{ compliant | length }} compliant</span>
+      <span class="text-warning">~ {{ assessed | selectattr('assessment.status','equalto','partial') | list | length }} partial</span>
+      <span class="text-danger">✗ {{ assessed | selectattr('assessment.status','equalto','non_compliant') | list | length }} gap</span>
+      <span class="text-muted">? {{ all_controls | length - assessed | length }} unassessed</span>
+    </div>
+    {% set total_ev = ev_counts.values() | sum %}
+    {% if total_ev %}
+    <div class="text-muted small">
+      <i class="bi bi-paperclip me-1"></i>{{ total_ev }} evidence file{{ 's' if total_ev != 1 }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Controls by category -->
+{% for category, controls in by_cat.items() %}
+<div class="section-header mb-2 mt-4">
+  <span class="section-title">{{ category }}</span>
+  <span class="text-muted small ms-2">({{ controls | length }})</span>
+</div>
+
+<div class="data-table mb-3">
+  <table class="table table-dark table-hover mb-0" style="font-size:0.85rem">
+    <thead>
+      <tr>
+        <th style="width:100px">Control</th>
+        <th>Title</th>
+        <th style="width:160px">Status</th>
+        <th>Notes</th>
+        <th style="width:90px" class="text-center">Evidence</th>
+        <th style="width:110px">Assessed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ctrl in controls %}
+      {% set a = ctrl.assessment %}
+      {% set status = a.status if a else 'not_assessed' %}
+      {% set ev_count = ev_counts.get(ctrl.id, 0) %}
+      <tr id="ctrl-row-{{ ctrl.id }}">
+        <td class="font-monospace text-muted small">{{ ctrl.control_id }}</td>
+        <td>
+          <div class="fw-semibold small">{{ ctrl.title }}</div>
+          {% if ctrl.description %}
+          <div class="text-muted mt-1" style="font-size:0.7rem">{{ ctrl.description | truncate(120) }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <select class="form-select form-select-sm status-select"
+                  data-ctrl="{{ ctrl.id }}"
+                  style="background:var(--bg-input);border-color:var(--border-color);font-size:0.75rem;
+                  color:{% if status == 'compliant' %}#4ade80{% elif status == 'partial' %}#fbbf24{% elif status == 'non_compliant' %}#f87171{% elif status == 'not_applicable' %}#94a3b8{% else %}#64748b{% endif %}">
+            <option value="not_assessed"   {% if status == 'not_assessed'   %}selected{% endif %} style="color:#64748b">Not Assessed</option>
+            <option value="compliant"      {% if status == 'compliant'      %}selected{% endif %} style="color:#4ade80">✓ Compliant</option>
+            <option value="partial"        {% if status == 'partial'        %}selected{% endif %} style="color:#fbbf24">~ Partial</option>
+            <option value="non_compliant"  {% if status == 'non_compliant'  %}selected{% endif %} style="color:#f87171">✗ Non-Compliant</option>
+            <option value="not_applicable" {% if status == 'not_applicable' %}selected{% endif %} style="color:#94a3b8">— N/A</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm notes-input"
+                 data-ctrl="{{ ctrl.id }}"
+                 value="{{ a.notes or '' }}"
+                 placeholder="Assessment notes…"
+                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color);font-size:0.75rem">
+        </td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2 ev-btn"
+                  onclick="openEvidence({{ ctrl.id }}, '{{ ctrl.control_id | e }}', '{{ ctrl.title | e | truncate(40) }}')"
+                  title="Manage evidence files">
+            <i class="bi bi-paperclip me-1"></i>
+            <span class="ev-count-{{ ctrl.id }}{% if ev_count %} text-info{% endif %}">
+              {{ ev_count or '' }}
+            </span>
+          </button>
+        </td>
+        <td class="text-muted small" id="assessed-at-{{ ctrl.id }}">
+          {% if a and a.assessed_at %}
+          {{ a.assessed_at | localdt('%Y-%m-%d') }}
+          {% if a.assessor %}<div style="font-size:0.65rem">{{ a.assessor.username }}</div>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+<!-- ── Evidence Modal ──────────────────────────────────────────────────────── -->
+<div class="modal fade" id="evidenceModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <div>
+          <h6 class="modal-title mb-0"><i class="bi bi-paperclip me-2"></i>Evidence Files</h6>
+          <div class="text-muted small" id="ev-modal-subtitle"></div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Existing files list -->
+        <div id="ev-file-list" class="mb-4"></div>
+
+        <!-- Upload form -->
+        {% if current_user.is_admin %}
+        <div style="border-top:1px solid var(--border-color);padding-top:1rem">
+          <div class="fw-semibold small text-muted mb-2">ATTACH NEW FILE</div>
+          <div class="mb-2">
+            <input type="file" id="ev-file-input" class="form-control form-control-sm"
+                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+            <div class="text-muted mt-1" style="font-size:0.7rem">
+              Accepted: PDF, images, Word, Excel, CSV, ZIP, TXT — max {{ 32 }} MB
+            </div>
+          </div>
+          <div class="mb-3">
+            <input type="text" id="ev-description" class="form-control form-control-sm"
+                   placeholder="Brief description of what this file demonstrates…"
+                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="uploadEvidence()" id="ev-upload-btn">
+            <i class="bi bi-upload me-1"></i>Upload
+          </button>
+          <span id="ev-upload-status" class="ms-3 small text-muted"></span>
+        </div>
+        {% endif %}
+
+      </div>
+      <div class="modal-footer" style="border-color:var(--border-color)">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STATUS_COLORS = {
+  compliant:      '#4ade80',
+  partial:        '#fbbf24',
+  non_compliant:  '#f87171',
+  not_applicable: '#94a3b8',
+  not_assessed:   '#64748b',
+};
+
+let _saveTimers = {};
+let _evControlId = null;
+const evModal = new bootstrap.Modal(document.getElementById('evidenceModal'));
+
+/* ── Compliance assessment ────────────────────────────────────────────────── */
+function scheduleAssess(ctrlId) {
+  clearTimeout(_saveTimers[ctrlId]);
+  _saveTimers[ctrlId] = setTimeout(() => assessControl(ctrlId), 800);
+}
+
+async function assessControl(ctrlId) {
+  const select = document.querySelector(`.status-select[data-ctrl="${ctrlId}"]`);
+  const notes  = document.querySelector(`.notes-input[data-ctrl="${ctrlId}"]`);
+  if (!select) return;
+  const fd = new FormData();
+  fd.append('status', select.value);
+  fd.append('notes',  notes?.value || '');
+  const res  = await fetch(`/grc/compliance/assess/${ctrlId}`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (!data.ok) return;
+  select.style.color = STATUS_COLORS[data.status] || '#64748b';
+  const cell = document.getElementById(`assessed-at-${ctrlId}`);
+  if (cell) {
+    const now = new Date().toISOString().slice(0,10);
+    cell.innerHTML = `${now}<div style="font-size:0.65rem">{{ current_user.username }}</div>`;
+  }
+}
+
+document.querySelectorAll('.status-select').forEach(sel => {
+  sel.addEventListener('change', () => assessControl(sel.dataset.ctrl));
+});
+document.querySelectorAll('.notes-input').forEach(inp => {
+  inp.addEventListener('input', () => scheduleAssess(inp.dataset.ctrl));
+});
+
+/* ── Evidence management ──────────────────────────────────────────────────── */
+function _evIcon(mime) {
+  if (!mime) return 'bi-file-earmark';
+  if (mime.includes('pdf'))   return 'bi-file-earmark-pdf text-danger';
+  if (mime.startsWith('image')) return 'bi-file-earmark-image text-info';
+  if (mime.includes('word') || mime.includes('document')) return 'bi-file-earmark-word text-primary';
+  if (mime.includes('excel') || mime.includes('sheet'))  return 'bi-file-earmark-excel text-success';
+  if (mime.includes('zip') || mime.includes('compressed')) return 'bi-file-zip text-warning';
+  return 'bi-file-earmark-text';
+}
+
+function _renderFiles(files) {
+  const list = document.getElementById('ev-file-list');
+  if (!files.length) {
+    list.innerHTML = '<div class="text-muted small py-2">No evidence files attached yet.</div>';
+    return;
+  }
+  list.innerHTML = files.map(f => `
+    <div class="d-flex align-items-start gap-3 py-2" style="border-bottom:1px solid var(--border-color)" id="ev-row-${f.id}">
+      <i class="bi ${_evIcon(f.mime_type)} fs-5 mt-1 flex-shrink-0"></i>
+      <div class="flex-grow-1 min-width-0">
+        <div class="fw-semibold small text-truncate">
+          <a href="/grc/evidence/${f.id}/download" class="text-info text-decoration-none">
+            ${f.filename}
+          </a>
+        </div>
+        ${f.description ? `<div class="text-muted" style="font-size:0.75rem">${f.description}</div>` : ''}
+        <div class="text-muted" style="font-size:0.7rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at} &nbsp;·&nbsp; ${f.uploader}</div>
+      </div>
+      {% if current_user.is_admin %}
+      <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+              onclick="deleteEvidence(${f.id})" title="Delete">
+        <i class="bi bi-trash"></i>
+      </button>
+      {% endif %}
+    </div>
+  `).join('');
+}
+
+async function openEvidence(ctrlId, ctrlRef, ctrlTitle) {
+  _evControlId = ctrlId;
+  document.getElementById('ev-modal-subtitle').textContent = `${ctrlRef} — ${ctrlTitle}`;
+  document.getElementById('ev-file-list').innerHTML = '<div class="text-muted small py-2">Loading…</div>';
+  document.getElementById('ev-upload-status').textContent = '';
+  evModal.show();
+
+  const res  = await fetch(`/grc/evidence/list?control_id=${ctrlId}`);
+  const data = await res.json();
+  if (data.ok) _renderFiles(data.files);
+}
+
+async function uploadEvidence() {
+  const fileInput = document.getElementById('ev-file-input');
+  const desc      = document.getElementById('ev-description').value.trim();
+  const statusEl  = document.getElementById('ev-upload-status');
+  const btn       = document.getElementById('ev-upload-btn');
+
+  if (!fileInput.files.length) { statusEl.textContent = 'Select a file first.'; return; }
+
+  const fd = new FormData();
+  fd.append('file',        fileInput.files[0]);
+  fd.append('description', desc);
+  fd.append('control_id',  _evControlId);
+
+  btn.disabled = true;
+  statusEl.textContent = 'Uploading…';
+
+  const res  = await fetch('/grc/evidence/upload', {method:'POST', body:fd});
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (!data.ok) { statusEl.textContent = `Error: ${data.error}`; return; }
+
+  statusEl.textContent = '';
+  fileInput.value = '';
+  document.getElementById('ev-description').value = '';
+
+  // Refresh file list
+  const listRes  = await fetch(`/grc/evidence/list?control_id=${_evControlId}`);
+  const listData = await listRes.json();
+  if (listData.ok) _renderFiles(listData.files);
+
+  // Update count badge in table
+  const countEl = document.querySelector(`.ev-count-${_evControlId}`);
+  if (countEl) {
+    const current = parseInt(countEl.textContent) || 0;
+    countEl.textContent = current + 1;
+    countEl.classList.add('text-info');
+  }
+}
+
+async function deleteEvidence(evId) {
+  if (!confirm('Delete this evidence file? This cannot be undone.')) return;
+  const res  = await fetch(`/grc/evidence/${evId}/delete`, {method:'POST'});
+  const data = await res.json();
+  if (!data.ok) return;
+  document.getElementById(`ev-row-${evId}`)?.remove();
+
+  // Update count badge
+  const countEl = document.querySelector(`.ev-count-${_evControlId}`);
+  if (countEl) {
+    const current = parseInt(countEl.textContent) || 1;
+    const next = current - 1;
+    countEl.textContent = next || '';
+    if (!next) countEl.classList.remove('text-info');
+  }
+
+  // Show empty state if no rows left
+  const list = document.getElementById('ev-file-list');
+  if (list && !list.querySelector('[id^="ev-row-"]')) {
+    list.innerHTML = '<div class="text-muted small py-2">No evidence files attached yet.</div>';
+  }
+}
+</script>
+{% endblock %}

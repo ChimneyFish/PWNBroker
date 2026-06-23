@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% block title %}Assets — PwnBroker{% endblock %}
+{% block page_title %}Asset Inventory{% endblock %}
+
+{% block header_actions %}
+{% if current_user.is_admin %}
+<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#tagModal">
+  <i class="bi bi-tag me-1"></i>Manage Tags
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ assets | length }}</div>
+          <div class="stat-label">Total Assets</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-hdd-network"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ tags | length }}</div>
+          <div class="stat-label">Tags Defined</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa">
+          <i class="bi bi-tags"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          {% set tagged = assets | selectattr('tags') | list %}
+          <div class="stat-value">{{ tagged | length }}</div>
+          <div class="stat-label">Tagged</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#4ade80">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          {% set untagged = assets | rejectattr('tags') | list %}
+          <div class="stat-value {% if untagged %}text-warning{% else %}text-success{% endif %}">{{ untagged | length }}</div>
+          <div class="stat-label">Untagged</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#fbbf24">
+          <i class="bi bi-question-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tag filter bar -->
+{% if tags %}
+<div class="form-card mb-4 py-2 px-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <span class="text-muted small fw-semibold me-1">FILTER</span>
+    <a href="{{ url_for('assets.index') }}"
+       class="btn btn-sm {% if not tag_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      All
+    </a>
+    {% for tag in tags %}
+    <a href="{{ url_for('assets.index', tag=tag.id) }}"
+       class="btn btn-sm {% if tag_filter == tag.id %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+       style="{% if tag_filter == tag.id %}background:{{ tag.color }};border-color:{{ tag.color }};{% else %}border-color:{{ tag.color }};color:{{ tag.color }};{% endif %}">
+      {{ tag.label }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Asset table -->
+{% if not assets %}
+<div class="form-card text-center py-5 text-muted">
+  <i class="bi bi-hdd-network fs-1 d-block mb-2 opacity-50"></i>
+  {% if tag_filter %}
+  No assets with that tag. <a href="{{ url_for('assets.index') }}">Clear filter</a>
+  {% else %}
+  No assets discovered yet. Run a scan to populate this list.
+  {% endif %}
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0" id="assets-table">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Hostname</th>
+        <th>Network</th>
+        <th>OS</th>
+        <th>Tags</th>
+        <th class="text-center">Open Vulns</th>
+        <th>Last Seen</th>
+        <th>Notes</th>
+        <th style="width:40px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assets %}
+      {% set vuln_count = counts.get((a.target_id, a.ip_address), 0) %}
+      <tr id="asset-row-{{ a.id }}">
+        <td class="font-monospace fw-semibold">{{ a.ip_address }}</td>
+        <td>
+          <span id="hn-display-{{ a.id }}" class="small text-muted">
+            {{ a.hostname or '<span class="text-muted opacity-50">—</span>' | safe }}
+          </span>
+          <button class="btn btn-link btn-sm p-0 ms-1 text-muted opacity-50"
+                  onclick="editHostname({{ a.id }}, '{{ a.hostname or '' }}')"
+                  title="Edit hostname" style="font-size:0.7rem">
+            <i class="bi bi-pencil"></i>
+          </button>
+        </td>
+        <td class="small text-muted">
+          {% if a.target %}{{ a.target.name }}{% else %}—{% endif %}
+        </td>
+        <td class="small text-muted">
+          <span id="os-{{ a.id }}">{{ a.os_name or '—' }}</span>
+        </td>
+        <td>
+          <!-- Current tags -->
+          <div class="d-flex flex-wrap gap-1 align-items-center" id="tags-{{ a.id }}">
+            {% for tag in a.tags %}
+            <span class="badge d-inline-flex align-items-center gap-1"
+                  style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}40;font-size:0.65rem">
+              {{ tag.label }}
+              <button type="button" class="btn-close btn-close-white"
+                      style="font-size:0.4rem;filter:none;opacity:0.7"
+                      onclick="removeTag({{ a.id }}, {{ tag.id }}, this)"
+                      title="Remove tag"></button>
+            </span>
+            {% endfor %}
+            <!-- Add tag dropdown -->
+            {% if tags %}
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-1"
+                      style="font-size:0.65rem;line-height:1.4"
+                      data-bs-toggle="dropdown" title="Add tag">
+                <i class="bi bi-plus"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark" style="min-width:140px;font-size:0.8rem">
+                {% for tag in tags %}
+                {% if tag not in a.tags %}
+                <li>
+                  <button class="dropdown-item d-flex align-items-center gap-2"
+                          onclick="addTag({{ a.id }}, {{ tag.id }})">
+                    <span class="badge" style="background:{{ tag.color }};font-size:0.55rem">&nbsp;</span>
+                    {{ tag.label }}
+                  </button>
+                </li>
+                {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        </td>
+        <td class="text-center">
+          {% if vuln_count %}
+          <a href="{{ url_for('vulns.tickets') }}?status=open"
+             class="badge bg-danger text-white text-decoration-none">{{ vuln_count }}</a>
+          {% else %}
+          <span class="text-success small"><i class="bi bi-check2"></i></span>
+          {% endif %}
+        </td>
+        <td class="small text-muted">
+          {{ a.last_seen | localdt('%Y-%m-%d') if a.last_seen else '—' }}
+        </td>
+        <td style="max-width:200px">
+          <div class="small text-muted" id="notes-display-{{ a.id }}"
+               style="white-space:pre-wrap;word-break:break-word">
+            {{ a.notes or '' }}
+          </div>
+        </td>
+        <td>
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                    onclick="editNotes({{ a.id }}, `{{ (a.notes or '') | replace('`','\\`') }}`)"
+                    title="Edit notes">
+              <i class="bi bi-pencil"></i>
+            </button>
+            {% if current_user.is_admin %}
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                      id="qs-btn-{{ a.id }}" data-bs-toggle="dropdown"
+                      title="Quick Scan {{ a.ip_address }}">
+                <i class="bi bi-radar" id="qs-icon-{{ a.id }}"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end"
+                  style="min-width:180px;font-size:0.8rem">
+                <li><h6 class="dropdown-header text-truncate" style="max-width:170px">{{ a.ip_address }}</h6></li>
+                <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'port')">
+                  <i class="bi bi-hdd-network me-2 text-primary"></i>Port &amp; Services</button></li>
+                <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'cve')">
+                  <i class="bi bi-bug me-2 text-warning"></i>CVE Lookup</button></li>
+                <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'web')">
+                  <i class="bi bi-globe me-2 text-info"></i>Web Scan</button></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'full')">
+                  <i class="bi bi-shield-check me-2 text-success"></i>Full Scan</button></li>
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Tag Management Modal (admin only) -->
+{% if current_user.is_admin %}
+<div class="modal fade" id="tagModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <h6 class="modal-title"><i class="bi bi-tags me-2"></i>Manage Tags</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Create tag form -->
+        <form method="POST" action="{{ url_for('assets.create_tag') }}" class="mb-4">
+          <div class="fw-semibold small text-muted mb-2">CREATE NEW TAG</div>
+          <div class="d-flex gap-2">
+            <input type="text" name="label" class="form-control form-control-sm"
+                   placeholder="Tag label (e.g. Server, DMZ, Critical)"
+                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
+                   required maxlength="50">
+            <input type="color" name="color" value="#0bbcd4"
+                   class="form-control form-control-sm form-control-color"
+                   style="width:40px;padding:2px;background:var(--bg-input);border-color:var(--border-color)"
+                   title="Pick a color">
+            <button type="submit" class="btn btn-primary btn-sm">Add</button>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            {% for c in ['#0bbcd4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
+            <button type="button" class="btn btn-sm"
+                    style="background:{{ c }};width:24px;height:24px;padding:0;border:none"
+                    onclick="document.querySelector('[name=color]').value='{{ c }}'"></button>
+            {% endfor %}
+            <span class="text-muted small align-self-center ms-1">Quick colors</span>
+          </div>
+        </form>
+
+        <!-- Existing tags -->
+        <div class="fw-semibold small text-muted mb-2">EXISTING TAGS</div>
+        {% if not tags %}
+        <div class="text-muted small">No tags yet.</div>
+        {% else %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for tag in tags %}
+          <span class="badge d-inline-flex align-items-center gap-2 px-2 py-1"
+                style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}50;font-size:0.75rem">
+            {{ tag.label }}
+            <span class="text-muted" style="font-size:0.65rem">({{ tag.assets | length }})</span>
+            <button type="button" class="btn-close btn-close-white"
+                    style="font-size:0.45rem;filter:none;opacity:0.6"
+                    onclick="deleteTag({{ tag.id }}, '{{ tag.label }}', this.closest('span'))"
+                    title="Delete tag"></button>
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hostname edit modal -->
+<div class="modal fade" id="hostnameModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <h6 class="modal-title">Set Hostname</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="hn-asset-id">
+        <input type="text" id="hn-input" class="form-control form-control-sm"
+               placeholder="e.g. web-server-01"
+               style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+      </div>
+      <div class="modal-footer" style="border-color:var(--border-color)">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveHostname()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notes edit modal -->
+<div class="modal fade" id="notesModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <h6 class="modal-title">Asset Notes</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="notes-asset-id">
+        <textarea id="notes-input" class="form-control form-control-sm" rows="5"
+                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
+                  placeholder="Free-form notes about this asset..."></textarea>
+      </div>
+      <div class="modal-footer" style="border-color:var(--border-color)">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveNotes()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const hnModal    = new bootstrap.Modal(document.getElementById('hostnameModal'));
+const notesModal = new bootstrap.Modal(document.getElementById('notesModal'));
+
+async function addTag(assetId, tagId) {
+  const fd = new FormData();
+  fd.append('tag_id', tagId);
+  const res  = await fetch(`/assets/${assetId}/tag`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (!data.ok) return;
+
+  const container = document.getElementById(`tags-${assetId}`);
+  const plus = container.querySelector('.dropdown');
+
+  // Build new tag badge
+  const span = document.createElement('span');
+  span.className = 'badge d-inline-flex align-items-center gap-1';
+  span.style.cssText = `background:${data.color}20;color:${data.color};border:1px solid ${data.color}40;font-size:0.65rem`;
+  span.innerHTML = `${data.label}
+    <button type="button" class="btn-close btn-close-white"
+            style="font-size:0.4rem;filter:none;opacity:0.7"
+            onclick="removeTag(${assetId}, ${data.tag_id}, this)"
+            title="Remove tag"></button>`;
+  container.insertBefore(span, plus);
+
+  // Remove from dropdown
+  const btn = plus.querySelector(`[onclick="addTag(${assetId}, ${data.tag_id})"]`);
+  if (btn) btn.closest('li').remove();
+}
+
+async function removeTag(assetId, tagId, btn) {
+  const res  = await fetch(`/assets/${assetId}/untag/${tagId}`, {method:'POST'});
+  const data = await res.json();
+  if (!data.ok) return;
+  btn.closest('span.badge').remove();
+}
+
+function editHostname(assetId, current) {
+  document.getElementById('hn-asset-id').value = assetId;
+  document.getElementById('hn-input').value     = current;
+  hnModal.show();
+}
+
+async function saveHostname() {
+  const id = document.getElementById('hn-asset-id').value;
+  const hn = document.getElementById('hn-input').value.trim();
+  const fd = new FormData();
+  fd.append('hostname', hn);
+  const res  = await fetch(`/assets/${id}/hostname`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (!data.ok) return;
+  const el = document.getElementById(`hn-display-${id}`);
+  el.innerHTML = data.hostname || '<span class="text-muted opacity-50">—</span>';
+  hnModal.hide();
+}
+
+function editNotes(assetId, current) {
+  document.getElementById('notes-asset-id').value = assetId;
+  document.getElementById('notes-input').value     = current;
+  notesModal.show();
+}
+
+async function saveNotes() {
+  const id    = document.getElementById('notes-asset-id').value;
+  const notes = document.getElementById('notes-input').value;
+  const fd    = new FormData();
+  fd.append('notes', notes);
+  const res  = await fetch(`/assets/${id}/notes`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (!data.ok) return;
+  document.getElementById(`notes-display-${id}`).textContent = notes;
+  notesModal.hide();
+}
+
+async function deleteTag(tagId, label, el) {
+  if (!confirm(`Delete tag "${label}"? It will be removed from all assets.`)) return;
+  const res  = await fetch(`/assets/tags/${tagId}/delete`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) el.remove();
+}
+
+async function quickScan(assetId, scanType) {
+  const icon = document.getElementById(`qs-icon-${assetId}`);
+  const btn  = document.getElementById(`qs-btn-${assetId}`);
+  icon.className = 'bi bi-arrow-repeat spin';
+  btn.disabled   = true;
+
+  try {
+    const fd = new FormData();
+    fd.append('scan_type', scanType);
+    const res  = await fetch(`/assets/${assetId}/quick-scan`, {method:'POST', body:fd});
+    const data = await res.json();
+    if (data.ok) {
+      window.location.href = `/scans/${data.scan_id}`;
+    } else {
+      icon.className = 'bi bi-radar';
+      btn.disabled   = false;
+      alert(data.error || 'Failed to start scan.');
+    }
+  } catch (e) {
+    icon.className = 'bi bi-radar';
+    btn.disabled   = false;
+    alert('Request failed.');
+  }
+}
+</script>
+{% endblock %}

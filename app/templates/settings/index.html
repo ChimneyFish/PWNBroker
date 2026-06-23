@@ -1,0 +1,725 @@
+{% extends "base.html" %}
+{% block title %}Settings — PwnBroker{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- ── Time & NTP ── -->
+  <div class="col-12">
+    <div class="form-card" id="time">
+      <h5 class="fw-bold mb-1"><i class="bi bi-clock me-2" style="color:var(--accent)"></i>Time &amp; NTP</h5>
+      <p class="text-muted small mb-4">Set the timezone for all timestamps displayed in PwnBroker, and configure the NTP server used to keep the system clock accurate.</p>
+
+      <!-- NTP sync status bar -->
+      <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="d-flex align-items-center gap-2">
+          {% if ntp_status.ntp_synced is none %}
+            <span class="badge bg-secondary bg-opacity-25 text-muted">timedatectl unavailable</span>
+          {% elif ntp_status.ntp_synced %}
+            <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 6px #4ade80"></span>
+            <span class="small text-success fw-semibold">NTP Synced</span>
+          {% elif ntp_status.ntp_active %}
+            <span style="width:8px;height:8px;border-radius:50%;background:#facc15;display:inline-block;box-shadow:0 0 6px #facc15"></span>
+            <span class="small text-warning fw-semibold">NTP Active, syncing…</span>
+          {% else %}
+            <span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>
+            <span class="small text-danger fw-semibold">NTP Not Active</span>
+          {% endif %}
+        </div>
+        {% if ntp_status.sys_timezone %}
+        <div class="vr" style="background:var(--border-color)"></div>
+        <div class="small text-muted">System TZ: <span class="text-primary">{{ ntp_status.sys_timezone }}</span></div>
+        {% endif %}
+        <div class="ms-auto small text-muted" id="live-clock"></div>
+      </div>
+
+      <form method="POST">
+        <input type="hidden" name="form" value="time">
+        <div class="row g-3">
+
+          <!-- Timezone select -->
+          <div class="col-lg-6">
+            <label class="form-label">App Timezone</label>
+            <select name="timezone" class="form-select" id="tz-select">
+              {% set current_tz = time_cfg.timezone or 'UTC' %}
+              {% set last_region = namespace(val='') %}
+              {% for region, tz in tz_list %}
+                {% if region != last_region.val %}
+                  {% if last_region.val != '' %}</optgroup>{% endif %}
+                  <optgroup label="{{ region }}">
+                  {% set last_region.val = region %}
+                {% endif %}
+                <option value="{{ tz }}" {% if tz == current_tz %}selected{% endif %}>{{ tz }}</option>
+              {% endfor %}
+              </optgroup>
+            </select>
+            <div class="form-text text-muted">All timestamps in the UI will display in this timezone.</div>
+          </div>
+
+          <!-- NTP server -->
+          <div class="col-lg-6">
+            <label class="form-label">NTP Server</label>
+            <input type="text" name="ntp_server" class="form-control font-monospace"
+                   value="{{ ntp_server_current or time_cfg.ntp_server or 'pool.ntp.org' }}"
+                   placeholder="pool.ntp.org">
+            <div class="form-text text-muted">
+              Writes to <code>/etc/systemd/timesyncd.conf</code> and restarts the sync service.
+              Requires the process to run as root (or grant sudo).
+            </div>
+          </div>
+
+          <!-- Quick TZ preview -->
+          <div class="col-12">
+            <div class="p-3 rounded small" style="background:rgba(11,188,212,0.05);border:1px solid rgba(11,188,212,0.15)">
+              <span class="text-muted me-2">Preview — current time in selected zone:</span>
+              <span id="tz-preview" class="fw-semibold text-primary font-monospace">—</span>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check2 me-1"></i>Save Time Settings
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Left column: Email config -->
+  <div class="col-lg-5">
+    <div class="form-card mb-4">
+      <h5 class="fw-bold mb-4"><i class="bi bi-envelope-gear me-2 text-primary"></i>Email / SMTP</h5>
+      <form method="POST">
+        <input type="hidden" name="form" value="email">
+        <div class="row g-3 mb-3">
+          <div class="col-8">
+            <label class="form-label">SMTP Server</label>
+            <input type="text" name="smtp_server" class="form-control" value="{{ cfg.smtp_server or '' }}" placeholder="smtp.gmail.com">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Port</label>
+            <input type="number" name="smtp_port" class="form-control" value="{{ cfg.smtp_port or 587 }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="use_tls" id="use_tls" {% if cfg.use_tls %}checked{% endif %}>
+            <label class="form-check-label small" for="use_tls">Use STARTTLS</label>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" value="{{ cfg.username or '' }}" placeholder="your@email.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
+        </div>
+        <div class="mb-4">
+          <label class="form-label">From Address</label>
+          <input type="email" name="sender" class="form-control" value="{{ cfg.sender or '' }}" placeholder="pwnbroker@company.com">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </form>
+    </div>
+
+    <div class="form-card">
+      <h5 class="fw-bold mb-3"><i class="bi bi-send-check me-2 text-primary"></i>Test Email</h5>
+      <form method="POST" action="{{ url_for('settings.test_email') }}">
+        <div class="d-flex gap-2">
+          <input type="email" name="test_recipient" class="form-control" placeholder="test@example.com" required>
+          <button type="submit" class="btn btn-outline-secondary flex-shrink-0">Send Test</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Threat Intelligence API keys -->
+  <div class="col-12">
+    <div class="form-card" id="threat">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-shield-exclamation me-2" style="color:var(--accent)"></i>Threat Intelligence APIs</h5>
+        <button type="button" class="btn btn-sm btn-outline-info" id="btn-test-keys" onclick="testAllKeys()">
+          <i class="bi bi-plug me-1"></i>Test All Keys
+        </button>
+      </div>
+      <form method="POST">
+        <input type="hidden" name="form" value="threat">
+        <div class="row g-3">
+
+          <!-- OTX -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              OTX API Key
+              <span class="key-pill" id="pill-otx" data-svc="otx">
+                {% if threat_cfg.otx_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="otx_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text">
+              <a href="https://otx.alienvault.com/api" target="_blank" rel="noopener" class="text-info">Get key at otx.alienvault.com</a>
+            </div>
+          </div>
+
+          <!-- VirusTotal -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              VirusTotal API Key
+              <span class="key-pill" id="pill-virustotal" data-svc="virustotal">
+                {% if threat_cfg.virustotal_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="virustotal_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text">
+              <a href="https://www.virustotal.com/gui/my-apikey" target="_blank" rel="noopener" class="text-info">Get key at virustotal.com</a>
+            </div>
+          </div>
+
+          <!-- AbuseIPDB -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              AbuseIPDB API Key
+              <span class="key-pill" id="pill-abuseipdb" data-svc="abuseipdb">
+                {% if threat_cfg.abuseipdb_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="abuseipdb_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text">
+              <a href="https://www.abuseipdb.com/account/api" target="_blank" rel="noopener" class="text-info">Get key at abuseipdb.com</a>
+            </div>
+          </div>
+
+          <!-- GreyNoise -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              GreyNoise API Key
+              <span class="key-pill" id="pill-greynoise" data-svc="greynoise">
+                {% if threat_cfg.greynoise_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="greynoise_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">SOC triage — noise/RIOT classification.
+              <a href="https://viz.greynoise.io/account/api-key" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- DNSDumpster -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              DNSDumpster API Key
+              <span class="key-pill" id="pill-dnsdumpster" data-svc="dnsdumpster">
+                {% if threat_cfg.dnsdumpster_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="dnsdumpster_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">Subdomain enumeration.
+              <a href="https://api.dnsdumpster.com" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- NVD -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              NVD API Key
+              <span class="badge bg-info bg-opacity-20 text-info" style="font-size:0.6rem">GRC</span>
+              <span class="key-pill" id="pill-nvd" data-svc="nvd">
+                {% if threat_cfg.nvd_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="nvd_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">NIST NVD — CVE enrichment. Without key: 5 req/30s; with key: 50 req/30s.
+              <a href="https://nvd.nist.gov/developers/request-an-api-key" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <div class="col-12 mt-2 d-flex align-items-center gap-3 flex-wrap">
+            <button type="submit" class="btn btn-primary">Save Threat Intel Settings</button>
+            <span id="test-keys-status" class="small text-muted"></span>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Atlassian (Confluence + Jira) config -->
+  <div class="col-12">
+    <div class="form-card" id="atlassian">
+      <h5 class="fw-bold mb-4"><i class="bi bi-diagram-3 me-2 text-primary"></i>Atlassian Integration</h5>
+      <form method="POST">
+        <input type="hidden" name="form" value="atlassian">
+
+        <!-- Shared credentials -->
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" name="atlassian_enabled" id="atlassian_enabled"
+                     {% if atlassian_cfg and atlassian_cfg.enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="atlassian_enabled">Enable Atlassian Integration</label>
+            </div>
+            <div class="form-text text-muted">Required for both Confluence and Jira.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Atlassian Base URL</label>
+            <input type="url" name="base_url" class="form-control"
+                   value="{{ atlassian_cfg.base_url or '' if atlassian_cfg else '' }}"
+                   placeholder="https://yourorg.atlassian.net">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Atlassian Account Email</label>
+            <input type="email" name="atl_email" class="form-control"
+                   value="{{ atlassian_cfg.email or '' if atlassian_cfg else '' }}"
+                   placeholder="you@company.com">
+          </div>
+          <div class="col-12">
+            <label class="form-label">API Token</label>
+            <input type="password" name="api_token" class="form-control"
+                   placeholder="Leave blank to keep current">
+            <div class="form-text text-muted">
+              Generate at <strong>id.atlassian.com → Security → API tokens</strong>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Confluence sub-panel -->
+        <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="confluence_enabled" id="confluence_enabled"
+                     {% if atlassian_cfg and atlassian_cfg.confluence_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="confluence_enabled">Confluence — Publish Reports</label>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-4">
+              <label class="form-label">Space Key</label>
+              <input type="text" name="confluence_space_key" class="form-control"
+                     value="{{ atlassian_cfg.confluence_space_key or '' if atlassian_cfg else '' }}"
+                     placeholder="SEC">
+            </div>
+            <div class="col-8">
+              <label class="form-label">Parent Page ID <span class="text-muted">(optional)</span></label>
+              <input type="text" name="confluence_parent_page_id" class="form-control"
+                     value="{{ atlassian_cfg.confluence_parent_page_id or '' if atlassian_cfg else '' }}"
+                     placeholder="123456789">
+              <div class="form-text text-muted">Found in the page URL: /wiki/spaces/SEC/pages/<strong>123456789</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jira sub-panel -->
+        <div class="p-3 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="jira_enabled" id="jira_enabled"
+                     {% if atlassian_cfg and atlassian_cfg.jira_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="jira_enabled">Jira — Create Vulnerability Tickets</label>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-4">
+              <label class="form-label">Project Key</label>
+              <input type="text" name="jira_project_key" class="form-control"
+                     value="{{ atlassian_cfg.jira_project_key or '' if atlassian_cfg else '' }}"
+                     placeholder="SEC">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Issue Type</label>
+              <input type="text" name="jira_issue_type" class="form-control"
+                     value="{{ atlassian_cfg.jira_issue_type or 'Bug' if atlassian_cfg else 'Bug' }}"
+                     placeholder="Bug">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Minimum Severity</label>
+              <select name="jira_severity_threshold" class="form-select">
+                {% set thr = atlassian_cfg.jira_severity_threshold if atlassian_cfg else 'medium' %}
+                <option value="critical" {% if thr == 'critical' %}selected{% endif %}>Critical only</option>
+                <option value="high"     {% if thr == 'high'     %}selected{% endif %}>High &amp; above</option>
+                <option value="medium"   {% if thr == 'medium'   %}selected{% endif %}>Medium &amp; above</option>
+                <option value="low"      {% if thr == 'low'      %}selected{% endif %}>Low &amp; above</option>
+                <option value="info"     {% if thr == 'info'     %}selected{% endif %}>All findings</option>
+              </select>
+              <div class="form-text text-muted">Only findings at or above this level will create tickets.</div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Atlassian Settings</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Cloud API config -->
+  <div class="col-12">
+    <div class="form-card" id="cloud">
+      <h5 class="fw-bold mb-4"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Cloud API Integration</h5>
+      <form method="POST">
+        <input type="hidden" name="form" value="cloud">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="cloud_enabled" id="cloud_enabled"
+                     {% if cloud_cfg and cloud_cfg.enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="cloud_enabled">Enable Cloud API</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Endpoint URL</label>
+            <input type="url" name="endpoint_url" class="form-control"
+                   value="{{ cloud_cfg.endpoint_url or '' if cloud_cfg else '' }}"
+                   placeholder="https://api.example.com/reports/ingest">
+            <div class="form-text text-muted">PwnBroker will POST a JSON payload to this URL.</div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Auth Type</label>
+            <select name="auth_type" class="form-select" id="auth_type_select">
+              {% set at = cloud_cfg.auth_type if cloud_cfg else 'bearer' %}
+              <option value="none" {% if at == 'none' %}selected{% endif %}>None</option>
+              <option value="bearer" {% if at == 'bearer' %}selected{% endif %}>Bearer Token</option>
+              <option value="api_key" {% if at == 'api_key' %}selected{% endif %}>API Key Header</option>
+            </select>
+          </div>
+          <div class="col-4" id="auth_header_field" {% if (cloud_cfg.auth_type if cloud_cfg else 'bearer') != 'api_key' %}style="display:none"{% endif %}>
+            <label class="form-label">Header Name</label>
+            <input type="text" name="auth_header" class="form-control"
+                   value="{{ cloud_cfg.auth_header or 'X-API-Key' if cloud_cfg else 'X-API-Key' }}"
+                   placeholder="X-API-Key">
+          </div>
+          <div class="col-{% if (cloud_cfg.auth_type if cloud_cfg else 'bearer') == 'api_key' %}4{% else %}8{% endif %}" id="auth_token_field"
+               {% if (cloud_cfg.auth_type if cloud_cfg else 'bearer') == 'none' %}style="display:none"{% endif %}>
+            <label class="form-label">Token / Key</label>
+            <input type="password" name="auth_token" class="form-control"
+                   placeholder="Leave blank to keep current">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Attach Report File</label>
+            <div class="form-check mt-1">
+              <input class="form-check-input" type="checkbox" name="send_file" id="send_file"
+                     {% if not cloud_cfg or cloud_cfg.send_file %}checked{% endif %}>
+              <label class="form-check-label small" for="send_file">
+                Include base64-encoded report file in payload
+              </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Default File Format</label>
+            <select name="file_format" class="form-select">
+              {% set ff = cloud_cfg.file_format if cloud_cfg else 'pdf' %}
+              <option value="pdf" {% if ff == 'pdf' %}selected{% endif %}>PDF</option>
+              <option value="html" {% if ff == 'html' %}selected{% endif %}>HTML</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary me-2">Save Cloud Config</button>
+            <span class="text-muted small">Payload includes scan metadata, all findings, and optionally an attached report file.</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TLS / HTTPS Certificate -->
+  <div class="col-12">
+    <div class="form-card" id="tls">
+      <h5 class="fw-bold mb-1"><i class="bi bi-shield-lock me-2 text-primary"></i>HTTPS / TLS Certificate</h5>
+      <p class="text-muted small mb-4">
+        PwnBroker is running over HTTPS with a self-signed certificate.
+        Upload a CA-signed certificate and private key to replace it.
+        The server must be restarted after uploading for the new cert to take effect.
+      </p>
+      <form method="POST" action="{{ url_for('settings.upload_cert') }}" enctype="multipart/form-data">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Certificate File <span class="text-muted fw-normal">(PEM)</span></label>
+            <input type="file" name="cert_file" class="form-control" accept=".pem,.crt,.cer">
+            <div class="form-text text-muted">Your signed <code>cert.pem</code> or <code>fullchain.pem</code></div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Private Key File <span class="text-muted fw-normal">(PEM)</span></label>
+            <input type="file" name="key_file" class="form-control" accept=".pem,.key">
+            <div class="form-text text-muted">Matching <code>key.pem</code> or <code>privkey.pem</code></div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-upload me-1"></i>Upload Certificate
+            </button>
+            <span class="text-muted small ms-3">
+              <i class="bi bi-info-circle me-1"></i>Restart PwnBroker after upload to activate the new certificate.
+            </span>
+          </div>
+        </div>
+      </form>
+      <div class="mt-3 p-3 rounded small" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="row g-2">
+          <div class="col-12 fw-semibold text-muted text-uppercase mb-1" style="font-size:0.7rem;letter-spacing:0.08em">Current Certificate</div>
+          {% if cert_info %}
+          <div class="col-6"><span class="text-muted">Subject:</span> {{ cert_info.subject }}</div>
+          <div class="col-6"><span class="text-muted">Issuer:</span> {{ cert_info.issuer }}</div>
+          <div class="col-6"><span class="text-muted">Valid From:</span> {{ cert_info.not_before }}</div>
+          <div class="col-6">
+            <span class="text-muted">Expires:</span>
+            <span class="{% if cert_info.days_left < 30 %}text-danger{% elif cert_info.days_left < 90 %}text-warning{% else %}text-success{% endif %}">
+              {{ cert_info.not_after }} ({{ cert_info.days_left }} days)
+            </span>
+          </div>
+          <div class="col-12"><span class="text-muted">Self-signed:</span>
+            {% if cert_info.self_signed %}
+            <span class="badge bg-warning bg-opacity-20 text-warning">Yes — replace with CA-signed cert for production</span>
+            {% else %}
+            <span class="badge bg-success bg-opacity-20 text-success">No</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="col-12 text-muted">Certificate info unavailable.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: User management -->
+  <div class="col-lg-7">
+    <div class="form-card">
+      <h5 class="fw-bold mb-4"><i class="bi bi-people me-2 text-primary"></i>User Management</h5>
+
+      <!-- User table -->
+      <div class="data-table mb-4">
+        <table class="table table-dark table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td class="fw-semibold">
+                {{ u.username }}
+                {% if u.id == current_user.id %}
+                  <span class="badge bg-primary bg-opacity-25 text-primary ms-1" style="font-size:0.65rem">you</span>
+                {% endif %}
+              </td>
+              <td class="text-muted small">{{ u.email }}</td>
+              <td>
+                {% if u.id != current_user.id %}
+                <form method="POST" action="{{ url_for('settings.user_role', user_id=u.id) }}" class="d-inline">
+                  <select name="role" class="form-select form-select-sm d-inline-block w-auto"
+                          onchange="this.form.submit()" style="font-size:0.75rem;padding:2px 24px 2px 8px">
+                    <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
+                  </select>
+                </form>
+                {% else %}
+                <span class="badge bg-danger bg-opacity-20 text-danger">Admin</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge-status status-{% if u.active %}done{% else %}failed{% endif %}">
+                  {% if u.active %}ACTIVE{% else %}DISABLED{% endif %}
+                </span>
+              </td>
+              <td>
+                {% if u.id != current_user.id %}
+                <div class="d-flex gap-1">
+                  <form method="POST" action="{{ url_for('settings.user_toggle', user_id=u.id) }}"
+                        data-confirm="{% if u.active %}Disable{% else %}Enable{% endif %} '{{ u.username }}'?">
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            title="{% if u.active %}Disable{% else %}Enable{% endif %}">
+                      <i class="bi bi-{% if u.active %}person-slash{% else %}person-check{% endif %}"></i>
+                    </button>
+                  </form>
+                  <form method="POST" action="{{ url_for('settings.user_delete', user_id=u.id) }}"
+                        data-confirm="Permanently delete '{{ u.username }}'? This cannot be undone.">
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add user form -->
+      <div class="border-top border-secondary pt-4">
+        <h6 class="fw-semibold mb-3 text-muted text-uppercase" style="font-size:0.75rem;letter-spacing:0.08em">
+          Add New User
+        </h6>
+        <form method="POST" action="{{ url_for('settings.user_add') }}">
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label">Username</label>
+              <input type="text" name="username" class="form-control form-control-sm" placeholder="jsmith" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control form-control-sm" placeholder="j@company.com" required>
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">Password</label>
+              <input type="password" name="password" class="form-control form-control-sm" placeholder="Temporary password" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Role</label>
+              <select name="role" class="form-select form-select-sm">
+                <option value="user" selected>User (read-only)</option>
+                <option value="admin">Admin (full access)</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i>Add User
+          </button>
+        </form>
+      </div>
+
+      <!-- Role legend -->
+      <div class="mt-4 p-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-danger bg-opacity-20 text-danger">Admin</span>
+              <span class="fw-semibold small">Full Access</span>
+            </div>
+            <ul class="small text-muted mb-0 ps-3">
+              <li>Create &amp; delete targets</li>
+              <li>Run &amp; schedule scans</li>
+              <li>Schedule email reports</li>
+              <li>Manage users &amp; settings</li>
+              <li>Download reports</li>
+            </ul>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-secondary bg-opacity-25 text-light">User</span>
+              <span class="fw-semibold small">Read-Only</span>
+            </div>
+            <ul class="small text-muted mb-0 ps-3">
+              <li>View dashboard &amp; scans</li>
+              <li>View targets</li>
+              <li>Download reports</li>
+              <li>Update own profile</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Live clock + timezone preview ─────────────────────────────────────────────
+const tzSelect  = document.getElementById('tz-select');
+const tzPreview = document.getElementById('tz-preview');
+const liveClock = document.getElementById('live-clock');
+
+function updateTzPreview() {
+  const tz = tzSelect ? tzSelect.value : (window.APP_TZ || 'UTC');
+  try {
+    const now = new Date();
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: 'short', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    if (tzPreview) tzPreview.textContent = fmt.format(now);
+    if (liveClock) liveClock.textContent = fmt.format(now);
+  } catch {
+    if (tzPreview) tzPreview.textContent = 'Invalid timezone';
+  }
+}
+
+if (tzSelect) tzSelect.addEventListener('change', updateTzPreview);
+updateTzPreview();
+setInterval(updateTzPreview, 1000);
+
+// ── API key tester ────────────────────────────────────────────────────────────
+const PILL_HTML = {
+  testing: '<span class="badge bg-secondary bg-opacity-30 text-warning" style="font-size:0.6rem"><span class="spinner-border spinner-border-sm" style="width:.5rem;height:.5rem;border-width:1px"></span> TESTING</span>',
+  ok:      (detail) => `<span class="badge bg-success bg-opacity-25 text-success" style="font-size:0.6rem" title="${detail}">✓ VALID</span>`,
+  error:   (detail) => `<span class="badge bg-danger bg-opacity-25 text-danger"   style="font-size:0.6rem" title="${detail}">✗ INVALID</span>`,
+  not_set: '<span class="badge bg-secondary bg-opacity-20 text-muted"             style="font-size:0.6rem">○ NOT SET</span>',
+};
+
+async function testAllKeys() {
+  const btn    = document.getElementById('btn-test-keys');
+  const status = document.getElementById('test-keys-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:.75rem;height:.75rem;border-width:1.5px"></span>Testing…';
+  status.textContent = '';
+
+  // Set all configured pills to "testing" immediately
+  document.querySelectorAll('.key-pill').forEach(el => {
+    const current = el.innerHTML;
+    if (!current.includes('NOT SET')) el.innerHTML = PILL_HTML.testing;
+  });
+
+  try {
+    const res  = await fetch('/settings/test-keys', {method: 'POST'});
+    const data = await res.json();
+
+    Object.entries(data).forEach(([svc, {status: st, detail}]) => {
+      const pill = document.getElementById(`pill-${svc}`);
+      if (!pill) return;
+      if (st === 'ok')      pill.innerHTML = PILL_HTML.ok(detail);
+      else if (st === 'error')   pill.innerHTML = PILL_HTML.error(detail);
+      else                       pill.innerHTML = PILL_HTML.not_set;
+    });
+
+    const ok      = Object.values(data).filter(d => d.status === 'ok').length;
+    const errors  = Object.values(data).filter(d => d.status === 'error').length;
+    const not_set = Object.values(data).filter(d => d.status === 'not_set').length;
+    status.innerHTML = `<span class="text-success">${ok} valid</span>${errors ? ` &nbsp;·&nbsp; <span class="text-danger">${errors} invalid</span>` : ''}&nbsp;·&nbsp;<span class="text-muted">${not_set} not set</span>`;
+  } catch(e) {
+    status.textContent = 'Test failed — check console.';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-plug me-1"></i>Test All Keys';
+}
+
+// ── Cloud auth toggle ─────────────────────────────────────────────────────────
+const authSelect = document.getElementById('auth_type_select');
+if (authSelect) {
+  authSelect.addEventListener('change', function() {
+    const headerField = document.getElementById('auth_header_field');
+    const tokenField  = document.getElementById('auth_token_field');
+    if (this.value === 'none') {
+      headerField.style.display = 'none';
+      tokenField.style.display = 'none';
+    } else if (this.value === 'api_key') {
+      headerField.style.display = '';
+      tokenField.style.display = '';
+    } else {
+      headerField.style.display = 'none';
+      tokenField.style.display = '';
+    }
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}New Target — PwnBroker{% endblock %}
+{% block page_title %}New Target{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="form-card">
+      <h5 class="fw-bold mb-4">Add Scan Target</h5>
+      <form method="POST">
+
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input type="text" name="name" class="form-control" placeholder="Production Web Server" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Target Type</label>
+          <select name="target_type" id="target_type" class="form-select">
+            <option value="host">Host / IP</option>
+            <option value="domain">Domain</option>
+          </select>
+          <div class="form-text text-muted" id="type_hint">Hostname or IP address for scanning.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Host / IP / Domain</label>
+          <input type="text" name="host" class="form-control"
+                 placeholder="192.168.1.1 or example.com" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Brief description"></textarea>
+        </div>
+
+        <!-- SSH Credentials (collapsible) -->
+        <div class="border-top border-secondary pt-4 mb-4">
+          <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="ssh_toggle">
+            <i class="bi bi-terminal me-1"></i>SSH Credentials
+            <span class="text-muted ms-1" style="font-size:0.75rem">(for Dependency Scanner)</span>
+            <i class="bi bi-chevron-down ms-1" id="ssh_chevron"></i>
+          </button>
+
+          <div id="ssh_fields" style="display:none">
+            <div class="p-3 rounded mb-3" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+              <div class="row g-3">
+                <div class="col-8">
+                  <label class="form-label">SSH Username</label>
+                  <input type="text" name="ssh_username" class="form-control" placeholder="ubuntu">
+                </div>
+                <div class="col-4">
+                  <label class="form-label">SSH Port</label>
+                  <input type="number" name="ssh_port" class="form-control" value="22">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Auth Type</label>
+                  <select name="ssh_auth_type" class="form-select" id="ssh_auth_type">
+                    <option value="password">Password</option>
+                    <option value="key">Private Key</option>
+                  </select>
+                </div>
+
+                <!-- Password auth -->
+                <div class="col-12" id="ssh_password_field">
+                  <label class="form-label">Password</label>
+                  <input type="password" name="ssh_password" class="form-control" autocomplete="new-password">
+                </div>
+
+                <!-- Key auth -->
+                <div class="col-12" id="ssh_key_field" style="display:none">
+                  <label class="form-label">Private Key <span class="text-muted fw-normal">(PEM format)</span></label>
+                  <textarea name="ssh_private_key" class="form-control font-monospace" rows="5"
+                            placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
+                            style="font-size:0.75rem"></textarea>
+                </div>
+                <div class="col-12" id="ssh_passphrase_field" style="display:none">
+                  <label class="form-label">Key Passphrase <span class="text-muted fw-normal">(if encrypted)</span></label>
+                  <input type="password" name="ssh_key_passphrase" class="form-control" autocomplete="new-password">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Add Target</button>
+          <a href="{{ url_for('targets.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const toggleBtn  = document.getElementById('ssh_toggle');
+const sshFields  = document.getElementById('ssh_fields');
+const chevron    = document.getElementById('ssh_chevron');
+const authSelect = document.getElementById('ssh_auth_type');
+const pwField    = document.getElementById('ssh_password_field');
+const keyField   = document.getElementById('ssh_key_field');
+const ppField    = document.getElementById('ssh_passphrase_field');
+
+toggleBtn.addEventListener('click', () => {
+  const open = sshFields.style.display === '';
+  sshFields.style.display = open ? 'none' : '';
+  chevron.className = open ? 'bi bi-chevron-down ms-1' : 'bi bi-chevron-up ms-1';
+});
+
+document.getElementById('target_type').addEventListener('change', function() {
+  const hints = {
+    host: 'Hostname or IP address for scanning.',
+    domain: 'Apex domain — subdomains, MX, and CNAME records will be automatically enumerated and monitored.',
+  };
+  document.getElementById('type_hint').textContent = hints[this.value] || '';
+});
+
+authSelect.addEventListener('change', function() {
+  const isKey = this.value === 'key';
+  pwField.style.display  = isKey ? 'none' : '';
+  keyField.style.display = isKey ? '' : 'none';
+  ppField.style.display  = isKey ? '' : 'none';
+});
+</script>
+{% endblock %}

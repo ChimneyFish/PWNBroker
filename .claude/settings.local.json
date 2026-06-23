@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash *)",
+      "Bash(sudo kill *)",
+      "Bash(python *)",
+      "Bash(venv/bin/pip install *)",
+      "Bash(venv/bin/playwright install *)",
+      "Bash(venv/bin/python -m pip install playwright -q)",
+      "Bash(venv/bin/python -m playwright install chromium)",
+      "Bash(venv/bin/python *)",
+      "Bash(curl -sk -c /tmp/pb_test.txt -X POST https://localhost:5000/login -d 'username=admin&password=admin' -L -o /dev/null -w '%{http_code}\\\\n')",
+      "Bash(curl -sk -b /tmp/pb_test.txt https://localhost:5000/targets/)",
+      "Bash(curl -sk -b /tmp/pb_cookies2.txt https://localhost:5000/targets/)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -sk -b /tmp/pb_cookies2.txt https://localhost:5000/targets/4 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -sk -b /tmp/pb_cookies2.txt -X POST https://localhost:5000/targets/4/re-enum -w '%{http_code} -> %{url_effective}' -o /dev/null)",
+      "Bash(curl *)",
+      "Bash(kill -HUP 389298)",
+      "Bash(kill -HUP 3361128)",
+      "Bash(kill -HUP 3361130)",
+      "Bash(kill -HUP 3361132)",
+      "Bash(kill -0 3361128)",
+      "Bash(kill -0 389298)",
+      "Bash(xargs -I{} sh -c 'readlink {} 2>/dev/null')",
+      "Bash(xargs -I{} find {} -maxdepth 1 -type l)",
+      "Bash(xargs '-I{}' sh -c 'r=$\\(readlink {}\\); echo \"$r {}\"; ')",
+      "Bash(kill -HUP 389307)",
+      "Bash(kill -0 1945279)",
+      "Bash(kill -0 1945282)",
+      "Bash(sudo -l)",
+      "Read(//etc/sudoers.d/**)",
+      "Read(//etc/**)",
+      "Bash(getent group *)",
+      "Bash(sudo -S kill -HUP 389298)",
+      "Bash(systemctl list-units *)",
+      "Bash(/bin/curl --version)",
+      "Bash(/usr/bin/curl -sk -c /tmp/ck2.txt -b /tmp/ck2.txt https://localhost:5000/grc/ -o /tmp/grc_live.txt)",
+      "Bash(/usr/bin/curl -sk -c /tmp/ck2.txt -b /tmp/ck2.txt https://localhost:5000/vulns/tickets -w \"\\\\nHTTP: %{http_code}\" -o /dev/null)",
+      "Bash(kill -HUP 2539977)"
+    ]
+  }
+}

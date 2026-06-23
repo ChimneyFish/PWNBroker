@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Targets — PwnBroker{% endblock %}
+{% block page_title %}Targets{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('targets.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>Add Target
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>Name</th><th>Type</th><th>Host / IP</th><th>Description</th><th>Scans</th><th>Added</th><th></th></tr></thead>
+    <tbody>
+      {% for t in targets %}
+      <tr>
+        <td class="fw-semibold">
+          {% if t.target_type == 'domain' %}
+          <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="text-decoration-none">{{ t.name }}</a>
+          {% else %}
+          {{ t.name }}
+          {% endif %}
+        </td>
+        <td>
+          {% if t.target_type == 'domain' %}
+          <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.65rem">DOMAIN</span>
+          {% else %}
+          <span class="badge bg-secondary" style="font-size:0.65rem">HOST</span>
+          {% endif %}
+        </td>
+        <td><code class="text-primary">{{ t.host }}</code></td>
+        <td class="text-muted small">{{ t.description or '—' }}</td>
+        <td>
+          {% if current_user.is_admin %}
+          <a href="{{ url_for('scans.new') }}" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1">
+            <i class="bi bi-play-fill"></i>
+          </a>
+          {% endif %}
+          {{ t.scans.count() }}
+        </td>
+        <td class="text-muted small">{{ t.created_at | localdt('%Y-%m-%d') }}</td>
+        <td class="d-flex gap-1">
+          {% if t.target_type == 'domain' %}
+          <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="DNS Records">
+            <i class="bi bi-diagram-3"></i>
+          </a>
+          {% endif %}
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('targets.delete', target_id=t.id) }}" data-confirm="Delete target '{{ t.name }}'? All associated scans will also be deleted.">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No targets yet.{% if current_user.is_admin %} <a href="{{ url_for('targets.new') }}">Add your first target.</a>{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

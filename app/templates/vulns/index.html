@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Vulnerability Management — PwnBroker{% endblock %}
+{% block page_title %}Vulnerability Management{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('vulns.tickets') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-ticket-detailed me-1"></i>All Tickets
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('vulns.tickets') }}?status=open" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ total_open }}</div>
+          <div class="stat-label">Open Vulnerabilities</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-bug"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('vulns.tickets') }}?status=open&severity=critical" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value text-danger">{{ total_critical }}</div>
+          <div class="stat-label">Critical Open</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:var(--critical)">
+          <i class="bi bi-exclamation-octagon"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('vulns.tickets') }}?status=open" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if total_overdue %}text-danger{% else %}text-success{% endif %}">{{ total_overdue }}</div>
+          <div class="stat-label">SLA Breached</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:var(--critical)">
+          <i class="bi bi-clock-history"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('vulns.tickets') }}?status=patched" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value text-success">{{ total_patched }}</div>
+          <div class="stat-label">Patched</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#4ade80">
+          <i class="bi bi-shield-check"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- Device table -->
+<div class="section-header mb-3">
+  <span class="section-title">Devices ({{ device_rows | length }})</span>
+</div>
+
+{% if not device_rows %}
+<div class="form-card text-center py-5 text-muted">
+  <i class="bi bi-bug fs-1 d-block mb-2 opacity-50"></i>
+  No vulnerabilities found. Run a scan to populate this view.
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Device</th>
+        <th>Host / IP</th>
+        <th class="text-center">
+          <span class="badge-severity sev-critical" style="font-size:0.65rem">CRIT</span>
+        </th>
+        <th class="text-center">
+          <span class="badge-severity sev-high" style="font-size:0.65rem">HIGH</span>
+        </th>
+        <th class="text-center">
+          <span class="badge-severity sev-medium" style="font-size:0.65rem">MED</span>
+        </th>
+        <th class="text-center">
+          <span class="badge-severity sev-low" style="font-size:0.65rem">LOW</span>
+        </th>
+        <th class="text-center text-danger">Overdue</th>
+        <th class="text-center text-success">Patched</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in device_rows %}
+      <tr>
+        <td class="fw-semibold">
+          <a href="{{ url_for('vulns.device', target_id=row.target.id, host=row.host_ip) }}" class="text-decoration-none">
+            {{ row.target.name }}
+          </a>
+          <div class="text-muted small" style="font-size:0.7rem">{{ row.target.host }}</div>
+        </td>
+        <td class="font-monospace small text-muted">{{ row.host_ip }}</td>
+        <td class="text-center">
+          {% if row.critical %}<span class="badge-severity sev-critical">{{ row.critical }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="text-center">
+          {% if row.high %}<span class="badge-severity sev-high">{{ row.high }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="text-center">
+          {% if row.medium %}<span class="badge-severity sev-medium">{{ row.medium }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="text-center">
+          {% if row.low %}<span class="badge-severity sev-low">{{ row.low }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+        </td>
+        <td class="text-center">
+          {% if row.overdue %}
+          <span class="fw-semibold text-danger">{{ row.overdue }}</span>
+          {% else %}
+          <span class="text-success"><i class="bi bi-check2"></i></span>
+          {% endif %}
+        </td>
+        <td class="text-center text-success fw-semibold">{{ row.patched or '—' }}</td>
+        <td>
+          <a href="{{ url_for('vulns.device', target_id=row.target.id, host=row.host_ip) }}"
+             class="btn btn-sm btn-outline-secondary py-0 px-2">
+            <i class="bi bi-arrow-right"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

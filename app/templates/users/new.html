@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}New User — PwnBroker{% endblock %}
+{% block page_title %}Add User{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="form-card">
+      <h5 class="fw-bold mb-4">Create User Account</h5>
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-select">
+            <option value="user">User (read-only)</option>
+            <option value="admin">Admin (full access)</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Create User</button>
+          <a href="{{ url_for('users.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

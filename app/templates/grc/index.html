@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}GRC Overview — PwnBroker{% endblock %}
+{% block page_title %}Governance, Risk & Compliance{% endblock %}
+
+{% block header_actions %}
+{% if current_user.is_admin %}
+<button class="btn btn-sm btn-outline-info" id="btn-enrich" onclick="triggerEnrich()">
+  <i class="bi bi-cloud-download me-1"></i>Refresh CVE Intel
+</button>
+<button class="btn btn-sm btn-outline-secondary" id="btn-assess" onclick="triggerAssess()">
+  <i class="bi bi-robot me-1"></i>Auto-Assess
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+{% set critical_r = open_risks | selectattr('risk_level','equalto','critical') | list %}
+{% set high_r     = open_risks | selectattr('risk_level','equalto','high')     | list %}
+{% set active_pol = policies   | selectattr('status','equalto','active')       | list %}
+{% set avg_pct    = (fw_summary | map(attribute='pct') | list | sum / fw_summary | length) | round | int if fw_summary else 0 %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('grc.risks') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if critical_r %}text-danger{% endif %}">{{ open_risks | length }}</div>
+          <div class="stat-label">Open Risks</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:var(--critical)">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('grc.risks') }}?status=open" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if critical_r %}text-danger{% elif high_r %}text-warning{% else %}text-success{% endif %}">
+            {{ critical_r | length }}
+          </div>
+          <div class="stat-label">Critical Risks</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:var(--critical)">
+          <i class="bi bi-fire"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('grc.compliance') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if avg_pct >= 70 %}text-success{% elif avg_pct >= 40 %}text-warning{% else %}text-danger{% endif %}">
+            {{ avg_pct }}%
+          </div>
+          <div class="stat-label">Avg Compliance</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#4ade80">
+          <i class="bi bi-clipboard-check"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('grc.policies') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ active_pol | length }}</div>
+          <div class="stat-label">Active Policies</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa">
+          <i class="bi bi-file-text"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- CVE Intel enrichment status bar -->
+<div class="form-card mb-4 py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+  <div class="small text-muted fw-semibold">CVE INTEL</div>
+  <div class="d-flex align-items-center gap-2">
+    <div class="progress flex-grow-1" style="height:6px;width:140px;background:rgba(255,255,255,0.08)">
+      <div class="progress-bar bg-info"
+           style="width:{{ ((enriched_count / total_cve_count * 100) | round | int) if total_cve_count else 0 }}%"></div>
+    </div>
+    <span class="small text-info">{{ enriched_count }} / {{ total_cve_count }} CVEs enriched</span>
+  </div>
+  <div class="ms-auto d-flex gap-2 small text-muted">
+    <span><i class="bi bi-shield-check text-info me-1"></i>NVD</span>
+    <span><i class="bi bi-graph-up text-warning me-1"></i>EPSS</span>
+    <span><i class="bi bi-diagram-3 text-danger me-1"></i>ATT&amp;CK</span>
+  </div>
+  <span class="badge bg-success bg-opacity-20 text-success small" id="enrich-status"></span>
+</div>
+
+<div class="row g-4">
+
+  <!-- Risk Heatmap -->
+  <div class="col-xl-5">
+    <div class="section-header mb-3"><span class="section-title">Risk Heatmap</span></div>
+    <div class="form-card">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div class="text-muted small">Likelihood →</div>
+        <a href="{{ url_for('grc.risks') }}" class="btn btn-sm btn-outline-secondary py-0">
+          View Register <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+      <div style="display:grid;grid-template-columns:auto repeat(5,1fr);gap:3px;font-size:0.7rem">
+        <div></div>
+        {% for l in range(1,6) %}
+        <div class="text-center text-muted fw-semibold">{{ l }}</div>
+        {% endfor %}
+        {% for imp in [5,4,3,2,1] %}
+        <div class="d-flex align-items-center text-muted fw-semibold" style="padding-right:4px">{{ imp }}</div>
+        {% for lik in range(1,6) %}
+        {% set score = lik * imp %}
+        {% if score >= 20 %}{% set bg = 'rgba(220,38,38,0.7)' %}
+        {% elif score >= 12 %}{% set bg = 'rgba(234,88,12,0.6)' %}
+        {% elif score >= 6  %}{% set bg = 'rgba(234,179,8,0.5)' %}
+        {% else              %}{% set bg = 'rgba(22,163,74,0.4)' %}
+        {% endif %}
+        {% set count = heatmap.get((lik, imp), 0) %}
+        <div style="background:{{ bg }};border-radius:4px;height:44px;display:flex;align-items:center;justify-content:center;font-size:{{ '1rem' if count else '0.6rem' }};font-weight:{% if count %}700{% else %}400{% endif %};color:{% if count %}#fff{% else %}rgba(255,255,255,0.2){% endif %}">
+          {{ count if count else '·' }}
+        </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      <div class="d-flex gap-3 mt-3 small">
+        <span style="color:rgba(22,163,74,0.9)">■ Low (1–5)</span>
+        <span style="color:rgba(234,179,8,0.9)">■ Medium (6–11)</span>
+        <span style="color:rgba(234,88,12,0.9)">■ High (12–19)</span>
+        <span style="color:rgba(220,38,38,0.9)">■ Critical (20–25)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance Summary -->
+  <div class="col-xl-4">
+    <div class="section-header mb-3"><span class="section-title">Compliance</span></div>
+    <div class="form-card">
+      {% for s in fw_summary %}
+      <div class="mb-4">
+        <div class="d-flex justify-content-between mb-1">
+          <a href="{{ url_for('grc.framework_detail', framework_id=s.framework.id) }}"
+             class="small fw-semibold text-decoration-none">
+            {{ s.framework.short_name }} {{ s.framework.version }}
+          </a>
+          <span class="small {% if s.pct >= 70 %}text-success{% elif s.pct >= 40 %}text-warning{% else %}text-danger{% endif %}">
+            {{ s.pct }}%
+          </span>
+        </div>
+        <div class="progress" style="height:6px;background:rgba(255,255,255,0.1)">
+          <div class="progress-bar {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+               style="width:{{ s.pct }}%"></div>
+        </div>
+        <div class="d-flex gap-3 mt-1" style="font-size:0.65rem;color:var(--text-muted)">
+          <span class="text-success">✓ {{ s.compliant }} compliant</span>
+          <span class="text-warning">~ {{ s.partial }} partial</span>
+          <span class="text-danger">✗ {{ s.non_compliant }} gap</span>
+          <span class="text-muted">{{ s.not_assessed }} unassessed</span>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="mt-2">
+        <a href="{{ url_for('grc.compliance') }}" class="btn btn-sm btn-outline-secondary w-100">
+          View All Frameworks
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Policy Status -->
+  <div class="col-xl-3">
+    <div class="section-header mb-3"><span class="section-title">Policies</span></div>
+    <div class="form-card">
+      {% for status, label, color in [
+          ('active','Active','#4ade80'),
+          ('draft','Draft','#94a3b8'),
+          ('under_review','Under Review','#fbbf24'),
+          ('retired','Retired','#6b7280')
+      ] %}
+      {% set count = policies | selectattr('status','equalto',status) | list | length %}
+      <a href="{{ url_for('grc.policies') }}?status={{ status }}"
+         class="d-flex justify-content-between align-items-center py-2 text-decoration-none border-bottom"
+         style="border-color:var(--border-color)!important;color:inherit">
+        <span class="small">
+          <span class="me-2" style="color:{{ color }}">■</span>{{ label }}
+        </span>
+        <span class="badge bg-secondary bg-opacity-20 text-muted">{{ count }}</span>
+      </a>
+      {% endfor %}
+      <div class="mt-3">
+        <a href="{{ url_for('grc.policies') }}" class="btn btn-sm btn-outline-secondary w-100">
+          Manage Policies
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /row -->
+
+<!-- EPSS Top Risk CVEs + ATT&CK Tactic Coverage -->
+{% if top_cves or tactic_counts %}
+<div class="row g-4 mt-1">
+
+  <!-- EPSS Top-Risk CVEs -->
+  {% if top_cves %}
+  <div class="col-xl-7">
+    <div class="section-header mb-3">
+      <span class="section-title">Top CVEs by Exploit Probability (EPSS)</span>
+      <span class="badge bg-warning bg-opacity-20 text-warning ms-2 small">NVD + EPSS</span>
+    </div>
+    <div class="data-table">
+      <table class="table table-dark table-hover mb-0" style="font-size:0.82rem">
+        <thead>
+          <tr>
+            <th>CVE ID</th>
+            <th>EPSS Score</th>
+            <th>Percentile</th>
+            <th>CVSS v3</th>
+            <th>Severity</th>
+            <th>CWE</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in top_cves %}
+          <tr>
+            <td>
+              <a href="https://nvd.nist.gov/vuln/detail/{{ e.cve_id }}" target="_blank"
+                 class="font-monospace text-info text-decoration-none small">
+                {{ e.cve_id }}
+              </a>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:5px;width:70px;background:rgba(255,255,255,0.1)">
+                  <div class="progress-bar {% if e.epss_score >= 0.5 %}bg-danger{% elif e.epss_score >= 0.1 %}bg-warning{% else %}bg-info{% endif %}"
+                       style="width:{{ (e.epss_score * 100) | round | int }}%"></div>
+                </div>
+                <span class="small {% if e.epss_score >= 0.5 %}text-danger{% elif e.epss_score >= 0.1 %}text-warning{% else %}text-info{% endif %}">
+                  {{ "%.1f"|format(e.epss_score * 100) }}%
+                </span>
+              </div>
+            </td>
+            <td class="text-muted small">{{ (e.epss_percentile * 100) | round(1) if e.epss_percentile else '—' }}th</td>
+            <td>
+              {% if e.cvss_v3 %}
+              <span class="badge {% if e.cvss_v3 >= 9 %}bg-danger{% elif e.cvss_v3 >= 7 %}bg-warning text-dark{% elif e.cvss_v3 >= 4 %}bg-secondary{% else %}bg-success{% endif %}">
+                {{ e.cvss_v3 }}
+              </span>
+              {% else %}
+              <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if e.nvd_severity %}
+              <span class="small {% if e.nvd_severity == 'CRITICAL' %}text-danger{% elif e.nvd_severity == 'HIGH' %}text-warning{% elif e.nvd_severity == 'MEDIUM' %}text-info{% else %}text-muted{% endif %}">
+                {{ e.nvd_severity }}
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="font-monospace small text-muted">
+              {% if e.cwe_ids %}
+              {% set cwes = e.cwe_ids | fromjson %}
+              {% if cwes %}{{ cwes[0] }}{% if cwes | length > 1 %} +{{ cwes | length - 1 }}{% endif %}{% else %}—{% endif %}
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ATT&CK Tactic Coverage -->
+  {% if tactic_counts %}
+  <div class="col-xl-5">
+    <div class="section-header mb-3">
+      <span class="section-title">ATT&amp;CK Tactic Coverage</span>
+      <span class="badge bg-danger bg-opacity-20 text-danger ms-2 small">MITRE ATT&amp;CK</span>
+    </div>
+    <div class="form-card">
+      {% set max_count = tactic_counts.values() | max %}
+      {% for tactic, count in tactic_counts | dictsort(by='value', reverse=true) %}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small text-muted">{{ tactic }}</span>
+          <span class="small text-danger fw-semibold">{{ count }} CVE{{ 's' if count != 1 }}</span>
+        </div>
+        <div class="progress" style="height:4px;background:rgba(255,255,255,0.08)">
+          <div class="progress-bar bg-danger" style="width:{{ (count / max_count * 100) | round | int }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="mt-3 small text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        Tactics mapped from CVEs found in your environment via MITRE ATT&amp;CK STIX data.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function triggerEnrich() {
+  const btn = document.getElementById('btn-enrich');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Fetching…';
+  try {
+    const res  = await fetch('/grc/enrich/trigger', {method: 'POST'});
+    const data = await res.json();
+    const el   = document.getElementById('enrich-status');
+    if (data.ok) {
+      el.textContent = 'Enrichment started — check back in a few minutes';
+      el.className   = 'badge bg-success bg-opacity-20 text-success small';
+    } else {
+      el.textContent = 'Error starting enrichment';
+      el.className   = 'badge bg-danger bg-opacity-20 text-danger small';
+    }
+  } catch(e) {
+    console.error(e);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-cloud-download me-1"></i>Refresh CVE Intel';
+}
+
+async function triggerAssess() {
+  const btn = document.getElementById('btn-assess');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Assessing…';
+  try {
+    const res  = await fetch('/grc/assess/trigger', {method: 'POST'});
+    const data = await res.json();
+    if (data.ok) {
+      const el = document.getElementById('enrich-status');
+      el.textContent = `Auto-assessed ${data.updated} control(s) — reload to see changes`;
+      el.className   = 'badge bg-info bg-opacity-20 text-info small';
+    }
+  } catch(e) {
+    console.error(e);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-robot me-1"></i>Auto-Assess';
+}
+</script>
+{% endblock %}

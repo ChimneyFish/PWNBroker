@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Asset Groups — PwnBroker{% endblock %}
+{% block page_title %}{{ group.name }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('assets.groups') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>All Groups
+</a>
+{% if current_user.is_admin and group.group_type == 'manual' %}
+<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+  <i class="bi bi-plus me-1"></i>Add Assets
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Group meta strip -->
+<div class="form-card mb-4 py-2">
+  <div class="d-flex flex-wrap gap-4 align-items-center small">
+    <div>
+      <span class="text-muted">Type:</span>
+      {% if group.group_type == 'tag' %}
+      <span class="badge ms-1" style="background:{{ group.tag.color }}20;color:{{ group.tag.color }};border:1px solid {{ group.tag.color }}40">
+        <i class="bi bi-tag me-1"></i>{{ group.tag.label if group.tag else '—' }}
+      </span>
+      {% elif group.group_type == 'network' %}
+      <span class="ms-1"><i class="bi bi-diagram-3 me-1"></i>
+        {{ group.network.name if group.network else '—' }}
+        <span class="font-monospace text-muted">({{ group.network.host if group.network else '' }})</span>
+      </span>
+      {% else %}
+      <span class="ms-1"><i class="bi bi-pencil me-1"></i>Manual</span>
+      {% endif %}
+    </div>
+    <div><span class="text-muted">Members:</span> <strong>{{ members | length }}</strong></div>
+    {% if group.description %}
+    <div class="text-muted">{{ group.description }}</div>
+    {% endif %}
+    <div style="width:12px;height:12px;border-radius:50%;background:{{ group.color }};flex-shrink:0"></div>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ members | length }}</div>
+          <div class="stat-label">Assets</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-hdd-network"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          {% set total_vulns = namespace(n=0) %}
+          {% for a in members %}{% set total_vulns.n = total_vulns.n + counts.get((a.target_id, a.ip_address), 0) %}{% endfor %}
+          <div class="stat-value {% if total_vulns.n %}text-danger{% else %}text-success{% endif %}">{{ total_vulns.n }}</div>
+          <div class="stat-label">Open Vulns</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:var(--critical)">
+          <i class="bi bi-bug"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          {% set with_hostname = members | selectattr('hostname') | list %}
+          <div class="stat-value">{{ with_hostname | length }}</div>
+          <div class="stat-label">With Hostname</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#4ade80">
+          <i class="bi bi-pc-display"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          {% set with_os = members | selectattr('os_name') | list %}
+          <div class="stat-value">{{ with_os | length }}</div>
+          <div class="stat-label">OS Identified</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#fbbf24">
+          <i class="bi bi-cpu"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Members table -->
+{% if not members %}
+<div class="form-card text-center py-5 text-muted">
+  <i class="bi bi-hdd-network fs-1 d-block mb-2 opacity-50"></i>
+  No assets in this group yet.
+  {% if group.group_type == 'manual' and current_user.is_admin %}
+  <div class="mt-2">
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">Add Assets</button>
+  </div>
+  {% elif group.group_type == 'tag' %}
+  <div class="small mt-1">Assign the <strong>{{ group.tag.label if group.tag else '' }}</strong> tag to assets on the Inventory page.</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>IP Address</th>
+        <th>Hostname</th>
+        <th>OS</th>
+        <th>Network</th>
+        <th>Tags</th>
+        <th class="text-center">Open Vulns</th>
+        <th>Last Seen</th>
+        {% if group.group_type == 'manual' and current_user.is_admin %}<th style="width:50px"></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody id="members-tbody">
+      {% for a in members %}
+      <tr id="member-row-{{ a.id }}">
+        <td class="font-monospace fw-semibold">{{ a.ip_address }}</td>
+        <td class="small text-muted">{{ a.hostname or '—' }}</td>
+        <td class="small text-muted">{{ a.os_name or '—' }}</td>
+        <td class="small text-muted">{{ a.target.name if a.target else '—' }}</td>
+        <td>
+          <div class="d-flex flex-wrap gap-1">
+            {% for tag in a.tags %}
+            <span class="badge" style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}40;font-size:0.6rem">
+              {{ tag.label }}
+            </span>
+            {% endfor %}
+          </div>
+        </td>
+        <td class="text-center">
+          {% set vc = counts.get((a.target_id, a.ip_address), 0) %}
+          {% if vc %}
+          <span class="badge bg-danger text-white">{{ vc }}</span>
+          {% else %}
+          <span class="text-success small"><i class="bi bi-check2"></i></span>
+          {% endif %}
+        </td>
+        <td class="small text-muted">{{ a.last_seen | localdt('%Y-%m-%d') if a.last_seen else '—' }}</td>
+        {% if group.group_type == 'manual' and current_user.is_admin %}
+        <td>
+          <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                  onclick="removeMember({{ a.id }})" title="Remove from group">
+            <i class="bi bi-x" style="font-size:0.8rem"></i>
+          </button>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Add Assets Modal (manual groups only) -->
+{% if group.group_type == 'manual' and current_user.is_admin %}
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-color:var(--border-color)">
+        <h6 class="modal-title">Add Assets to {{ group.name }}</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {% if not available %}
+        <div class="text-muted small text-center py-3">All discovered assets are already in this group.</div>
+        {% else %}
+        <input type="text" id="asset-search" class="form-control form-control-sm mb-3"
+               placeholder="Filter by IP or hostname…"
+               style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
+               oninput="filterAvailable(this.value)">
+        <div style="max-height:320px;overflow-y:auto">
+          <table class="table table-dark table-hover table-sm mb-0" id="available-table">
+            <thead><tr><th>IP</th><th>Hostname</th><th>OS</th><th>Network</th><th></th></tr></thead>
+            <tbody>
+              {% for a in available %}
+              <tr data-search="{{ a.ip_address }} {{ a.hostname or '' }}" id="avail-{{ a.id }}">
+                <td class="font-monospace small">{{ a.ip_address }}</td>
+                <td class="small text-muted">{{ a.hostname or '—' }}</td>
+                <td class="small text-muted">{{ a.os_name or '—' }}</td>
+                <td class="small text-muted">{{ a.target.name if a.target else '—' }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                          onclick="addMember({{ a.id }})">Add</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GROUP_ID = {{ group.id }};
+
+async function removeMember(assetId) {
+  const res  = await fetch(`/assets/groups/${GROUP_ID}/remove/${assetId}`, {method:'POST'});
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById(`member-row-${assetId}`)?.remove();
+  }
+}
+
+async function addMember(assetId) {
+  const fd = new FormData();
+  fd.append('asset_id', assetId);
+  const res  = await fetch(`/assets/groups/${GROUP_ID}/add`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (!data.ok) return;
+
+  // Add row to members table
+  const tbody = document.getElementById('members-tbody');
+  if (tbody) {
+    const tr = document.createElement('tr');
+    tr.id = `member-row-${assetId}`;
+    tr.innerHTML = `
+      <td class="font-monospace fw-semibold">${data.ip}</td>
+      <td class="small text-muted">${data.hostname || '—'}</td>
+      <td class="small text-muted">${data.os || '—'}</td>
+      <td class="small text-muted">—</td>
+      <td></td>
+      <td class="text-center"><span class="text-success small"><i class="bi bi-check2"></i></span></td>
+      <td class="small text-muted">—</td>
+      <td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removeMember(${assetId})"><i class="bi bi-x" style="font-size:0.8rem"></i></button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Remove from available list
+  document.getElementById(`avail-${assetId}`)?.remove();
+}
+
+function filterAvailable(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#available-table tbody tr').forEach(tr => {
+    tr.style.display = tr.dataset.search.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

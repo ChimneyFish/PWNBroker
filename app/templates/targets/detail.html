@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ target.name }} — PwnBroker{% endblock %}
+{% block page_title %}{{ target.name }}{% endblock %}
+
+{% block header_actions %}
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="d-inline">
+  <button class="btn btn-sm btn-primary">
+    <i class="bi bi-arrow-repeat me-1"></i>Re-enumerate
+  </button>
+</form>
+{% endif %}
+<a href="{{ url_for('targets.index') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>All Targets
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Target meta -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="#dns-records" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ record_count }}</div>
+          <div class="stat-label">DNS Records</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-diagram-3"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value text-warning">{{ record_count }}</div>
+          <div class="stat-label">
+            {% set new_count = namespace(v=0) %}
+            {% for recs in by_type.values() %}{% for r in recs %}{% if r.status == 'new' %}{% set new_count.v = new_count.v + 1 %}{% endif %}{% endfor %}{% endfor %}
+            {{ new_count.v }} New
+            {% set chg_count = namespace(v=0) %}
+            {% for recs in by_type.values() %}{% for r in recs %}{% if r.status == 'changed' %}{% set chg_count.v = chg_count.v + 1 %}{% endif %}{% endfor %}{% endfor %}
+            / {{ chg_count.v }} Changed
+          </div>
+        </div>
+        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#fcd34d">
+          <i class="bi bi-bell"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value text-muted" style="font-size:0.9rem">
+            {{ target.last_enum_at | localdt('%Y-%m-%d %H:%M') if target.last_enum_at else 'Never' }}
+          </div>
+          <div class="stat-label">Last Enumerated</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#4ade80">
+          <i class="bi bi-clock-history"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('scans.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ target.scans.count() }}</div>
+          <div class="stat-label">Scans</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-radar"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+{% if not by_type %}
+<div class="form-card text-center py-5 text-muted">
+  <i class="bi bi-diagram-3 d-block mb-3" style="font-size:2rem"></i>
+  No DNS records yet.
+  {% if current_user.is_admin %}
+  <form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="mt-3">
+    <button class="btn btn-primary btn-sm"><i class="bi bi-arrow-repeat me-1"></i>Start Enumeration</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+
+{% set status_order = ['new', 'changed', 'active', 'removed'] %}
+{% set type_order = ['A', 'AAAA', 'CNAME', 'MX', 'NS'] %}
+
+{% for rtype in type_order %}
+{% if rtype in by_type %}
+<div class="data-table mb-4" {% if loop.first %}id="dns-records"{% endif %}>
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">
+      <span class="badge bg-secondary me-2" style="font-size:0.7rem">{{ rtype }}</span>
+      {{ by_type[rtype] | length }} record{{ 's' if by_type[rtype] | length != 1 }}
+    </span>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Value</th>
+        <th>Source</th>
+        <th>Status</th>
+        <th>First Seen</th>
+        <th>Last Seen</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in by_type[rtype] | sort(attribute='status') %}
+      <tr {% if rec.status == 'removed' %}style="opacity:0.5"{% endif %}>
+        <td class="font-monospace small">{{ rec.name }}</td>
+        <td class="small">
+          {{ rec.value or '—' }}
+          {% if rec.status == 'changed' and rec.previous_value %}
+          <div class="text-muted" style="font-size:0.7rem;text-decoration:line-through">{{ rec.previous_value }}</div>
+          {% endif %}
+        </td>
+        <td class="text-muted small">{{ rec.source }}</td>
+        <td>
+          {% if rec.status == 'new' %}
+          <span class="badge bg-success">New</span>
+          {% elif rec.status == 'changed' %}
+          <span class="badge bg-warning text-dark">Changed</span>
+          {% elif rec.status == 'removed' %}
+          <span class="badge bg-danger">Removed</span>
+          {% else %}
+          <span class="badge bg-secondary">Active</span>
+          {% endif %}
+        </td>
+        <td class="text-muted small">{{ rec.first_seen | localdt('%Y-%m-%d') if rec.first_seen else '—' }}</td>
+        <td class="text-muted small">{{ rec.last_seen | localdt('%Y-%m-%d %H:%M') if rec.last_seen else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+{% for rtype, recs in by_type.items() %}
+{% if rtype not in type_order %}
+<div class="data-table mb-4">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">
+      <span class="badge bg-secondary me-2" style="font-size:0.7rem">{{ rtype }}</span>
+      {{ recs | length }} record{{ 's' if recs | length != 1 }}
+    </span>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead><tr><th>Name</th><th>Value</th><th>Source</th><th>Status</th><th>First Seen</th><th>Last Seen</th></tr></thead>
+    <tbody>
+      {% for rec in recs %}
+      <tr>
+        <td class="font-monospace small">{{ rec.name }}</td>
+        <td class="small">{{ rec.value or '—' }}</td>
+        <td class="text-muted small">{{ rec.source }}</td>
+        <td><span class="badge bg-secondary">{{ rec.status }}</span></td>
+        <td class="text-muted small">{{ rec.first_seen | localdt('%Y-%m-%d') if rec.first_seen else '—' }}</td>
+        <td class="text-muted small">{{ rec.last_seen | localdt('%Y-%m-%d %H:%M') if rec.last_seen else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% endblock %}

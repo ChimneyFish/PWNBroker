@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}IOC Lookup — PwnBroker{% endblock %}
+{% block page_title %}IOC Lookup{% endblock %}
+
+{% block content %}
+
+<!-- Search bar -->
+<div class="form-card mb-4">
+  <form method="POST">
+    <div class="row g-3 align-items-end">
+      <div class="col-lg-8">
+        <label class="form-label">Indicator (IP, Domain, URL, File Hash)</label>
+        <input type="text" name="indicator" class="form-control form-control-lg font-monospace"
+               value="{{ indicator }}" placeholder="e.g. 8.8.8.8 · example.com · https://… · d41d8cd98f00…"
+               required autofocus>
+        <div class="form-text">MD5/SHA1/SHA256 hashes, IPv4 addresses, domains, and URLs are supported</div>
+      </div>
+      <div class="col-lg-2">
+        <button type="submit" class="btn btn-primary w-100 py-2">
+          <i class="bi bi-search me-1"></i>Lookup
+        </button>
+      </div>
+      <div class="col-lg-2">
+        <button type="submit" name="force" value="1" class="btn btn-outline-secondary w-100 py-2">
+          <i class="bi bi-arrow-clockwise me-1"></i>Force Refresh
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if error %}
+<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<!-- Verdict banner -->
+{% set verdict = result.verdict %}
+<div class="mb-4 p-4 rounded-3 d-flex align-items-center justify-content-between"
+     style="background:{% if verdict == 'malicious' %}rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.4){% elif verdict == 'suspicious' %}rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.4){% else %}rgba(22,163,74,0.12);border:1px solid rgba(22,163,74,0.4){% endif %}">
+  <div class="d-flex align-items-center gap-3">
+    <div style="font-size:2.5rem">
+      {% if verdict == "malicious" %}<i class="bi bi-shield-x text-danger"></i>
+      {% elif verdict == "suspicious" %}<i class="bi bi-shield-exclamation text-warning"></i>
+      {% else %}<i class="bi bi-shield-check text-success"></i>{% endif %}
+    </div>
+    <div>
+      <div class="fw-bold fs-5
+        {% if verdict == 'malicious' %}text-danger{% elif verdict == 'suspicious' %}text-warning{% else %}text-success{% endif %}">
+        {{ verdict|upper }}
+      </div>
+      <div class="font-monospace text-muted small">{{ result.indicator }}</div>
+      <div class="text-muted small mt-1">
+        <span class="badge bg-secondary text-uppercase me-1">{{ result.ioc_type }}</span>
+        Threat score: <strong>{{ result.threat_score }}/100</strong>
+        {% if result.created_at %}
+        &nbsp;·&nbsp; Cached {{ result.created_at | localdt('%Y-%m-%d %H:%M') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="display-6 fw-bold
+      {% if result.threat_score >= 60 %}text-danger{% elif result.threat_score >= 30 %}text-warning{% else %}text-success{% endif %}">
+      {{ result.threat_score }}
+    </div>
+    <div class="text-muted" style="font-size:0.7rem">/ 100</div>
+  </div>
+</div>
+
+<!-- Source panels -->
+<div class="row g-3 mb-4">
+
+  <!-- OTX -->
+  <div class="col-md-4">
+    <div class="form-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge" style="background:#e17c00;font-size:0.75rem">OTX</span>
+        <span class="fw-semibold">AlienVault OTX</span>
+        {% if result.otx %}
+          {% if result.otx.error %}<span class="badge bg-secondary ms-auto">Error</span>
+          {% elif result.otx.verdict == "malicious" %}<span class="badge bg-danger ms-auto">Malicious</span>
+          {% elif result.otx.verdict == "suspicious" %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
+          {% else %}<span class="badge bg-success ms-auto">Clean</span>{% endif %}
+        {% else %}
+          <span class="badge bg-secondary ms-auto">No Key</span>
+        {% endif %}
+      </div>
+      {% if result.otx %}
+        {% if result.otx.error %}
+          <p class="text-danger small">{{ result.otx.error }}</p>
+        {% else %}
+          {% if result.otx.pulse_count > 0 %}
+          <a href="#otx-pulses" data-bs-toggle="collapse" class="text-decoration-none d-block mb-3 text-center"
+             style="cursor:pointer" title="Click to view all pulses">
+            <div style="font-size:2rem;font-weight:700;color:{% if result.otx.pulse_count > 3 %}#f87171{% elif result.otx.pulse_count > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
+              {{ result.otx.pulse_count }}
+            </div>
+            <div class="text-muted small">
+              Threat Pulses <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem"></i>
+            </div>
+          </a>
+          {% else %}
+          <div class="mb-3 text-center">
+            <div style="font-size:2rem;font-weight:700;color:#4ade80">0</div>
+            <div class="text-muted small">Threat Pulses</div>
+          </div>
+          {% endif %}
+          {% if result.otx.country %}
+          <div class="small mb-1"><span class="text-muted">Country:</span> {{ result.otx.country }}</div>
+          {% endif %}
+          {% if result.otx.asn %}
+          <div class="small mb-2"><span class="text-muted">ASN:</span> {{ result.otx.asn }}</div>
+          {% endif %}
+          {% if result.otx.malware_families %}
+          <div class="small mb-2">
+            <span class="text-muted">Malware:</span>
+            {% for m in result.otx.malware_families %}
+            <span class="badge bg-danger me-1" style="font-size:0.65rem">{{ m }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if result.otx.tags %}
+          <div class="d-flex flex-wrap gap-1">
+            {% for tag in result.otx.tags[:8] %}
+            <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.65rem">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p class="text-muted small">Configure OTX API key in Settings → Threat Intelligence.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- VirusTotal -->
+  <div class="col-md-4">
+    <div class="form-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge" style="background:#3950de;font-size:0.75rem">VT</span>
+        <span class="fw-semibold">VirusTotal</span>
+        {% if result.vt %}
+          {% if result.vt.not_found %}<span class="badge bg-secondary ms-auto">Not Found</span>
+          {% elif result.vt.verdict == "malicious" %}<span class="badge bg-danger ms-auto">Malicious</span>
+          {% elif result.vt.verdict == "suspicious" %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
+          {% else %}<span class="badge bg-success ms-auto">Clean</span>{% endif %}
+        {% else %}
+          <span class="badge bg-secondary ms-auto">No Key</span>
+        {% endif %}
+      </div>
+      {% if result.vt %}
+        {% if result.vt.error %}
+          <p class="text-danger small">{{ result.vt.error }}</p>
+        {% elif result.vt.not_found %}
+          <p class="text-muted small">Indicator not found in VirusTotal database.</p>
+        {% else %}
+          <div class="mb-3 text-center">
+            <div style="font-size:2rem;font-weight:700;color:{% if result.vt.malicious >= 5 %}#f87171{% elif result.vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
+              {{ result.vt.malicious }}<span class="text-muted fs-5 fw-normal"> / {{ result.vt.total_engines }}</span>
+            </div>
+            <div class="text-muted small">Engines Detected</div>
+          </div>
+          {% if result.vt.suspicious > 0 %}
+          <div class="small mb-1 text-warning">{{ result.vt.suspicious }} suspicious detection(s)</div>
+          {% endif %}
+          {% if result.vt.country %}
+          <div class="small mb-1"><span class="text-muted">Country:</span> {{ result.vt.country }}</div>
+          {% endif %}
+          {% if result.vt.reputation is defined %}
+          <div class="small mb-2"><span class="text-muted">Reputation:</span>
+            <span class="{% if result.vt.reputation < 0 %}text-danger{% elif result.vt.reputation > 0 %}text-success{% else %}text-muted{% endif %}">
+              {{ result.vt.reputation }}
+            </span>
+          </div>
+          {% endif %}
+          {% if result.vt.detections %}
+          <div class="small text-muted mb-1">Top detections:</div>
+          {% for d in result.vt.detections[:5] %}
+          <div class="small font-monospace" style="color:#f87171">{{ d.engine }}: {{ d.result or d.category }}</div>
+          {% endfor %}
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p class="text-muted small">Configure VirusTotal API key in Settings → Threat Intelligence.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- AbuseIPDB -->
+  <div class="col-md-4">
+    <div class="form-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge" style="background:#c0392b;font-size:0.75rem">ABUSE</span>
+        <span class="fw-semibold">AbuseIPDB</span>
+        {% if result.abuse %}
+          {% if result.abuse.verdict == "malicious" %}<span class="badge bg-danger ms-auto">Malicious</span>
+          {% elif result.abuse.verdict == "suspicious" %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
+          {% else %}<span class="badge bg-success ms-auto">Clean</span>{% endif %}
+        {% else %}
+          <span class="badge bg-secondary ms-auto">{% if result.ioc_type != 'ip' %}IP Only{% else %}No Key{% endif %}</span>
+        {% endif %}
+      </div>
+      {% if result.abuse %}
+        {% if result.abuse.error %}
+          <p class="text-danger small">{{ result.abuse.error }}</p>
+        {% else %}
+          <div class="mb-3 text-center">
+            <div style="font-size:2rem;font-weight:700;color:{% if result.abuse.confidence_score >= 50 %}#f87171{% elif result.abuse.confidence_score >= 20 %}#fcd34d{% else %}#4ade80{% endif %}">
+              {{ result.abuse.confidence_score }}<span class="text-muted fs-5 fw-normal">%</span>
+            </div>
+            <div class="text-muted small">Abuse Confidence</div>
+          </div>
+          <div class="small mb-1"><span class="text-muted">Reports:</span> {{ result.abuse.total_reports }}</div>
+          {% if result.abuse.isp %}
+          <div class="small mb-1"><span class="text-muted">ISP:</span> {{ result.abuse.isp }}</div>
+          {% endif %}
+          {% if result.abuse.country_code %}
+          <div class="small mb-1"><span class="text-muted">Country:</span> {{ result.abuse.country_code }}</div>
+          {% endif %}
+          {% if result.abuse.usage_type %}
+          <div class="small mb-1"><span class="text-muted">Usage:</span> {{ result.abuse.usage_type }}</div>
+          {% endif %}
+          {% if result.abuse.is_tor %}
+          <div class="small text-danger"><i class="bi bi-incognito me-1"></i>TOR Exit Node</div>
+          {% endif %}
+          {% if result.abuse.last_reported %}
+          <div class="small text-muted mt-2">Last reported: {{ result.abuse.last_reported[:10] }}</div>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        {% if result.ioc_type == 'ip' %}
+          <p class="text-muted small">Configure AbuseIPDB API key in Settings → Threat Intelligence.</p>
+        {% else %}
+          <p class="text-muted small">AbuseIPDB only supports IP address lookups.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% if result and result.otx and result.otx.pulses %}
+<!-- OTX Pulse Detail -->
+<div class="collapse mb-4" id="otx-pulses">
+  <div class="data-table">
+    <div class="section-header px-3 pt-3 pb-2">
+      <span class="section-title">
+        <span class="badge me-2" style="background:#e17c00">OTX</span>
+        {{ result.otx.pulse_count }} Threat Pulse{{ 's' if result.otx.pulse_count != 1 }} mentioning
+        <span class="font-monospace" style="color:var(--accent)">{{ result.indicator }}</span>
+      </span>
+    </div>
+    {% for pulse in result.otx.pulses %}
+    <div class="px-3 py-3 {% if not loop.last %}border-bottom border-secondary{% endif %}">
+      <div class="d-flex align-items-start justify-content-between gap-3 mb-1">
+        <div class="fw-semibold small">{{ pulse.name }}</div>
+        <div class="text-muted small flex-shrink-0">{{ pulse.created }}</div>
+      </div>
+      {% if pulse.author %}
+      <div class="text-muted small mb-1">by {{ pulse.author }}</div>
+      {% endif %}
+      {% if pulse.description %}
+      <div class="small mb-2" style="color:var(--text-muted)">{{ pulse.description }}</div>
+      {% endif %}
+      <div class="d-flex flex-wrap gap-1 mb-2">
+        {% for m in pulse.malware %}
+        <span class="badge bg-danger" style="font-size:0.62rem">{{ m }}</span>
+        {% endfor %}
+        {% for tag in pulse.tags %}
+        <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.62rem">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% if pulse.references %}
+      <div class="d-flex flex-wrap gap-2">
+        {% for ref in pulse.references %}
+        <a href="{{ ref }}" target="_blank" rel="noopener noreferrer"
+           class="small text-truncate" style="color:var(--accent-orange);max-width:340px">
+          <i class="bi bi-box-arrow-up-right me-1" style="font-size:0.65rem"></i>{{ ref }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Lookup history -->
+{% if history %}
+<div class="data-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Lookup History</span>
+    <span class="text-muted small">{{ history|length }} records (24h cache)</span>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Indicator</th>
+        <th>Type</th>
+        <th>Verdict</th>
+        <th>Score</th>
+        <th>Sources</th>
+        <th>Cached Until</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in history %}
+      <tr>
+        <td class="font-monospace small">
+          <button class="btn btn-link btn-sm p-0 text-start font-monospace"
+                  style="color:var(--accent)"
+                  onclick="document.querySelector('[name=indicator]').value='{{ rec.indicator }}'; document.querySelector('form').submit()">
+            {{ rec.indicator[:50] }}{% if rec.indicator|length > 50 %}…{% endif %}
+          </button>
+        </td>
+        <td><span class="badge bg-secondary text-uppercase" style="font-size:0.65rem">{{ rec.ioc_type }}</span></td>
+        <td>
+          {% if rec.verdict == "malicious" %}<span class="badge bg-danger">Malicious</span>
+          {% elif rec.verdict == "suspicious" %}<span class="badge bg-warning text-dark">Suspicious</span>
+          {% elif rec.verdict == "clean" %}<span class="badge bg-success">Clean</span>
+          {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
+        </td>
+        <td class="small">{{ rec.threat_score }}/100</td>
+        <td class="small text-muted">
+          {% if rec.otx_result %}{% set _o = rec.otx_result | fromjson %}{% if _o.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>{% endif %}{% endif %}
+          {% if rec.vt_result %}{% set _v = rec.vt_result | fromjson %}{% if _v.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>{% endif %}{% endif %}
+          {% if rec.abuseipdb_result %}{% set _a = rec.abuseipdb_result | fromjson %}{% if _a.verdict in ('suspicious','malicious') %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>{% endif %}{% endif %}
+        </td>
+        <td class="text-muted small">{{ rec.expires_at | localdt('%m/%d %H:%M') if rec.expires_at else '—' }}</td>
+        <td>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('threat.ioc_delete', ioc_id=rec.id) }}"
+                onsubmit="return confirm('Delete this IOC record?')">
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

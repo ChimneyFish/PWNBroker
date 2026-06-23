@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}OTX Threat Feed — PwnBroker{% endblock %}
+{% block page_title %}OTX Threat Feed{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.index') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Back
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="alert alert-warning d-flex align-items-center gap-2">
+  <i class="bi bi-exclamation-triangle fs-5"></i>
+  <div>{{ error }}</div>
+</div>
+{% endif %}
+
+{% if pulses %}
+<p class="text-muted small mb-3">Showing {{ pulses | length }} recent pulses from your OTX subscriptions.</p>
+
+<div class="d-flex flex-column gap-3">
+  {% for pulse in pulses %}
+  <div class="form-card">
+    <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+      <div class="flex-grow-1">
+        <div class="fw-semibold">{{ pulse.name }}</div>
+        {% if pulse.description %}
+        <div class="text-muted small mt-1" style="max-width:800px">{{ pulse.description[:300] }}{% if pulse.description|length > 300 %}…{% endif %}</div>
+        {% endif %}
+      </div>
+      <div class="text-end flex-shrink-0">
+        {% set tlp = pulse.get('tlp', 'white') | upper %}
+        <span class="badge mb-1
+          {% if tlp == 'RED' %}bg-danger
+          {% elif tlp == 'AMBER' %}bg-warning text-dark
+          {% elif tlp == 'GREEN' %}bg-success
+          {% else %}bg-secondary{% endif %}">
+          TLP:{{ tlp }}
+        </span>
+        <div class="text-muted" style="font-size:0.7rem">{{ pulse.modified[:10] if pulse.modified else '' }}</div>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <!-- Indicator count -->
+      {% if pulse.indicator_count is defined %}
+      <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent)">
+        <i class="bi bi-list-ul me-1"></i>{{ pulse.indicator_count }} indicators
+      </span>
+      {% endif %}
+
+      <!-- Tags -->
+      {% for tag in (pulse.tags or [])[:8] %}
+      <span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.7rem">{{ tag }}</span>
+      {% endfor %}
+
+      <!-- Malware families -->
+      {% for mw in (pulse.malware_families or [])[:5] %}
+      <span class="badge bg-danger" style="font-size:0.7rem">{{ mw.display_name if mw.display_name is defined else mw }}</span>
+      {% endfor %}
+
+      <!-- Author -->
+      {% if pulse.author_name %}
+      <span class="ms-auto text-muted" style="font-size:0.7rem">by {{ pulse.author_name }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif not error %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-rss fs-1 d-block mb-3 opacity-25"></i>
+  No pulses in your OTX subscriptions yet.<br>
+  <a href="https://otx.alienvault.com" target="_blank" rel="noopener" class="btn btn-outline-secondary mt-3">
+    <i class="bi bi-box-arrow-up-right me-1"></i>Visit OTX to Subscribe to Feeds
+  </a>
+</div>
+{% endif %}
+{% endblock %}

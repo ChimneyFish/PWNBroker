@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Compliance — PwnBroker{% endblock %}
+{% block page_title %}Compliance Frameworks{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('grc.index') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-speedometer me-1"></i>GRC Overview
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+  {% for s in summaries %}
+  <div class="col-md-6 col-xl-4">
+    <div class="form-card h-100">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <div class="fw-semibold">{{ s.framework.name }}</div>
+          <div class="text-muted small">v{{ s.framework.version }}</div>
+        </div>
+        <span class="badge {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">
+          {{ s.pct }}%
+        </span>
+      </div>
+      {% if s.framework.description %}
+      <div class="text-muted small mb-3">{{ s.framework.description }}</div>
+      {% endif %}
+
+      <!-- Progress bar -->
+      <div class="progress mb-2" style="height:8px;background:rgba(255,255,255,0.08)">
+        {% set c_pct  = (s.compliant / s.total * 100) | round | int %}
+        {% set p_pct  = (s.partial   / s.total * 100) | round | int %}
+        {% set nc_pct = (s.non_compliant / s.total * 100) | round | int %}
+        <div class="progress-bar bg-success"   style="width:{{ c_pct }}%"  title="{{ s.compliant }} Compliant"></div>
+        <div class="progress-bar bg-warning"   style="width:{{ p_pct }}%"  title="{{ s.partial }} Partial"></div>
+        <div class="progress-bar bg-danger"    style="width:{{ nc_pct }}%" title="{{ s.non_compliant }} Non-compliant"></div>
+      </div>
+
+      <!-- Legend -->
+      <div class="d-flex gap-3 mb-4" style="font-size:0.7rem">
+        <span class="text-success">✓ {{ s.compliant }}</span>
+        <span class="text-warning">~ {{ s.partial }}</span>
+        <span class="text-danger">✗ {{ s.non_compliant }}</span>
+        <span class="text-muted">— {{ s.not_applicable }} N/A</span>
+        <span class="text-muted opacity-50">? {{ s.not_assessed }}</span>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('grc.framework_detail', framework_id=s.framework.id) }}"
+           class="btn btn-sm btn-outline-secondary flex-grow-1">
+          Assess Controls <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+        <a href="{{ url_for('grc.compliance_report', framework_id=s.framework.id) }}"
+           class="btn btn-sm btn-outline-success" title="Download Audit Report (PDF)">
+          <i class="bi bi-file-earmark-pdf"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,80 @@
+{% macro gen_modal(scan, cloud_enabled) %}
+<div class="modal fade" id="genModal{{ scan.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-file-earmark-arrow-down me-2 text-primary"></i>Generate Report
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('reports.generate', scan_id=scan.id) }}">
+        <div class="modal-body">
+          <div class="mb-1 text-muted small">Scan: <span class="text-light fw-semibold">{{ scan.name }}</span></div>
+          <div class="mb-4 text-muted small">Target: {{ scan.target.host }}</div>
+
+          <div class="mb-4">
+            <label class="form-label">Format</label>
+            <div class="d-flex gap-2">
+              <div class="form-check flex-fill p-3 rounded" style="background:var(--bg-input);border:1px solid var(--border-color)">
+                <input class="form-check-input" type="radio" name="file_format" id="fmt_pdf_{{ scan.id }}" value="pdf" checked>
+                <label class="form-check-label w-100" for="fmt_pdf_{{ scan.id }}">
+                  <i class="bi bi-filetype-pdf text-danger me-1"></i><strong>PDF</strong>
+                  <div class="text-muted" style="font-size:0.75rem">Formatted, printable document</div>
+                </label>
+              </div>
+              <div class="form-check flex-fill p-3 rounded" style="background:var(--bg-input);border:1px solid var(--border-color)">
+                <input class="form-check-input" type="radio" name="file_format" id="fmt_html_{{ scan.id }}" value="html">
+                <label class="form-check-label w-100" for="fmt_html_{{ scan.id }}">
+                  <i class="bi bi-filetype-html text-warning me-1"></i><strong>HTML</strong>
+                  <div class="text-muted" style="font-size:0.75rem">Web-ready, shareable</div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Delivery</label>
+            <div class="d-flex flex-column gap-2">
+              <div class="form-check p-3 rounded" style="background:var(--bg-input);border:1px solid var(--border-color)">
+                <input class="form-check-input" type="radio" name="delivery" id="del_local_{{ scan.id }}" value="local" checked>
+                <label class="form-check-label" for="del_local_{{ scan.id }}">
+                  <i class="bi bi-hdd me-1 text-primary"></i><strong>Local only</strong>
+                  <span class="text-muted small ms-1">— save to server, available on Reports page</span>
+                </label>
+              </div>
+              {% if cloud_enabled %}
+              <div class="form-check p-3 rounded" style="background:var(--bg-input);border:1px solid var(--border-color)">
+                <input class="form-check-input" type="radio" name="delivery" id="del_cloud_{{ scan.id }}" value="cloud">
+                <label class="form-check-label" for="del_cloud_{{ scan.id }}">
+                  <i class="bi bi-cloud-upload me-1 text-info"></i><strong>Cloud API only</strong>
+                  <span class="text-muted small ms-1">— push findings JSON to configured endpoint</span>
+                </label>
+              </div>
+              <div class="form-check p-3 rounded" style="background:var(--bg-input);border:1px solid var(--border-color)">
+                <input class="form-check-input" type="radio" name="delivery" id="del_both_{{ scan.id }}" value="both">
+                <label class="form-check-label" for="del_both_{{ scan.id }}">
+                  <i class="bi bi-hdd-stack me-1 text-success"></i><strong>Both</strong>
+                  <span class="text-muted small ms-1">— save locally and push to cloud API</span>
+                </label>
+              </div>
+              {% else %}
+              <div class="p-3 rounded text-muted small" style="background:rgba(255,255,255,0.03);border:1px dashed var(--border-color)">
+                <i class="bi bi-cloud-slash me-1"></i>Cloud API not configured.
+                <a href="{{ url_for('settings.index') }}#cloud" class="text-primary">Configure in Settings.</a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-file-earmark-check me-1"></i>Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endmacro %}

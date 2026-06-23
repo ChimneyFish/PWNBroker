@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div class="login-page">
+  <div class="login-card">
+
+    <!-- Logo -->
+    <div class="text-center mb-2">
+      <img src="{{ url_for('static', filename='img/logo.png') }}"
+           alt="PwnBroker" class="login-logo-img">
+    </div>
+
+    <p class="text-center mb-0" style="font-size:0.7rem;letter-spacing:0.15em;color:var(--accent);font-weight:600;text-transform:uppercase">
+      Integrated Cyber Operations Suite
+    </p>
+
+    <hr class="login-divider">
+
+    <p class="text-center text-muted small mb-4">Sign in to continue</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} py-2 small">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" placeholder="admin" autofocus required>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+      </div>
+      <div class="form-check mb-4">
+        <input class="form-check-input" type="checkbox" name="remember" id="remember">
+        <label class="form-check-label small text-muted" for="remember">Remember me</label>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+    </form>
+
+    <p class="text-center mt-4 mb-0" style="font-size:0.65rem;color:var(--text-muted)">
+      PwnBroker &mdash; Unauthorized access is prohibited
+    </p>
+  </div>
+</div>
+{% endblock %}

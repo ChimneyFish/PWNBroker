@@ -1,0 +1,604 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — PwnBroker{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block header_actions %}
+<button class="btn-customize" id="openCustomize" title="Customize dashboard layout">
+  <i class="bi bi-grid-1x2"></i> Customize
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Widget grid – rendered by JS -->
+<div id="widget-grid"></div>
+
+<!-- ── Customize overlay + panel ───────────────────────── -->
+<div class="customize-overlay" id="customizeOverlay"></div>
+
+<div class="customize-panel" id="customizePanel">
+  <div class="customize-panel-header">
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <div>
+        <div class="fw-bold" style="font-size:1rem">Customize Dashboard</div>
+        <div class="text-muted" style="font-size:0.75rem">Add, remove, or drag to reorder widgets</div>
+      </div>
+      <button id="closeCustomize" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:4px">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-outline-secondary btn-sm" id="resetLayout">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset defaults
+      </button>
+    </div>
+  </div>
+
+  <div class="customize-panel-body">
+    <div class="widget-picker-section">
+      <div class="widget-picker-label">Stat Widgets</div>
+      <div id="picker-stats"></div>
+    </div>
+    <div class="widget-picker-section">
+      <div class="widget-picker-label">Charts</div>
+      <div id="picker-charts"></div>
+    </div>
+    <div class="widget-picker-section">
+      <div class="widget-picker-label">Tables &amp; Tools</div>
+      <div id="picker-tables"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   PWNBROKER DASHBOARD WIDGET SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// ── Widget definitions ────────────────────────────────────────────────────
+const WIDGET_DEFS = {
+  // Stats
+  'stat-scans': {
+    cat: 'stats', title: 'Total Scans', size: 'sm',
+    icon: 'bi-radar', color: '#60a5fa', colorBg: 'rgba(59,130,246,0.12)',
+    dataKey: 'total_scans', link: '/scans', desc: 'All scans ever run'
+  },
+  'stat-running': {
+    cat: 'stats', title: 'Running Now', size: 'sm',
+    icon: 'bi-activity', color: '#facc15', colorBg: 'rgba(234,179,8,0.12)',
+    dataKey: 'running_scans', link: '/scans', desc: 'Active scans'
+  },
+  'stat-targets': {
+    cat: 'stats', title: 'Targets', size: 'sm',
+    icon: 'bi-bullseye', color: '#38bdf8', colorBg: 'rgba(56,189,248,0.12)',
+    dataKey: 'total_targets', link: '/targets', desc: 'Configured scan targets'
+  },
+  'stat-critical': {
+    cat: 'stats', title: 'Critical Vulns', size: 'sm',
+    icon: 'bi-exclamation-triangle-fill', color: '#f87171', colorBg: 'rgba(220,38,38,0.12)',
+    dataKey: 'critical_vulns', link: '/vulns', desc: 'Unresolved critical findings'
+  },
+  'stat-high': {
+    cat: 'stats', title: 'High Vulns', size: 'sm',
+    icon: 'bi-exclamation-circle-fill', color: '#fb923c', colorBg: 'rgba(234,88,12,0.12)',
+    dataKey: 'high_vulns', link: '/vulns', desc: 'High severity findings'
+  },
+  'stat-agents': {
+    cat: 'stats', title: 'Online Agents', size: 'sm',
+    icon: 'bi-pc-display-horizontal', color: '#4ade80', colorBg: 'rgba(22,163,74,0.12)',
+    dataKey: 'online_agents', link: '/threat/agents', desc: 'Active endpoint agents'
+  },
+  'stat-assets': {
+    cat: 'stats', title: 'Assets', size: 'sm',
+    icon: 'bi-hdd-network', color: '#a78bfa', colorBg: 'rgba(139,92,246,0.12)',
+    dataKey: 'total_assets', link: '/assets', desc: 'Discovered assets'
+  },
+  'stat-soc': {
+    cat: 'stats', title: 'Open SOC Cases', size: 'sm',
+    icon: 'bi-shield-exclamation', color: '#fbbf24', colorBg: 'rgba(245,158,11,0.12)',
+    dataKey: 'open_soc', link: '/threat/triage', desc: 'Pending SOC triage cases'
+  },
+  // Charts
+  'chart-severity': {
+    cat: 'charts', title: 'Severity Breakdown', size: 'md',
+    icon: 'bi-pie-chart-fill', desc: 'Vulnerability distribution by severity'
+  },
+  'chart-trend': {
+    cat: 'charts', title: 'Scan Trend (14d)', size: 'md',
+    icon: 'bi-graph-up-arrow', desc: 'Scans launched per day'
+  },
+  'chart-vuln-target': {
+    cat: 'charts', title: 'Vulns by Target', size: 'md',
+    icon: 'bi-bar-chart-fill', desc: 'Top targets by vulnerability count'
+  },
+  'chart-agents': {
+    cat: 'charts', title: 'Agent Health', size: 'sm',
+    icon: 'bi-cpu-fill', desc: 'Endpoint agent online/offline status'
+  },
+  // Tables & tools
+  'table-scans': {
+    cat: 'tables', title: 'Recent Scans', size: 'lg',
+    icon: 'bi-list-check', desc: 'Latest scan activity'
+  },
+  'table-findings': {
+    cat: 'tables', title: 'Recent Findings', size: 'lg',
+    icon: 'bi-shield-exclamation', desc: 'Latest vulnerability findings'
+  },
+  'quick-actions': {
+    cat: 'tables', title: 'Quick Actions', size: 'md',
+    icon: 'bi-lightning-charge-fill', desc: 'Shortcuts to common tasks'
+  },
+};
+
+const DEFAULT_LAYOUT = [
+  'stat-scans', 'stat-running', 'stat-targets', 'stat-critical',
+  'chart-severity', 'quick-actions',
+  'table-scans',
+  'table-findings',
+];
+
+const STORAGE_KEY = 'pb_dash_layout_v2';
+
+// ── Chart registry (destroy before re-create) ─────────────────────────────
+const CHARTS = {};
+
+function destroyChart(id) {
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+
+// ── Layout persistence ────────────────────────────────────────────────────
+function getLayout() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) return JSON.parse(s);
+  } catch {}
+  return [...DEFAULT_LAYOUT];
+}
+
+function saveLayout() {
+  const order = [...document.querySelectorAll('#widget-grid .widget-wrap')]
+    .map(w => w.dataset.widget);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(order));
+  renderPickerState();
+}
+
+function addWidget(id) {
+  const layout = getLayout();
+  if (!layout.includes(id)) {
+    layout.push(id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    loadDashboard();
+  }
+}
+
+function removeWidget(id) {
+  const layout = getLayout().filter(x => x !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+  loadDashboard();
+}
+
+// ── Widget HTML builders ──────────────────────────────────────────────────
+function wrapWidget(id, size, innerHtml) {
+  return `<div class="widget-wrap" data-widget="${id}" data-size="${size}" draggable="true">
+    ${innerHtml}
+  </div>`;
+}
+
+function widgetShell(id, def, bodyHtml) {
+  return `<div class="widget-card">
+    <div class="widget-header">
+      <div class="widget-title"><i class="bi ${def.icon}"></i>${def.title}</div>
+      <div class="widget-controls">
+        <button class="widget-drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></button>
+        <button class="widget-remove-btn" data-remove="${id}" title="Remove widget"><i class="bi bi-x"></i></button>
+      </div>
+    </div>
+    <div class="widget-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function buildStatWidget(id, def, data) {
+  const val = data.stats[def.dataKey] ?? 0;
+  const html = `<a href="${def.link}" class="text-decoration-none d-block">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="stat-widget-val" style="color:${def.color}">${val}</div>
+        <div class="stat-widget-label">${def.title}</div>
+      </div>
+      <div class="widget-icon-bg" style="background:${def.colorBg};color:${def.color}">
+        <i class="bi ${def.icon}"></i>
+      </div>
+    </div>
+  </a>`;
+  return wrapWidget(id, 'sm', widgetShell(id, def, html));
+}
+
+function buildSeverityChart(id, def, data) {
+  const html = `<div class="chart-container" style="height:220px">
+    <canvas id="chart_${id}"></canvas>
+  </div>`;
+  return wrapWidget(id, 'md', widgetShell(id, def, html));
+}
+
+function buildTrendChart(id, def, data) {
+  const html = `<div class="chart-container" style="height:220px">
+    <canvas id="chart_${id}"></canvas>
+  </div>`;
+  return wrapWidget(id, 'md', widgetShell(id, def, html));
+}
+
+function buildVulnTargetChart(id, def, data) {
+  const html = `<div class="chart-container" style="height:220px">
+    <canvas id="chart_${id}"></canvas>
+  </div>`;
+  return wrapWidget(id, 'md', widgetShell(id, def, html));
+}
+
+function buildAgentChart(id, def, data) {
+  const s = data.agent_stats;
+  const total = s.online + s.offline + s.unknown;
+  const rows = [
+    { label: 'Online',  val: s.online,  color: '#4ade80' },
+    { label: 'Offline', val: s.offline, color: '#f87171' },
+    { label: 'Unknown', val: s.unknown, color: '#94a3b8' },
+  ].map(r => `<div class="agent-status-row">
+    <span class="d-flex align-items-center gap-2">
+      <span style="width:8px;height:8px;border-radius:50%;background:${r.color};display:inline-block"></span>
+      <span style="font-size:0.85rem">${r.label}</span>
+    </span>
+    <span class="fw-bold" style="color:${r.color}">${r.val}</span>
+  </div>`).join('');
+  const html = `${rows}
+    <div class="text-center mt-3 text-muted" style="font-size:0.72rem">${total} total agents</div>`;
+  return wrapWidget(id, 'sm', widgetShell(id, def, html));
+}
+
+function buildScansTable(id, def, data) {
+  if (!data.recent_scans.length) {
+    const html = `<div class="widget-empty">
+      <i class="bi bi-radar"></i>
+      <p>No scans yet — <a href="/scans/new">run your first scan</a></p>
+    </div>`;
+    return wrapWidget(id, 'lg', widgetShell(id, def, html));
+  }
+  const rows = data.recent_scans.map(s => `<tr>
+    <td><a href="/scans/${s.id}" class="text-decoration-none fw-semibold">${escHtml(s.name)}</a></td>
+    <td class="text-muted small">${escHtml(s.target)}</td>
+    <td><span class="badge-status status-${s.status}">${s.status.toUpperCase()}</span></td>
+    <td>${s.critical_count > 0 ? `<span class="badge-severity sev-critical me-1">${s.critical_count} crit</span>` : ''}<span class="text-muted">${s.vuln_count}</span></td>
+    <td class="text-muted small">${s.created_at}</td>
+  </tr>`).join('');
+  const html = `<div class="d-flex justify-content-end mb-3">
+    <a href="/scans/new" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>New Scan</a>
+  </div>
+  <div class="data-table">
+    <table class="table table-dark table-hover mb-0">
+      <thead><tr>
+        <th>Scan</th><th>Target</th><th>Status</th><th>Vulns</th><th>Date</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  return wrapWidget(id, 'lg', widgetShell(id, def, html));
+}
+
+function buildFindingsTable(id, def, data) {
+  if (!data.recent_vulns.length) {
+    const html = `<div class="widget-empty">
+      <i class="bi bi-shield-check"></i>
+      <p>No vulnerabilities found yet</p>
+    </div>`;
+    return wrapWidget(id, 'lg', widgetShell(id, def, html));
+  }
+  const rows = data.recent_vulns.map(r => `<tr class="result-row-${r.severity}">
+    <td><span class="badge-severity sev-${r.severity}">${r.severity}</span></td>
+    <td class="fw-semibold small">${escHtml(r.title)}</td>
+    <td class="text-muted small">${escHtml(r.host)}</td>
+    <td>${r.cvss_score != null ? `<span class="fw-semibold">${r.cvss_score}</span>` : '—'}</td>
+    <td>${r.cve_id ? `<a href="https://nvd.nist.gov/vuln/detail/${escHtml(r.cve_id)}" target="_blank" class="text-primary small">${escHtml(r.cve_id)}</a>` : '—'}</td>
+  </tr>`).join('');
+  const html = `<div class="data-table">
+    <table class="table table-dark table-hover mb-0">
+      <thead><tr><th>Sev</th><th>Finding</th><th>Host</th><th>CVSS</th><th>CVE</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  return wrapWidget(id, 'lg', widgetShell(id, def, html));
+}
+
+function buildQuickActions(id, def) {
+  const actions = [
+    { href: '/scans/new',      icon: 'bi-radar',           label: 'New Scan',     sub: 'Launch a scan' },
+    { href: '/threat/triage',  icon: 'bi-shield-check',    label: 'SOC Triage',   sub: 'GreyNoise + VT' },
+    { href: '/targets/new',    icon: 'bi-bullseye',        label: 'Add Target',   sub: 'Configure target' },
+    { href: '/threat/lookup',  icon: 'bi-search',          label: 'IOC Lookup',   sub: 'IP / hash / domain' },
+  ];
+  const html = `<div class="quick-action-grid">
+    ${actions.map(a => `<a href="${a.href}" class="quick-action-btn">
+      <i class="bi ${a.icon}"></i>
+      <span>${a.label}</span>
+      <span class="qa-sub">${a.sub}</span>
+    </a>`).join('')}
+  </div>`;
+  return wrapWidget(id, 'md', widgetShell(id, def, html));
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Chart initializers (called after DOM insert) ──────────────────────────
+const CHART_COLORS = {
+  critical: '#dc2626', high: '#ea580c', medium: '#d97706',
+  low: '#2563eb', info: '#475569',
+};
+
+function initSeverityChart(data) {
+  destroyChart('chart-severity');
+  const el = document.getElementById('chart_chart-severity');
+  if (!el) return;
+  const sm = data.severity_map;
+  CHARTS['chart-severity'] = new Chart(el, {
+    type: 'doughnut',
+    data: {
+      labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+      datasets: [{
+        data: ['critical','high','medium','low','info'].map(k => sm[k] || 0),
+        backgroundColor: Object.values(CHART_COLORS),
+        borderWidth: 2, borderColor: '#0b1222',
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#4f6480', padding: 14, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } },
+      },
+    }
+  });
+}
+
+function initTrendChart(data) {
+  destroyChart('chart-trend');
+  const el = document.getElementById('chart_chart-trend');
+  if (!el) return;
+  CHARTS['chart-trend'] = new Chart(el, {
+    type: 'line',
+    data: {
+      labels: data.trend.labels,
+      datasets: [{
+        label: 'Scans',
+        data: data.trend.data,
+        borderColor: '#0bbcd4',
+        backgroundColor: 'rgba(11,188,212,0.08)',
+        borderWidth: 2, tension: 0.4, fill: true,
+        pointBackgroundColor: '#0bbcd4', pointRadius: 3, pointHoverRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, precision: 0 }, beginAtZero: true },
+      },
+    }
+  });
+}
+
+function initVulnTargetChart(data) {
+  destroyChart('chart-vuln-target');
+  const el = document.getElementById('chart_chart-vuln-target');
+  if (!el) return;
+  const vbt = data.vuln_by_target;
+  CHARTS['chart-vuln-target'] = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: vbt.labels.length ? vbt.labels : ['No data'],
+      datasets: [{
+        label: 'Vulnerabilities',
+        data: vbt.data.length ? vbt.data : [0],
+        backgroundColor: 'rgba(11,188,212,0.25)',
+        borderColor: '#0bbcd4',
+        borderWidth: 1.5, borderRadius: 4,
+        hoverBackgroundColor: 'rgba(11,188,212,0.4)',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, precision: 0 }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+      },
+    }
+  });
+}
+
+function initAllCharts(data) {
+  initSeverityChart(data);
+  initTrendChart(data);
+  initVulnTargetChart(data);
+}
+
+// ── Render pipeline ───────────────────────────────────────────────────────
+function buildWidget(id, data) {
+  const def = WIDGET_DEFS[id];
+  if (!def) return '';
+  switch (id) {
+    case 'stat-scans': case 'stat-running': case 'stat-targets':
+    case 'stat-critical': case 'stat-high': case 'stat-agents':
+    case 'stat-assets': case 'stat-soc':
+      return buildStatWidget(id, def, data);
+    case 'chart-severity':    return buildSeverityChart(id, def, data);
+    case 'chart-trend':       return buildTrendChart(id, def, data);
+    case 'chart-vuln-target': return buildVulnTargetChart(id, def, data);
+    case 'chart-agents':      return buildAgentChart(id, def, data);
+    case 'table-scans':       return buildScansTable(id, def, data);
+    case 'table-findings':    return buildFindingsTable(id, def, data);
+    case 'quick-actions':     return buildQuickActions(id, def);
+    default: return '';
+  }
+}
+
+function renderGrid(data) {
+  const grid = document.getElementById('widget-grid');
+  const layout = getLayout();
+
+  // Destroy existing charts
+  Object.keys(CHARTS).forEach(k => destroyChart(k));
+
+  grid.innerHTML = layout.map(id => buildWidget(id, data)).join('');
+
+  // Init charts after DOM is updated
+  requestAnimationFrame(() => initAllCharts(data));
+
+  initDragAndDrop();
+  attachRemoveButtons();
+}
+
+// ── Fetch + render ────────────────────────────────────────────────────────
+let _lastData = null;
+
+async function loadDashboard() {
+  try {
+    const res = await fetch('/api/dashboard/widgets');
+    if (!res.ok) return;
+    const data = await res.json();
+    _lastData = data;
+    renderGrid(data);
+  } catch (e) { console.warn('Dashboard fetch failed', e); }
+}
+
+// ── Drag-and-drop ─────────────────────────────────────────────────────────
+function initDragAndDrop() {
+  const grid = document.getElementById('widget-grid');
+
+  grid.querySelectorAll('.widget-wrap').forEach(wrap => {
+    wrap.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', wrap.dataset.widget);
+      setTimeout(() => wrap.classList.add('dragging'), 0);
+    });
+    wrap.addEventListener('dragend', () => {
+      wrap.classList.remove('dragging');
+      grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      saveLayout();
+    });
+    wrap.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const dragging = grid.querySelector('.dragging');
+      if (!dragging || dragging === wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      const mid  = rect.top + rect.height / 2;
+      if (e.clientY < mid) {
+        grid.insertBefore(dragging, wrap);
+      } else {
+        grid.insertBefore(dragging, wrap.nextSibling);
+      }
+    });
+    wrap.addEventListener('dragenter', e => { e.preventDefault(); wrap.classList.add('drag-over'); });
+    wrap.addEventListener('dragleave', () => wrap.classList.remove('drag-over'));
+    wrap.addEventListener('drop', e => { e.preventDefault(); wrap.classList.remove('drag-over'); });
+  });
+
+  // Drag handle sets draggable via pointer
+  grid.querySelectorAll('.widget-drag-handle').forEach(btn => {
+    btn.addEventListener('mousedown', () => {
+      btn.closest('.widget-wrap').setAttribute('draggable', 'true');
+    });
+  });
+}
+
+// ── Remove buttons ────────────────────────────────────────────────────────
+function attachRemoveButtons() {
+  document.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      removeWidget(btn.dataset.remove);
+    });
+  });
+}
+
+// ── Widget picker ─────────────────────────────────────────────────────────
+function renderPickerState() {
+  const layout = getLayout();
+  ['stats', 'charts', 'tables'].forEach(cat => {
+    const container = document.getElementById(`picker-${cat}`);
+    if (!container) return;
+    container.innerHTML = Object.entries(WIDGET_DEFS)
+      .filter(([, def]) => def.cat === cat)
+      .map(([id, def]) => {
+        const onBoard = layout.includes(id);
+        return `<div class="widget-picker-item ${onBoard ? 'on-board' : ''}">
+          <div class="picker-item-icon" style="${def.color ? `color:${def.color}` : ''}">
+            <i class="bi ${def.icon}"></i>
+          </div>
+          <div class="picker-item-text">
+            <div class="picker-item-name">${def.title}</div>
+            <div class="picker-item-desc">${def.desc}</div>
+          </div>
+          ${onBoard
+            ? `<button class="picker-item-action picker-remove" data-picker-remove="${id}" title="Remove"><i class="bi bi-dash"></i></button>`
+            : `<button class="picker-item-action picker-add" data-picker-add="${id}" title="Add"><i class="bi bi-plus"></i></button>`
+          }
+        </div>`;
+      }).join('');
+  });
+
+  // Attach picker events
+  document.querySelectorAll('[data-picker-add]').forEach(btn => {
+    btn.addEventListener('click', () => addWidget(btn.dataset.pickerAdd));
+  });
+  document.querySelectorAll('[data-picker-remove]').forEach(btn => {
+    btn.addEventListener('click', () => removeWidget(btn.dataset.pickerRemove));
+  });
+}
+
+// ── Customize panel controls ──────────────────────────────────────────────
+document.getElementById('openCustomize').addEventListener('click', () => {
+  renderPickerState();
+  document.getElementById('customizePanel').classList.add('open');
+  document.getElementById('customizeOverlay').classList.add('open');
+});
+
+function closePanel() {
+  document.getElementById('customizePanel').classList.remove('open');
+  document.getElementById('customizeOverlay').classList.remove('open');
+}
+
+document.getElementById('closeCustomize').addEventListener('click', closePanel);
+document.getElementById('customizeOverlay').addEventListener('click', closePanel);
+
+document.getElementById('resetLayout').addEventListener('click', () => {
+  if (confirm('Reset dashboard to defaults?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    loadDashboard();
+    renderPickerState();
+  }
+});
+
+// ── Auto-refresh ──────────────────────────────────────────────────────────
+loadDashboard();
+setInterval(async () => {
+  try {
+    const res = await fetch('/api/dashboard/widgets');
+    if (!res.ok) return;
+    const data = await res.json();
+    _lastData = data;
+    // Only update stat numbers and chart data, don't re-render DOM
+    Object.entries(WIDGET_DEFS).forEach(([id, def]) => {
+      if (def.cat === 'stats' && def.dataKey) {
+        const el = document.querySelector(`[data-widget="${id}"] .stat-widget-val`);
+        if (el) el.textContent = data.stats[def.dataKey] ?? 0;
+      }
+    });
+  } catch {}
+}, 30000);
+</script>
+{% endblock %}

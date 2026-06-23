@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Endpoint Agents — PwnBroker{% endblock %}
+{% block page_title %}Endpoint Agents{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.download') }}" class="btn btn-sm btn-primary">
+  <i class="bi bi-download me-1"></i>Deploy Agent
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% set online_count  = agents | selectattr('status', 'eq', 'online')  | list | length %}
+{% set offline_count = agents | selectattr('status', 'ne', 'online')  | list | length %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <a href="#agent-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value">{{ agents | length }}</div>
+      <div class="stat-label">Total Agents</div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="#agent-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value text-success">{{ online_count }}</div>
+      <div class="stat-label">Online</div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="#agent-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value text-muted">{{ offline_count }}</div>
+      <div class="stat-label">Offline / Unknown</div>
+    </a>
+  </div>
+</div>
+
+<div class="data-table" id="agent-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Registered Agents</span>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Hostname</th>
+        <th>OS</th>
+        <th>IP Address</th>
+        <th>Last Seen</th>
+        <th>Alerts</th>
+        <th>Registered</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for agent in agents %}
+      <tr>
+        <td>
+          {% if agent.status == "online" %}
+            <span class="d-flex align-items-center gap-1">
+              <span class="pulse" style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block"></span>
+              <span class="text-success small">Online</span>
+            </span>
+          {% else %}
+            <span class="d-flex align-items-center gap-1">
+              <span style="width:8px;height:8px;border-radius:50%;background:#475569;display:inline-block"></span>
+              <span class="text-muted small">{{ agent.status|capitalize }}</span>
+            </span>
+          {% endif %}
+        </td>
+        <td class="fw-semibold">{{ agent.hostname or '—' }}</td>
+        <td>
+          {% set os = agent.os_type or '' %}
+          {% if 'win' in os %}<i class="bi bi-windows me-1 text-primary"></i>Windows
+          {% elif 'darwin' in os %}<i class="bi bi-apple me-1 text-muted"></i>macOS
+          {% elif 'linux' in os %}<i class="bi bi-ubuntu me-1 text-warning"></i>Linux
+          {% else %}<span class="text-muted">{{ os or '—' }}</span>{% endif %}
+        </td>
+        <td class="font-monospace small">{{ agent.ip_address or '—' }}</td>
+        <td class="text-muted small">
+          {{ agent.last_seen | localdt('%Y-%m-%d %H:%M') if agent.last_seen else '—' }}
+        </td>
+        <td>
+          {% set alert_count = agent.alerts.count() %}
+          {% set unacked = agent.alerts.filter_by(acknowledged=False).count() %}
+          {% if unacked > 0 %}
+            <span class="badge bg-warning text-dark">{{ unacked }} new</span>
+          {% elif alert_count > 0 %}
+            <span class="badge bg-secondary">{{ alert_count }}</span>
+          {% else %}
+            <span class="text-muted small">—</span>
+          {% endif %}
+        </td>
+        <td class="text-muted small">
+          {{ agent.registered_at | localdt('%Y-%m-%d') if agent.registered_at else '—' }}
+        </td>
+        <td>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('threat.agent_detail', agent_db_id=agent.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('threat.agent_delete', agent_db_id=agent.id) }}"
+                  onsubmit="return confirm('Remove agent {{ agent.hostname }}?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="text-center text-muted py-5">
+          <i class="bi bi-pc-display-horizontal fs-1 d-block mb-3 opacity-25"></i>
+          No agents registered yet.<br>
+          <a href="{{ url_for('threat.download') }}" class="btn btn-primary mt-3">Deploy Your First Agent</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

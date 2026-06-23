@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Dependency Scanner — PwnBroker{% endblock %}
+{% block page_title %}Dependency Scanner{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('dependency.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>New Scan
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-auto">
+    <a href="#scans-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Total Scans</div>
+      <div class="fw-semibold">{{ scans | length }}</div>
+    </a>
+  </div>
+  <div class="col-auto">
+    <a href="{{ url_for('targets.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-label">Targets with SSH</div>
+      <div class="fw-semibold">{{ targets | selectattr('ssh_username') | list | length }}</div>
+    </a>
+  </div>
+</div>
+
+<div class="section-header" id="scans-table">
+  <span class="section-title">Dependency Scans</span>
+</div>
+
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Target</th>
+        <th>Remote Path</th>
+        <th>Findings</th>
+        <th>Status</th>
+        <th>Run At</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr>
+        <td class="fw-semibold">
+          <a href="{{ url_for('dependency.view', scan_id=scan.id) }}" class="text-decoration-none">{{ scan.name }}</a>
+        </td>
+        <td class="text-muted small">{{ scan.target.host }}</td>
+        <td class="text-muted small font-monospace">{{ scan.scan_path or '—' }}</td>
+        <td>
+          {% set vulns = scan.results.filter_by(result_type='vulnerability').count() %}
+          {% set crits = scan.results.filter_by(result_type='vulnerability', severity='critical').count() %}
+          {% if crits %}<span class="badge-severity sev-critical me-1">{{ crits }}C</span>{% endif %}
+          <span class="text-muted">{{ vulns }} vulns</span>
+        </td>
+        <td><span class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span></td>
+        <td class="text-muted small">
+          {{ scan.completed_at | localdt('%Y-%m-%d %H:%M') if scan.completed_at else scan.created_at | localdt('%Y-%m-%d %H:%M') }}
+        </td>
+        <td>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('dependency.delete', scan_id=scan.id) }}"
+                data-confirm="Delete this dependency scan and all its findings?">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-5">
+          <i class="bi bi-box-seam fs-2 d-block mb-2"></i>
+          No dependency scans yet.
+          {% if current_user.is_admin %}
+          <div class="mt-2">
+            <a href="{{ url_for('dependency.new') }}" class="btn btn-primary btn-sm">Run your first scan</a>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if not targets | selectattr('ssh_username') | list %}
+<div class="alert alert-warning mt-3">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  No targets have SSH credentials configured.
+  <a href="{{ url_for('targets.index') }}" class="alert-link">Add SSH credentials to a target</a> to enable dependency scanning.
+</div>
+{% endif %}
+
+{% endblock %}

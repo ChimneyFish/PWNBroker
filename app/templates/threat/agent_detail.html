@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.hostname }} — PwnBroker{% endblock %}
+{% block page_title %}Agent: {{ agent.hostname }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.agents_list') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>All Agents
+</a>
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('threat.agent_delete', agent_db_id=agent.id) }}"
+      onsubmit="return confirm('Remove this agent?')" class="d-inline">
+  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Remove Agent</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <!-- Agent info -->
+  <div class="col-lg-4">
+    <div class="form-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-pc-display-horizontal me-2" style="color:var(--accent)"></i>Agent Info</h6>
+
+      <div class="mb-2 d-flex align-items-center gap-2">
+        {% if agent.status == "online" %}
+          <span class="pulse" style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>
+          <span class="text-success fw-semibold">Online</span>
+        {% else %}
+          <span style="width:10px;height:10px;border-radius:50%;background:#475569;display:inline-block"></span>
+          <span class="text-muted fw-semibold">{{ agent.status|capitalize }}</span>
+        {% endif %}
+      </div>
+
+      <table class="table table-sm table-dark mb-0" style="font-size:0.85rem">
+        <tbody>
+          <tr><td class="text-muted" style="width:35%">Hostname</td><td class="fw-semibold">{{ agent.hostname or '—' }}</td></tr>
+          <tr><td class="text-muted">IP Address</td><td class="font-monospace">{{ agent.ip_address or '—' }}</td></tr>
+          <tr>
+            <td class="text-muted">OS</td>
+            <td>
+              {% set os = agent.os_type or '' %}
+              {% if 'win' in os %}<i class="bi bi-windows me-1"></i>Windows
+              {% elif 'darwin' in os %}<i class="bi bi-apple me-1"></i>macOS
+              {% elif 'linux' in os %}<i class="bi bi-ubuntu me-1"></i>Linux
+              {% else %}{{ os or '—' }}{% endif %}
+            </td>
+          </tr>
+          <tr><td class="text-muted">OS Version</td><td class="small text-muted">{{ agent.os_version or '—' }}</td></tr>
+          <tr><td class="text-muted">Agent ID</td><td class="font-monospace small">{{ agent.agent_id }}</td></tr>
+          <tr><td class="text-muted">Registered</td><td class="small">{{ agent.registered_at | localdt('%Y-%m-%d %H:%M') if agent.registered_at else '—' }}</td></tr>
+          <tr><td class="text-muted">Last Seen</td><td class="small">{{ agent.last_seen | localdt('%Y-%m-%d %H:%M') if agent.last_seen else '—' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Alert summary -->
+  <div class="col-lg-8">
+    <div class="row g-3">
+      {% set total = agent.alerts.count() %}
+      {% set unacked = agent.alerts.filter_by(acknowledged=False).count() %}
+      {% set high_sev = agent.alerts.filter_by(severity='high').count() %}
+      <div class="col-4">
+        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+          <div class="stat-value">{{ total }}</div>
+          <div class="stat-label">Total Alerts</div>
+        </a>
+      </div>
+      <div class="col-4">
+        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+          <div class="stat-value text-warning">{{ unacked }}</div>
+          <div class="stat-label">Unacknowledged</div>
+        </a>
+      </div>
+      <div class="col-4">
+        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+          <div class="stat-value text-danger">{{ high_sev }}</div>
+          <div class="stat-label">High Severity</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Alerts table -->
+<div class="data-table" id="alerts-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Alerts ({{ alerts | length }})</span>
+    {% if alerts %}
+    <button class="btn btn-sm btn-outline-secondary" id="ack-all-btn">Acknowledge All</button>
+    {% endif %}
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Severity</th>
+        <th>Title</th>
+        <th>IOC</th>
+        <th>Detail</th>
+        <th>Time</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in alerts %}
+      <tr id="alert-row-{{ alert.id }}" {% if alert.acknowledged %}class="opacity-50"{% endif %}>
+        <td><span class="badge-severity sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
+        <td class="small fw-semibold">{{ alert.title }}</td>
+        <td class="font-monospace small" style="color:var(--accent-orange)">{{ alert.ioc or '—' }}</td>
+        <td class="small text-muted" style="max-width:300px">{{ alert.detail or '—' }}</td>
+        <td class="text-muted small">{{ alert.created_at | localdt('%Y-%m-%d %H:%M') if alert.created_at else '—' }}</td>
+        <td>
+          {% if not alert.acknowledged %}
+          <button class="btn btn-sm btn-outline-secondary ack-btn"
+                  data-alert-id="{{ alert.id }}"
+                  data-agent-id="{{ agent.id }}">
+            <i class="bi bi-check2"></i> Ack
+          </button>
+          {% else %}
+          <span class="badge bg-secondary">Acked</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-5">
+        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success opacity-50"></i>
+        No alerts for this agent
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.ack-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const agentId = btn.dataset.agentId;
+    const alertId = btn.dataset.alertId;
+    const res = await fetch(`/threat/agents/${agentId}/alerts/${alertId}/ack`, {method:'POST'});
+    if ((await res.json()).ok) {
+      const row = document.getElementById(`alert-row-${alertId}`);
+      row.classList.add('opacity-50');
+      btn.outerHTML = '<span class="badge bg-secondary">Acked</span>';
+    }
+  });
+});
+
+const ackAll = document.getElementById('ack-all-btn');
+if (ackAll) {
+  ackAll.addEventListener('click', () => {
+    document.querySelectorAll('.ack-btn').forEach(b => b.click());
+  });
+}
+</script>
+{% endblock %}

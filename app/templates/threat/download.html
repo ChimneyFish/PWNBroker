@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Deploy Agent — PwnBroker{% endblock %}
+{% block page_title %}Deploy Endpoint Agent{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.agents_list') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Back to Agents
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Registration key -->
+<div class="form-card mb-4" style="border-color:rgba(11,188,212,0.3)">
+  <div class="d-flex align-items-center gap-3 mb-1">
+    <i class="bi bi-key fs-4" style="color:var(--accent)"></i>
+    <div>
+      <div class="fw-bold">Registration Key</div>
+      <div class="text-muted small">Agents must include this key when registering. Keep it secret.</div>
+    </div>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <code class="px-3 py-2 rounded" style="background:var(--bg-input);font-size:0.9rem;letter-spacing:0.05em" id="reg-token">
+        {{ cfg.registration_token }}
+      </code>
+      <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ cfg.registration_token }}');this.innerHTML='<i class=\'bi bi-check2\'></i>'">
+        <i class="bi bi-clipboard"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Server URL info -->
+<div class="form-card mb-4">
+  <div class="fw-bold mb-2"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Server URL</div>
+  <div class="d-flex align-items-center gap-2">
+    <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input)">{{ server_url }}</code>
+    <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ server_url }}');this.innerHTML='<i class=\'bi bi-check2\'></i>'">
+      <i class="bi bi-clipboard"></i>
+    </button>
+  </div>
+  <div class="text-muted small mt-2">This URL is embedded in the downloaded agent script automatically.</div>
+</div>
+
+<!-- Platform tabs -->
+<ul class="nav nav-tabs mb-0" id="platform-tabs">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-linux">
+      <i class="bi bi-ubuntu me-1"></i>Linux
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mac">
+      <i class="bi bi-apple me-1"></i>macOS
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-windows">
+      <i class="bi bi-windows me-1"></i>Windows
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content form-card" style="border-top-left-radius:0">
+
+  <!-- Linux -->
+  <div class="tab-pane fade show active" id="tab-linux">
+    <h6 class="fw-bold mb-3">Linux — systemd Service</h6>
+    <p class="text-muted small">Requires Python 3.7+ and systemd. Run as root for full network visibility.</p>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
+      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+        <span class="text-muted"># Download and run the installer as root</span><br>
+        curl -O <a href="{{ url_for('threat.download_script', platform='linux') }}" class="text-info">{{ server_url }}/threat/download/script/linux</a><br>
+        chmod +x install_linux.sh<br>
+        sudo ./install_linux.sh
+      </div>
+      <a href="{{ url_for('threat.download_script', platform='linux') }}" class="btn btn-primary btn-sm mt-2">
+        <i class="bi bi-download me-1"></i>Download install_linux.sh
+      </a>
+    </div>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option B — Manual</div>
+      <ol class="small text-muted">
+        <li class="mb-1">Download the agent: <a href="{{ url_for('threat.download_agent') }}" class="text-info">pwnbroker_agent.py</a></li>
+        <li class="mb-1">Install deps: <code>pip3 install requests psutil</code></li>
+        <li class="mb-1">Register: <code>python3 pwnbroker_agent.py --register --no-verify-ssl</code></li>
+        <li class="mb-1">Run: <code>python3 pwnbroker_agent.py --no-verify-ssl</code></li>
+        <li>For persistence, create a systemd service pointing to the script.</li>
+      </ol>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a href="{{ url_for('threat.download_agent') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
+      </a>
+    </div>
+  </div>
+
+  <!-- macOS -->
+  <div class="tab-pane fade" id="tab-mac">
+    <h6 class="fw-bold mb-3">macOS — LaunchAgent</h6>
+    <p class="text-muted small">Requires Python 3 (Homebrew or system). Installs as a per-user LaunchAgent.</p>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
+      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+        curl -O <a href="{{ url_for('threat.download_script', platform='mac') }}" class="text-info">{{ server_url }}/threat/download/script/mac</a><br>
+        chmod +x install_mac.sh<br>
+        ./install_mac.sh
+      </div>
+      <a href="{{ url_for('threat.download_script', platform='mac') }}" class="btn btn-primary btn-sm mt-2">
+        <i class="bi bi-download me-1"></i>Download install_mac.sh
+      </a>
+    </div>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option B — Manual</div>
+      <ol class="small text-muted">
+        <li class="mb-1">Download: <a href="{{ url_for('threat.download_agent') }}" class="text-info">pwnbroker_agent.py</a></li>
+        <li class="mb-1">Install deps: <code>pip3 install requests psutil</code></li>
+        <li class="mb-1">Register: <code>python3 pwnbroker_agent.py --register --no-verify-ssl</code></li>
+        <li class="mb-1">Run: <code>python3 pwnbroker_agent.py --no-verify-ssl</code></li>
+        <li>Create a <code>~/Library/LaunchAgents/com.pwnbroker.agent.plist</code> for persistence.</li>
+      </ol>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a href="{{ url_for('threat.download_agent') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
+      </a>
+    </div>
+  </div>
+
+  <!-- Windows -->
+  <div class="tab-pane fade" id="tab-windows">
+    <h6 class="fw-bold mb-3">Windows — Task Scheduler</h6>
+    <p class="text-muted small">Requires Python 3.7+ from <a href="https://python.org" target="_blank" rel="noopener">python.org</a>. Run PowerShell as Administrator.</p>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
+      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+        <span class="text-muted"># In PowerShell (as Administrator)</span><br>
+        Invoke-WebRequest <span class="text-info">"{{ server_url }}/threat/download/script/windows"</span> -OutFile install_windows.ps1<br>
+        .\install_windows.ps1
+      </div>
+      <a href="{{ url_for('threat.download_script', platform='windows') }}" class="btn btn-primary btn-sm mt-2">
+        <i class="bi bi-download me-1"></i>Download install_windows.ps1
+      </a>
+    </div>
+
+    <div class="mb-3">
+      <div class="section-title mb-2">Option B — Manual</div>
+      <ol class="small text-muted">
+        <li class="mb-1">Download: <a href="{{ url_for('threat.download_agent') }}" class="text-info">pwnbroker_agent.py</a></li>
+        <li class="mb-1">Open Command Prompt: <code>pip install requests psutil</code></li>
+        <li class="mb-1">Register: <code>python pwnbroker_agent.py --register --no-verify-ssl</code></li>
+        <li class="mb-1">Run: <code>python pwnbroker_agent.py --no-verify-ssl</code></li>
+        <li>Create a Task Scheduler entry to run at startup.</li>
+      </ol>
+    </div>
+
+    <div class="alert alert-info py-2 small mt-2">
+      <i class="bi bi-info-circle me-1"></i>
+      The agent uses <code>--no-verify-ssl</code> by default when using a self-signed certificate.
+      Remove this flag after uploading a CA-signed cert in Settings → TLS/HTTPS.
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+      <a href="{{ url_for('threat.download_agent') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<!-- Requirements -->
+<div class="form-card mt-4">
+  <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2" style="color:var(--accent)"></i>Agent Capabilities</h6>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="small fw-semibold mb-1">Sends every 60 seconds:</div>
+      <ul class="small text-muted ps-3">
+        <li>Hostname &amp; IP address</li>
+        <li>CPU &amp; memory utilisation</li>
+        <li>Running process list (names)</li>
+        <li>Active network connections (remote IPs)</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <div class="small fw-semibold mb-1">Server checks:</div>
+      <ul class="small text-muted ps-3">
+        <li>New remote IPs vs AbuseIPDB</li>
+        <li>Results cached 24 hours</li>
+        <li>Alerts created for suspicious IPs</li>
+        <li>Alerts returned to agent on next heartbeat</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <div class="small fw-semibold mb-1">Python requirements:</div>
+      <ul class="small text-muted ps-3">
+        <li>Python 3.7+</li>
+        <li><code>requests</code></li>
+        <li><code>psutil</code></li>
+        <li>No other dependencies</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

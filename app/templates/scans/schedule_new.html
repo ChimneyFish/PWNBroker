@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Schedule Scan — PwnBroker{% endblock %}
+{% block page_title %}Schedule Scan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="form-card">
+      <h5 class="fw-bold mb-1">Schedule a Recurring Scan</h5>
+      <p class="text-muted small mb-4">Choose a frequency below — no cron knowledge required.</p>
+
+      <form method="POST" id="schedForm">
+        <div class="mb-3">
+          <label class="form-label">Schedule Name</label>
+          <input type="text" name="name" class="form-control" placeholder="Weekly Internal Scan" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Target</label>
+          <select name="target_id" class="form-select" required>
+            <option value="">— Select a target or group —</option>
+            {% if groups %}
+            <optgroup label="Asset Groups">
+              {% for g in groups %}
+              <option value="g:{{ g.id }}">
+                {{ g.name }}{% if g._member_count %} ({{ g._member_count }} asset{{ 's' if g._member_count != 1 }}){% endif %}
+              </option>
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+            <optgroup label="Individual Targets">
+              {% for t in targets %}
+              <option value="{{ t.id }}">{{ t.name }} ({{ t.host }})</option>
+              {% endfor %}
+            </optgroup>
+          </select>
+          <div class="mt-1 small text-muted">
+            Groups are expanded to their current members each time the schedule fires.
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Scan Type</label>
+          <select name="scan_type" class="form-select">
+            {% for val, label in scan_types %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Port Range</label>
+          <input type="text" name="port_range" class="form-control" value="1-1024">
+        </div>
+
+        <!-- ── Schedule Builder ────────────────────────────────────── -->
+        <div class="mb-4">
+          <label class="form-label">Frequency</label>
+          <div class="d-flex flex-wrap gap-2 mb-3" id="freq-pills">
+            <button type="button" class="btn btn-sm btn-outline-primary freq-pill" data-freq="hourly">Every Hour</button>
+            <button type="button" class="btn btn-sm btn-outline-primary freq-pill active" data-freq="daily">Daily</button>
+            <button type="button" class="btn btn-sm btn-outline-primary freq-pill" data-freq="weekly">Weekly</button>
+            <button type="button" class="btn btn-sm btn-outline-primary freq-pill" data-freq="monthly">Monthly</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary freq-pill" data-freq="custom">Custom (cron)</button>
+          </div>
+
+          <!-- Time picker — hidden for hourly & custom -->
+          <div id="time-row" class="mb-3">
+            <label class="form-label text-muted small">Run at (UTC)</label>
+            <div class="d-flex gap-2 align-items-center">
+              <select id="pick-hour" class="form-select w-auto">
+                {% for h in range(24) %}
+                <option value="{{ '%02d' % h }}" {% if h == 2 %}selected{% endif %}>{{ '%02d' % h }}</option>
+                {% endfor %}
+              </select>
+              <span class="text-muted">:</span>
+              <select id="pick-minute" class="form-select w-auto">
+                {% for m in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55] %}
+                <option value="{{ '%02d' % m }}">{{ '%02d' % m }}</option>
+                {% endfor %}
+              </select>
+              <span class="text-muted small">UTC</span>
+            </div>
+          </div>
+
+          <!-- Day-of-week picker — weekly only -->
+          <div id="weekday-row" class="mb-3 d-none">
+            <label class="form-label text-muted small">On day(s)</label>
+            <div class="d-flex flex-wrap gap-2" id="weekday-pills">
+              {% for i, d in [(1,'Mon'),(2,'Tue'),(3,'Wed'),(4,'Thu'),(5,'Fri'),(6,'Sat'),(0,'Sun')] %}
+              <button type="button" class="btn btn-sm btn-outline-secondary wd-pill {% if i == 1 %}active{% endif %}"
+                      data-wd="{{ i }}">{{ d }}</button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Day-of-month picker — monthly only -->
+          <div id="monthday-row" class="mb-3 d-none">
+            <label class="form-label text-muted small">On day</label>
+            <select id="pick-monthday" class="form-select w-auto">
+              {% for d in range(1, 29) %}
+              <option value="{{ d }}" {% if d == 1 %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Raw cron — custom only -->
+          <div id="custom-row" class="mb-3 d-none">
+            <label class="form-label text-muted small">Cron expression <span class="text-muted">(minute hour day month weekday)</span></label>
+            <input type="text" id="custom-cron" class="form-control font-monospace" placeholder="0 2 * * 1">
+            <div class="mt-1 small text-muted">
+              e.g. <code>0 2 * * 1</code> — Mon 2 AM &nbsp;|&nbsp;
+              <code>*/30 * * * *</code> — every 30 min &nbsp;|&nbsp;
+              <code>0 0 1 * *</code> — 1st of month
+            </div>
+          </div>
+
+          <!-- Live preview -->
+          <div class="p-3 rounded" style="background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2)">
+            <i class="bi bi-clock me-2 text-primary"></i>
+            <span id="cron-preview" class="fw-semibold">Daily at 02:00 UTC</span>
+            <code id="cron-raw" class="text-muted ms-3 small">0 2 * * *</code>
+          </div>
+        </div>
+        <!-- ── end Schedule Builder ─────────────────────────────────── -->
+
+        <!-- Hidden field consumed by the route -->
+        <input type="hidden" name="cron_expression" id="cron_expression" value="0 2 * * *" required>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-clock me-1"></i>Create Schedule</button>
+          <a href="{{ url_for('scans.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let freq = 'daily';
+
+  function selectedWeekdays() {
+    return [...document.querySelectorAll('.wd-pill.active')].map(b => b.dataset.wd);
+  }
+
+  function buildCron() {
+    const h = document.getElementById('pick-hour').value;
+    const m = document.getElementById('pick-minute').value;
+    const dom = document.getElementById('pick-monthday').value;
+
+    switch (freq) {
+      case 'hourly':  return `0 * * * *`;
+      case 'daily':   return `${m} ${h} * * *`;
+      case 'weekly': {
+        const wds = selectedWeekdays();
+        const spec = wds.length ? wds.join(',') : '1';
+        return `${m} ${h} * * ${spec}`;
+      }
+      case 'monthly': return `${m} ${h} ${dom} * *`;
+      case 'custom':  return document.getElementById('custom-cron').value.trim();
+      default:        return `${m} ${h} * * *`;
+    }
+  }
+
+  function cronToHuman(expr) {
+    if (!expr) return expr;
+    const parts = expr.trim().split(/\s+/);
+    if (parts.length !== 5) return expr;
+    const [minute, hour, day, month, weekday] = parts;
+
+    function fmt(h, m) {
+      const hh = h.padStart ? h : String(h);
+      const mm = m.padStart ? m : String(m);
+      return `${hh.padStart(2,'0')}:${mm.padStart(2,'0')} UTC`;
+    }
+
+    function dayNames(spec) {
+      const names = [];
+      for (const seg of spec.split(',')) {
+        if (seg.includes('-')) {
+          const [a, b] = seg.split('-').map(Number);
+          for (let i = a; i <= b; i++) names.push(DAYS[i % 7]);
+        } else {
+          names.push(DAYS[Number(seg) % 7]);
+        }
+      }
+      return names.join(', ');
+    }
+
+    if (minute === '*' && hour === '*' && day === '*' && month === '*' && weekday === '*')
+      return 'Every minute';
+    if (minute.startsWith('*/') && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+      const n = minute.slice(2);
+      return `Every ${n} minute${n !== '1' ? 's' : ''}`;
+    }
+    if (hour.startsWith('*/') && day === '*' && month === '*' && weekday === '*') {
+      const n = hour.slice(2);
+      return `Every ${n} hour${n !== '1' ? 's' : ''}`;
+    }
+    if (hour === '*' && day === '*' && month === '*' && weekday === '*')
+      return `Every hour`;
+    if (day === '*' && month === '*' && weekday === '*')
+      return `Daily at ${fmt(hour, minute)}`;
+    if (day === '*' && month === '*' && weekday !== '*') {
+      try { return `Weekly on ${dayNames(weekday)} at ${fmt(hour, minute)}`; }
+      catch { return expr; }
+    }
+    if (month === '*' && weekday === '*' && day !== '*')
+      return `Monthly on day ${day} at ${fmt(hour, minute)}`;
+    return expr;
+  }
+
+  function refreshUI() {
+    const cron = buildCron();
+    const isValid = cron && (freq !== 'custom' || cron.split(/\s+/).length === 5);
+    document.getElementById('cron_expression').value = cron;
+    document.getElementById('cron-raw').textContent = cron;
+    document.getElementById('cron-preview').textContent = isValid ? cronToHuman(cron) : '(invalid expression)';
+
+    // Show/hide rows
+    const timeRow    = document.getElementById('time-row');
+    const weekdayRow = document.getElementById('weekday-row');
+    const monthdayRow= document.getElementById('monthday-row');
+    const customRow  = document.getElementById('custom-row');
+
+    timeRow.classList.toggle('d-none',    freq === 'hourly' || freq === 'custom');
+    weekdayRow.classList.toggle('d-none', freq !== 'weekly');
+    monthdayRow.classList.toggle('d-none',freq !== 'monthly');
+    customRow.classList.toggle('d-none',  freq !== 'custom');
+  }
+
+  // Frequency pills
+  document.querySelectorAll('.freq-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.freq-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      freq = btn.dataset.freq;
+      refreshUI();
+    });
+  });
+
+  // Weekday pills (toggle, multi-select)
+  document.querySelectorAll('.wd-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      // Ensure at least one stays selected
+      if (!document.querySelector('.wd-pill.active')) btn.classList.add('active');
+      refreshUI();
+    });
+  });
+
+  // Time + monthday pickers
+  ['pick-hour', 'pick-minute', 'pick-monthday'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', refreshUI);
+  });
+
+  // Custom cron input
+  document.getElementById('custom-cron').addEventListener('input', refreshUI);
+
+  // Init
+  refreshUI();
+})();
+</script>
+{% endblock %}
