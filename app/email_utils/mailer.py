@@ -60,7 +60,7 @@ def _send_email(cfg, recipients, subject, attachment_bytes, filename, mime_type)
     part["Content-Disposition"] = f'attachment; filename="{filename}"'
     msg.attach(part)
 
-    with smtplib.SMTP(cfg.smtp_server, cfg.smtp_port) as server:
+    with smtplib.SMTP(cfg.smtp_server, cfg.smtp_port, timeout=30) as server:
         if cfg.use_tls:
             server.starttls()
         if cfg.username:

@@ -1,11 +1,10 @@
 import requests
 import ssl
 import socket
+import urllib3
 from datetime import datetime, timezone
 from typing import List, Dict
 from urllib.parse import urlparse
-
-requests.packages.urllib3.disable_warnings()
 
 SECURITY_HEADERS = [
     ("Strict-Transport-Security", "HSTS missing — site vulnerable to downgrade attacks"),
@@ -37,7 +36,9 @@ def _build_urls(host: str) -> List[str]:
 def _check_headers(url: str) -> List[Dict]:
     findings = []
     try:
-        resp = requests.get(url, timeout=10, verify=False, allow_redirects=True)
+        with urllib3.warnings.catch_warnings():
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            resp = requests.get(url, timeout=10, verify=False, allow_redirects=True)
     except Exception as e:
         return [_finding("web_check", url, "low", "Connection Failed",
                          f"Could not connect to {url}: {e}")]

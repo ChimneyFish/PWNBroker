@@ -84,7 +84,7 @@ def _collect_signals(db, Asset, VulnTicket, IOCRecord, ScheduledScan, Policy, Us
     open_vulns      = VulnTicket.query.filter_by(status="open").count()
     critical_vulns  = (VulnTicket.query
                        .filter(VulnTicket.status == "open",
-                               VulnTicket.severity.in_(["CRITICAL", "HIGH"]))
+                               VulnTicket.severity.in_(["critical", "high"]))
                        .count())
     remediated_vulns = VulnTicket.query.filter_by(status="closed").count()
 

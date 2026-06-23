@@ -42,7 +42,7 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 |---|---|
 | **Network Scanning** | nmap-powered port, service, OS, and CVE scans with CIDR and asset-group targeting |
 | **Vulnerability Management** | Ticket-based remediation workflow with SLA tracking, assignees, and auto-dedup |
-| **Dependency Scanner** | SSH into hosts, pull package manifests, cross-reference OSV — Python, npm, Go, Rust, Ruby, Java, PHP, and more |
+| **Dependency Scanner** | SSH into hosts (password, RSA, Ed25519, or ECDSA key auth), pull package manifests, cross-reference OSV — Python, npm, Go, Rust, Ruby, Java, PHP, and more |
 | **Threat Intelligence** | Multi-source IOC lookups (OTX, VirusTotal, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed |
 | **Endpoint Agents** | Lightweight Python agent watches outbound connections in real time and fires alerts to the SOC queue |
 | **CVE Enrichment** | EPSS scores, NVD CVSS v3 vectors, CWE IDs, and MITRE ATT&CK technique mapping — refreshed nightly |
@@ -123,8 +123,7 @@ cd pwnbroker
 # 2 — Virtual environment
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-pip install gunicorn
+pip install -r requirements.txt   # includes gunicorn
 
 # 3 — Environment
 cp .env.example .env          # or create from scratch (see Configuration)
@@ -338,7 +337,8 @@ sudo bash setup.sh
 | WSGI server | Gunicorn (gthread workers) |
 | Scheduler | APScheduler 3 (background thread) |
 | Database | SQLite (default) / PostgreSQL |
-| Scanning | python-nmap, paramiko (SSH), requests |
+| Scanning | python-nmap, paramiko (SSH — RSA / Ed25519 / ECDSA), requests |
+| HTML parsing | BeautifulSoup4 (subdomain enumeration scrape fallback) |
 | PDF reports | ReportLab |
 | Frontend | Bootstrap 5, Chart.js, vanilla JS |
 

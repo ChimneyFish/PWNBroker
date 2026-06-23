@@ -117,7 +117,7 @@ def query_dnsdumpster_scrape(domain):
     except Exception as e:
         return [], f"DNSDumpster error: {e}"
 
-    soup = BeautifulSoup(r.text, "lxml")
+    soup = BeautifulSoup(r.text, "html.parser")
     csrf_input = soup.find("input", {"name": "csrfmiddlewaretoken"})
     if not csrf_input:
         return [], "DNSDumpster error: could not find CSRF token"
@@ -134,7 +134,7 @@ def query_dnsdumpster_scrape(domain):
     except Exception as e:
         return [], f"DNSDumpster error: {e}"
 
-    soup = BeautifulSoup(r.text, "lxml")
+    soup = BeautifulSoup(r.text, "html.parser")
     results = []
     seen = set()
 

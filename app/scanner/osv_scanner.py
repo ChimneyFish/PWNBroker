@@ -8,6 +8,7 @@ import io
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -294,6 +295,17 @@ def _run_cli(scan_path):
 SUPPORTED_LOCKFILES = set(LOCKFILE_PARSERS.keys())
 
 
+def _load_private_key(key_str: str, passphrase):
+    """Load a PEM private key trying RSA, Ed25519, ECDSA, and DSS in order."""
+    import paramiko
+    for cls in (paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey, paramiko.DSSKey):
+        try:
+            return cls.from_private_key(io.StringIO(key_str), password=passphrase)
+        except (paramiko.SSHException, ValueError):
+            continue
+    raise ValueError("Unsupported private key type or incorrect passphrase.")
+
+
 def fetch_lockfiles_via_ssh(target, remote_path) -> tuple[str, list[str]]:
     """
     SSH into target, find lockfiles under remote_path, download them into a
@@ -314,9 +326,7 @@ def fetch_lockfiles_via_ssh(target, remote_path) -> tuple[str, list[str]]:
 
     if target.ssh_auth_type == "key" and target.ssh_private_key:
         passphrase = target.ssh_key_passphrase or None
-        pkey = paramiko.RSAKey.from_private_key(
-            io.StringIO(target.ssh_private_key), password=passphrase
-        )
+        pkey = _load_private_key(target.ssh_private_key, passphrase)
         connect_kw["pkey"] = pkey
         connect_kw["look_for_keys"] = False
     else:
@@ -328,7 +338,7 @@ def fetch_lockfiles_via_ssh(target, remote_path) -> tuple[str, list[str]]:
     # Find all recognised lockfiles under remote_path
     names_pattern = " -o ".join(f"-name '{n}'" for n in SUPPORTED_LOCKFILES)
     find_cmd = (
-        f"find {remote_path} \\( {names_pattern} \\) "
+        f"find {shlex.quote(remote_path)} \\( {names_pattern} \\) "
         f"-not -path '*/node_modules/*' -not -path '*/.git/*' "
         f"-not -path '*/__pycache__/*' -not -path '*/.venv/*' -not -path '*/venv/*' "
         f"2>/dev/null"
