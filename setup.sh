@@ -103,13 +103,15 @@ mkdir -p \
     "$INSTALL_DIR/logs" \
     "$INSTALL_DIR/evidence_uploads"
 
-# Fix ownership; keep code root-owned, only runtime dirs writable by service user
+# Fix ownership; keep code root-owned, only runtime dirs writable by service user.
+# 755 on the root dir lets the pwnbroker service user traverse into it;
+# sensitive files inside carry their own tighter permissions.
 chown -R root:root "$INSTALL_DIR"
 chown -R "$SERVICE_USER":"$SERVICE_USER" \
     "$INSTALL_DIR/data" \
     "$INSTALL_DIR/logs" \
     "$INSTALL_DIR/evidence_uploads"
-chmod 750 "$INSTALL_DIR"
+chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================

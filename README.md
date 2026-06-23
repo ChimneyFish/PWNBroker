@@ -354,6 +354,14 @@ journalctl -u pwnbroker -n 50
 # Python error?     /opt/pwnbroker/venv/bin/python -c "from app import create_app; create_app()"
 ```
 
+**`Permission denied` on service start / WorkingDirectory**
+
+The service user (`pwnbroker`) needs execute permission on the install directory to enter it. If the directory mode is `750` instead of `755` the service fails immediately before gunicorn launches. Re-run setup.sh to fix it, or apply manually:
+```bash
+sudo chmod 755 /opt/pwnbroker
+sudo systemctl restart pwnbroker
+```
+
 **Scans stuck in "running"**
 ```bash
 sudo systemctl restart pwnbroker
