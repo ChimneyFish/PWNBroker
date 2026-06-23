@@ -53,7 +53,7 @@ def _run_scheduled_scans(app):
         import threading
         now = datetime.now(timezone.utc)
         due = ScheduledScan.query.filter(
-            ScheduledScan.active == True,
+            ScheduledScan.active.is_(True),
             ScheduledScan.next_run <= now,
         ).all()
 
@@ -116,7 +116,7 @@ def _run_scheduled_reports(app):
         from ..models import ScheduledReport
         now = datetime.now(timezone.utc)
         due = ScheduledReport.query.filter(
-            ScheduledReport.active == True,
+            ScheduledReport.active.is_(True),
             ScheduledReport.next_send <= now,
         ).all()
 

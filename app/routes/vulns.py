@@ -90,7 +90,6 @@ def _auto_sync():
         db.session.commit()
 
 
-
 @vulns_bp.route("/")
 @login_required
 def index():

@@ -14,6 +14,8 @@ from .decorators import admin_required
 # ── NTP / time helpers ────────────────────────────────────────────────────────
 
 TIMESYNCD_CONF = "/etc/systemd/timesyncd.conf"
+_NTP_RE = re.compile(r'^[a-zA-Z0-9.\-]+$')
+
 
 def _ntp_status():
     """Read NTP sync state from timedatectl. Returns dict (all keys may be None on failure)."""
@@ -49,6 +51,8 @@ def _read_ntp_server():
 
 def _write_ntp_server(server):
     """Write NTP server to timesyncd.conf and restart the service. Returns (ok, errmsg)."""
+    if not _NTP_RE.fullmatch(server):
+        return False, "Invalid NTP server address (use hostname or IP only)"
     try:
         with open(TIMESYNCD_CONF) as f:
             content = f.read()
@@ -84,7 +88,7 @@ def _tz_list():
         "Asia/Dubai", "Asia/Kolkata", "Asia/Bangkok", "Asia/Singapore",
         "Asia/Tokyo", "Asia/Shanghai", "Asia/Seoul",
         "Australia/Sydney", "Australia/Perth",
-        "Pacific/Auckland", "Pacific/Auckland",
+        "Pacific/Auckland",
     ]
     all_tz = sorted(available_timezones())
     # Remove duplicates while preserving common-first order
@@ -108,7 +112,6 @@ KEY_PATH  = os.path.join(SSL_DIR, "key.pem")
 
 def _read_cert_info():
     try:
-        import datetime as dt
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -513,18 +516,27 @@ def upload_cert():
     key_data  = key_file.read()
 
     # Validate the pair loads correctly
+    import tempfile
+    cf_path = kf_path = None
     try:
+        with tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as cf:
+            cf.write(cert_data)
+            cf_path = cf.name
+        with tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as kf:
+            kf.write(key_data)
+            kf_path = kf.name
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        import tempfile
-        with tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as cf, \
-             tempfile.NamedTemporaryFile(suffix=".pem", delete=False) as kf:
-            cf.write(cert_data); cf.flush()
-            kf.write(key_data);  kf.flush()
-            ctx.load_cert_chain(cf.name, kf.name)
-        os.unlink(cf.name); os.unlink(kf.name)
+        ctx.load_cert_chain(cf_path, kf_path)
     except ssl.SSLError as e:
         flash(f"Certificate/key validation failed: {e}", "danger")
         return redirect(url_for("settings.index") + "#tls")
+    finally:
+        for _p in (cf_path, kf_path):
+            if _p:
+                try:
+                    os.unlink(_p)
+                except OSError:
+                    pass
 
     os.makedirs(SSL_DIR, exist_ok=True)
     # Back up existing

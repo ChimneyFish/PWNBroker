@@ -1,0 +1,12 @@
+[2026-06-18 03:37:33 -0700] [136032] [INFO] Starting gunicorn 26.0.0
+[2026-06-18 03:37:33 -0700] [136032] [INFO] Listening at: https://0.0.0.0:5001 (136032)
+[2026-06-18 03:37:33 -0700] [136032] [INFO] Using worker: gthread
+[2026-06-18 03:37:33 -0700] [136034] [INFO] Booting worker with pid: 136034
+[2026-06-18 03:37:33 -0700] [136035] [INFO] Booting worker with pid: 136035
+[2026-06-18 03:37:33 -0700] [136032] [INFO] Control socket listening at /run/user/1000/gunicorn.ctl
+[2026-06-18 03:41:00 -0700] [136032] [INFO] Handling signal: term
+[2026-06-18 03:41:00 -0700] [136035] [INFO] Worker exiting (pid: 136035)
+[2026-06-18 03:41:00 -0700] [136034] [INFO] Worker exiting (pid: 136034)
+[2026-06-18 03:41:00 -0700] [136032] [INFO] Worker (pid:136034) was sent SIGTERM!
+[2026-06-18 03:41:00 -0700] [136032] [INFO] Worker (pid:136035) was sent SIGTERM!
+[2026-06-18 03:41:01 -0700] [136032] [INFO] Shutting down: Master

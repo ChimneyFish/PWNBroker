@@ -1,3 +1,4 @@
+import json
 import os
 import threading
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
@@ -190,7 +191,6 @@ def new():
 @scans_bp.route("/<int:scan_id>")
 @login_required
 def view(scan_id):
-    import json
     scan = Scan.query.get_or_404(scan_id)
     results = scan.results.order_by(ScanResult.severity, ScanResult.result_type).all()
     severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}

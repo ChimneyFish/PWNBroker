@@ -9,6 +9,13 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    if app.config.get("SECRET_KEY") == "change-me-in-production":
+        import warnings
+        warnings.warn(
+            "SECRET_KEY is the insecure default. Set the SECRET_KEY environment variable.",
+            stacklevel=2,
+        )
+
     _base = os.path.dirname(os.path.dirname(__file__))
     os.makedirs(os.path.join(_base, "data"), exist_ok=True)
     _ev_dir = os.path.join(_base, "evidence_uploads")

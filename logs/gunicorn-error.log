@@ -1,0 +1,1515 @@
+[2026-06-14 20:29:07 -0700] [389307] [INFO] Starting gunicorn 26.0.0
+[2026-06-14 20:29:07 -0700] [389307] [INFO] Listening at: https://0.0.0.0:5000 (389307)
+[2026-06-14 20:29:07 -0700] [389307] [INFO] Using worker: gthread
+[2026-06-14 20:29:07 -0700] [389308] [INFO] Booting worker with pid: 389308
+[2026-06-14 20:29:07 -0700] [389309] [INFO] Booting worker with pid: 389309
+[2026-06-14 20:29:08 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-14 20:51:54 -0700] [389308] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-14 20:52:55 -0700] [389309] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-14 22:58:38 -0700] [389308] [WARNING] Invalid request from ip=127.0.0.1: [SSL: SSLV3_ALERT_BAD_CERTIFICATE] ssl/tls alert bad certificate (_ssl.c:1033)
+[2026-06-14 22:58:38 -0700] [389308] [WARNING] Invalid request from ip=127.0.0.1: [SSL: SSLV3_ALERT_BAD_CERTIFICATE] ssl/tls alert bad certificate (_ssl.c:1033)
+[2026-06-15 00:48:37 -0700] [389309] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 00:59:29,374] ERROR in app: Exception on /threat/lookup [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 98, in lookup
+    result = do_lookup(indicator, cfg, user_id=current_user.id, force=force)
+  File "/home/jackmehoff/pwnbroker/app/threat/ioc_lookup.py", line 56, in lookup
+    otx_result = otx.lookup(indicator, ioc_type, cfg.otx_api_key)
+  File "/home/jackmehoff/pwnbroker/app/threat/otx.py", line 36, in lookup
+    malware_families = list(dict.fromkeys(malware_families))[:8]
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'dict'
+[2026-06-15 15:01:42,345] ERROR in app: Exception on /threat/lookup [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 98, in lookup
+    result = do_lookup(indicator, cfg, user_id=current_user.id, force=force)
+  File "/home/jackmehoff/pwnbroker/app/threat/ioc_lookup.py", line 56, in lookup
+    otx_result = otx.lookup(indicator, ioc_type, cfg.otx_api_key)
+  File "/home/jackmehoff/pwnbroker/app/threat/otx.py", line 36, in lookup
+    tags.append(t)
+                ^^
+TypeError: unhashable type: 'dict'
+[2026-06-15 15:03:26,983] ERROR in app: Exception on /threat/lookup [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 98, in lookup
+    result = do_lookup(indicator, cfg, user_id=current_user.id, force=force)
+  File "/home/jackmehoff/pwnbroker/app/threat/ioc_lookup.py", line 56, in lookup
+    otx_result = otx.lookup(indicator, ioc_type, cfg.otx_api_key)
+  File "/home/jackmehoff/pwnbroker/app/threat/otx.py", line 36, in lookup
+    tags.append(t)
+                ^^
+TypeError: unhashable type: 'dict'
+[2026-06-15 15:03:36,251] ERROR in app: Exception on /threat/lookup [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 98, in lookup
+    result = do_lookup(indicator, cfg, user_id=current_user.id, force=force)
+  File "/home/jackmehoff/pwnbroker/app/threat/ioc_lookup.py", line 56, in lookup
+    otx_result = otx.lookup(indicator, ioc_type, cfg.otx_api_key)
+  File "/home/jackmehoff/pwnbroker/app/threat/otx.py", line 36, in lookup
+    tags.append(t)
+                ^^
+TypeError: unhashable type: 'dict'
+[2026-06-15 15:05:01 -0700] [389308] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 15:29:15 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 15:29:15 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 15:29:15 -0700] [3369561] [INFO] Booting worker with pid: 3369561
+[2026-06-15 15:29:15 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 15:29:17 -0700] [389308] [INFO] Worker exiting (pid: 389308)
+[2026-06-15 15:29:17 -0700] [389309] [INFO] Worker exiting (pid: 389309)
+[2026-06-15 15:29:17 -0700] [3369566] [INFO] Booting worker with pid: 3369566
+[2026-06-15 15:29:17 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 16:37:12 -0700] [3369566] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 16:37:39,363] ERROR in app: Exception on /threat/lookup [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 104, in lookup
+    return render_template("threat/lookup.html",
+                           result=result, indicator=indicator,
+                           history=history, error=error)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 771, in compile
+    self.handle_exception(source=source_hint)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/threat/lookup.html", line 347, in template
+    {% endblock %}
+jinja2.exceptions.TemplateSyntaxError: Encountered unknown tag 'endblock'. You probably made a nesting mistake. Jinja is expecting this tag, but currently looking for 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.
+[2026-06-15 16:38:06,293] ERROR in app: Exception on /threat/lookup [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 104, in lookup
+    return render_template("threat/lookup.html",
+                           result=result, indicator=indicator,
+                           history=history, error=error)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 771, in compile
+    self.handle_exception(source=source_hint)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/threat/lookup.html", line 347, in template
+    {% endblock %}
+jinja2.exceptions.TemplateSyntaxError: Encountered unknown tag 'endblock'. You probably made a nesting mistake. Jinja is expecting this tag, but currently looking for 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.
+[2026-06-15 16:38:09,619] ERROR in app: Exception on /threat/lookup [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/threat.py", line 104, in lookup
+    return render_template("threat/lookup.html",
+                           result=result, indicator=indicator,
+                           history=history, error=error)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 771, in compile
+    self.handle_exception(source=source_hint)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/threat/lookup.html", line 347, in template
+    {% endblock %}
+jinja2.exceptions.TemplateSyntaxError: Encountered unknown tag 'endblock'. You probably made a nesting mistake. Jinja is expecting this tag, but currently looking for 'elif' or 'else' or 'endif'. The innermost block that needs to be closed is 'if'.
+[2026-06-15 16:44:02 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 16:44:02 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 16:44:02 -0700] [3454787] [INFO] Booting worker with pid: 3454787
+[2026-06-15 16:44:02 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 16:44:04 -0700] [3454793] [INFO] Booting worker with pid: 3454793
+[2026-06-15 16:44:04 -0700] [3369566] [INFO] Worker exiting (pid: 3369566)
+[2026-06-15 16:44:04 -0700] [3369561] [INFO] Worker exiting (pid: 3369561)
+[2026-06-15 16:44:04 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 17:12:36 -0700] [3454793] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 17:12:54,759] ERROR in app: Exception on /targets/4/delete [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: NOT NULL constraint failed: scans.target_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/decorators.py", line 12, in decorated
+    return f(*args, **kwargs)
+  File "/home/jackmehoff/pwnbroker/app/routes/targets.py", line 91, in delete
+    db.session.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/scoping.py", line 597, in commit
+    return self._proxied.commit()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2017, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1302, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1277, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4341, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4476, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4437, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        update,
+        ^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2353, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constraint failed: scans.target_id
+[SQL: UPDATE scans SET target_id=? WHERE scans.id = ?]
+[parameters: (None, 3)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+[2026-06-15 17:13:23,385] ERROR in app: Exception on /targets/4/delete [POST]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: NOT NULL constraint failed: scans.target_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/decorators.py", line 12, in decorated
+    return f(*args, **kwargs)
+  File "/home/jackmehoff/pwnbroker/app/routes/targets.py", line 91, in delete
+    db.session.commit()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/scoping.py", line 597, in commit
+    return self._proxied.commit()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2017, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1302, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1277, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4341, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4476, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4437, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
+    _emit_update_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        update,
+        ^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
+    c = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2353, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constraint failed: scans.target_id
+[SQL: UPDATE scans SET target_id=? WHERE scans.id = ?]
+[parameters: (None, 3)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+[2026-06-15 17:14:40 -0700] [3454787] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 17:16:04 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 17:16:04 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 17:16:04 -0700] [3488087] [INFO] Booting worker with pid: 3488087
+[2026-06-15 17:16:04 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 17:16:06 -0700] [3488141] [INFO] Booting worker with pid: 3488141
+[2026-06-15 17:16:06 -0700] [3454793] [INFO] Worker exiting (pid: 3454793)
+[2026-06-15 17:16:06 -0700] [3454787] [INFO] Worker exiting (pid: 3454787)
+[2026-06-15 17:16:06 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 17:26:54 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 17:26:54 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 17:26:54 -0700] [3499591] [INFO] Booting worker with pid: 3499591
+[2026-06-15 17:26:54 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 17:26:56 -0700] [3488087] [INFO] Worker exiting (pid: 3488087)
+[2026-06-15 17:26:56 -0700] [3488141] [INFO] Worker exiting (pid: 3488141)
+[2026-06-15 17:26:56 -0700] [3500149] [INFO] Booting worker with pid: 3500149
+[2026-06-15 17:26:56 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 21:58:56,815] ERROR in app: Exception on /targets/4 [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/targets.py", line 67, in detail
+    return render_template("targets/detail.html", target=t, by_type=by_type,
+                           record_count=len(records))
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/targets/detail.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 132, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/targets/detail.html", line 39, in block 'content'
+    <div class="stat-value text-warning">{{ by_type.values() | sum(attribute='__len__') if by_type else 0 }}</div>
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/async_utils.py", line 48, in wrapper
+    return normal_func(*args, **kwargs)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/filters.py", line 1336, in sync_do_sum
+    return sum(iterable, start)  # type: ignore[no-any-return, call-overload]
+TypeError: unsupported operand type(s) for +: 'int' and 'method-wrapper'
+[2026-06-15 22:01:41 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 22:01:41 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 22:01:41 -0700] [3781872] [INFO] Booting worker with pid: 3781872
+[2026-06-15 22:01:41 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 22:01:43 -0700] [3499591] [INFO] Worker exiting (pid: 3499591)
+[2026-06-15 22:01:43 -0700] [3500149] [INFO] Worker exiting (pid: 3500149)
+[2026-06-15 22:01:43 -0700] [3782011] [INFO] Booting worker with pid: 3782011
+[2026-06-15 22:01:43 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 22:08:02 -0700] [3782011] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:10:04 -0700] [3782011] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:12:06 -0700] [3782011] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:16:08 -0700] [3781872] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:20:11 -0700] [3781872] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:21:12 -0700] [3782011] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-15 22:25:49 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-15 22:25:49 -0700] [389307] [INFO] Hang up: Master
+[2026-06-15 22:25:49 -0700] [3808170] [INFO] Booting worker with pid: 3808170
+[2026-06-15 22:25:49 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 22:25:51 -0700] [3781872] [INFO] Worker exiting (pid: 3781872)
+[2026-06-15 22:25:51 -0700] [3782011] [INFO] Worker exiting (pid: 3782011)
+[2026-06-15 22:25:51 -0700] [3808174] [INFO] Booting worker with pid: 3808174
+[2026-06-15 22:25:51 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-15 22:31:18 -0700] [3808174] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 04:26:19 -0700] [3808170] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 04:32:18 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 04:32:18 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 04:32:18 -0700] [1567470] [INFO] Booting worker with pid: 1567470
+[2026-06-16 04:32:18 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:32:20 -0700] [3808170] [INFO] Worker exiting (pid: 3808170)
+[2026-06-16 04:32:20 -0700] [1567474] [INFO] Booting worker with pid: 1567474
+[2026-06-16 04:32:20 -0700] [3808174] [INFO] Worker exiting (pid: 3808174)
+[2026-06-16 04:32:20 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:32:35,783] ERROR in app: Exception on /vulns/device/1 [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 102, in device
+    return render_template("vulns/device.html", target=target, tickets=tickets, users=users)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 771, in compile
+    self.handle_exception(source=source_hint)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/device.html", line 281, in template
+    {% endblock %}
+jinja2.exceptions.TemplateSyntaxError: Unexpected end of template. Jinja was looking for the following tags: 'endblock'. The innermost block that needs to be closed is 'block'.
+[2026-06-16 04:34:25 -0700] [1567470] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 04:47:33 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 04:47:33 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 04:47:33 -0700] [1583871] [INFO] Booting worker with pid: 1583871
+[2026-06-16 04:47:33 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:47:35 -0700] [1583909] [INFO] Booting worker with pid: 1583909
+[2026-06-16 04:47:35 -0700] [1567470] [INFO] Worker exiting (pid: 1567470)
+[2026-06-16 04:47:35 -0700] [1567474] [INFO] Worker exiting (pid: 1567474)
+[2026-06-16 04:47:35 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:50:55 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 04:50:55 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 04:50:55 -0700] [1587165] [INFO] Booting worker with pid: 1587165
+[2026-06-16 04:50:55 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:50:57 -0700] [1583871] [INFO] Worker exiting (pid: 1583871)
+[2026-06-16 04:50:57 -0700] [1583909] [INFO] Worker exiting (pid: 1583909)
+[2026-06-16 04:50:57 -0700] [1587602] [INFO] Booting worker with pid: 1587602
+[2026-06-16 04:50:57 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:52:51 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 04:52:51 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 04:52:51 -0700] [1589372] [INFO] Booting worker with pid: 1589372
+[2026-06-16 04:52:51 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:52:53 -0700] [1587165] [INFO] Worker exiting (pid: 1587165)
+[2026-06-16 04:52:53 -0700] [1587602] [INFO] Worker exiting (pid: 1587602)
+[2026-06-16 04:52:53 -0700] [1589381] [INFO] Booting worker with pid: 1589381
+[2026-06-16 04:52:53 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 04:54:38 -0700] [1589381] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 04:55:38 -0700] [1589372] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 05:02:36 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 05:02:36 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 05:02:36 -0700] [1601275] [INFO] Booting worker with pid: 1601275
+[2026-06-16 05:02:36 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 05:02:38 -0700] [1589372] [INFO] Worker exiting (pid: 1589372)
+[2026-06-16 05:02:38 -0700] [1601290] [INFO] Booting worker with pid: 1601290
+[2026-06-16 05:02:38 -0700] [1589381] [INFO] Worker exiting (pid: 1589381)
+[2026-06-16 05:02:38 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 06:09:49 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 06:09:49 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 06:09:49 -0700] [1671820] [INFO] Booting worker with pid: 1671820
+[2026-06-16 06:09:49 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 06:09:51 -0700] [1601275] [INFO] Worker exiting (pid: 1601275)
+[2026-06-16 06:09:51 -0700] [1601290] [INFO] Worker exiting (pid: 1601290)
+[2026-06-16 06:09:51 -0700] [1671871] [INFO] Booting worker with pid: 1671871
+[2026-06-16 06:09:51 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 06:17:44 -0700] [1671871] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 06:18:45 -0700] [1671871] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 08:37:36 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 08:37:36 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 08:37:36 -0700] [1825334] [INFO] Booting worker with pid: 1825334
+[2026-06-16 08:37:36 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 08:37:38 -0700] [1671820] [INFO] Worker exiting (pid: 1671820)
+[2026-06-16 08:37:38 -0700] [1671871] [INFO] Worker exiting (pid: 1671871)
+[2026-06-16 08:37:38 -0700] [1825339] [INFO] Booting worker with pid: 1825339
+[2026-06-16 08:37:38 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 08:40:21 -0700] [1825339] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 10:40:39,751] ERROR in app: Exception on /targets/ [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/targets.py", line 16, in index
+    return render_template("targets/index.html", targets=targets)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/targets/index.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 90, in top-level template code
+    <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+    ^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1084, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1073, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'grc.index'. Did you mean 'scans.index' instead?
+[2026-06-16 10:40:41,556] ERROR in app: Exception on /targets/ [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/targets.py", line 16, in index
+    return render_template("targets/index.html", targets=targets)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/targets/index.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 90, in top-level template code
+    <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+    ^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1084, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1073, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'grc.index'. Did you mean 'scans.index' instead?
+[2026-06-16 10:40:44,007] ERROR in app: Exception on / [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/dashboard.py", line 34, in index
+    return render_template(
+        "dashboard/index.html",
+    ...<5 lines>...
+        recent_vulns=recent_vulns,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/dashboard/index.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 90, in top-level template code
+    <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+    ^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1084, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1073, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'grc.index'. Did you mean 'scans.index' instead?
+[2026-06-16 10:40:52,912] ERROR in app: Exception on /reports/ [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/reports.py", line 28, in index
+    return render_template(
+        "reports/index.html",
+    ...<5 lines>...
+        confluence_enabled=bool(atlassian_cfg and atlassian_cfg.enabled and atlassian_cfg.confluence_enabled),
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/reports/index.html", line 2, in top-level template code
+    {% from "reports/_gen_modal.html" import gen_modal %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 90, in top-level template code
+    <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+    ^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1084, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1073, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'grc.index'. Did you mean 'scans.index' instead?
+[2026-06-16 10:41:02,505] ERROR in app: Exception on / [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/dashboard.py", line 34, in index
+    return render_template(
+        "dashboard/index.html",
+    ...<5 lines>...
+        recent_vulns=recent_vulns,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/dashboard/index.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 90, in top-level template code
+    <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+    ^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1084, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1073, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+        endpoint,
+    ...<3 lines>...
+        force_external=_external,
+    )
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'grc.index'. Did you mean 'scans.index' instead?
+[2026-06-16 10:41:19 -0700] [389307] [INFO] Handling signal: hup
+[2026-06-16 10:41:19 -0700] [389307] [INFO] Hang up: Master
+[2026-06-16 10:41:19 -0700] [1945279] [INFO] Booting worker with pid: 1945279
+[2026-06-16 10:41:19 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 10:41:21 -0700] [1825334] [INFO] Worker exiting (pid: 1825334)
+[2026-06-16 10:41:21 -0700] [1945282] [INFO] Booting worker with pid: 1945282
+[2026-06-16 10:41:21 -0700] [1825339] [INFO] Worker exiting (pid: 1825339)
+[2026-06-16 10:41:21 -0700] [389307] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 10:42:38 -0700] [1945282] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 13:39:50 -0700] [1945282] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-16 13:41:13,079] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% set enr = enrichments.get(t.cve_id) %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 13:42:48,429] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% set enr = enrichments.get(t.cve_id) %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 13:47:06,016] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    class="badge bg-danger text-white text-decoration-none" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
+    ^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:52:31,876] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,542] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,562] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,578] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,593] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,608] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 15:53:52,623] ERROR in app: Exception on /vulns/tickets [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/vulns.py", line 171, in tickets
+    
+    ...<3 lines>...
+    if cve_ids:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 195, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/vulns/tickets.html", line 78, in block 'content'
+    {% else %}<span class="text-muted small">—</span>{% endif %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'enrichments' is undefined
+[2026-06-16 16:26:38 -0700] [389307] [INFO] Handling signal: term
+[2026-06-16 16:26:38 -0700] [1945279] [INFO] Worker exiting (pid: 1945279)
+[2026-06-16 16:26:38 -0700] [1945282] [INFO] Worker exiting (pid: 1945282)
+[2026-06-16 16:26:39 -0700] [389307] [INFO] Worker (pid:1945279) was sent SIGTERM!
+[2026-06-16 16:26:39 -0700] [389307] [INFO] Shutting down: Master
+[2026-06-16 16:26:40 -0700] [2539977] [INFO] Starting gunicorn 26.0.0
+[2026-06-16 16:26:40 -0700] [2539977] [INFO] Listening at: https://0.0.0.0:5000 (2539977)
+[2026-06-16 16:26:40 -0700] [2539977] [INFO] Using worker: gthread
+[2026-06-16 16:26:40 -0700] [2539978] [INFO] Booting worker with pid: 2539978
+[2026-06-16 16:26:40 -0700] [2539979] [INFO] Booting worker with pid: 2539979
+[2026-06-16 16:26:41 -0700] [2539977] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-16 21:32:28 -0700] [2539977] [INFO] Handling signal: term
+[2026-06-16 21:32:28 -0700] [2539979] [INFO] Worker exiting (pid: 2539979)
+[2026-06-16 21:32:28 -0700] [2539978] [INFO] Worker exiting (pid: 2539978)
+[2026-06-16 21:32:28 -0700] [2539977] [INFO] Worker (pid:2539979) was sent SIGTERM!
+[2026-06-16 21:32:28 -0700] [2539977] [INFO] Shutting down: Master
+[2026-06-16 21:32:30 -0700] [3311483] [INFO] Starting gunicorn 26.0.0
+[2026-06-16 21:32:30 -0700] [3311483] [INFO] Listening at: https://0.0.0.0:5000 (3311483)
+[2026-06-16 21:32:30 -0700] [3311483] [INFO] Using worker: gthread
+[2026-06-16 21:32:30 -0700] [3311485] [INFO] Booting worker with pid: 3311485
+[2026-06-16 21:32:30 -0700] [3311486] [INFO] Booting worker with pid: 3311486
+[2026-06-16 21:32:30 -0700] [3311483] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 01:25:47 -0700] [3311483] [INFO] Handling signal: term
+[2026-06-17 01:25:47 -0700] [3311486] [INFO] Worker exiting (pid: 3311486)
+[2026-06-17 01:25:47 -0700] [3311485] [INFO] Worker exiting (pid: 3311485)
+[2026-06-17 01:25:47 -0700] [3311483] [INFO] Shutting down: Master
+[2026-06-17 01:25:49 -0700] [2285200] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 01:25:49 -0700] [2285200] [INFO] Listening at: https://0.0.0.0:5000 (2285200)
+[2026-06-17 01:25:49 -0700] [2285200] [INFO] Using worker: gthread
+[2026-06-17 01:25:49 -0700] [2285202] [INFO] Booting worker with pid: 2285202
+[2026-06-17 01:25:49 -0700] [2285203] [INFO] Booting worker with pid: 2285203
+[2026-06-17 01:25:49 -0700] [2285200] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 01:33:58 -0700] [2285203] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-17 02:24:20 -0700] [2285200] [INFO] Handling signal: term
+[2026-06-17 02:24:20 -0700] [2285203] [INFO] Worker exiting (pid: 2285203)
+[2026-06-17 02:24:20 -0700] [2285202] [INFO] Worker exiting (pid: 2285202)
+[2026-06-17 02:24:21 -0700] [2285200] [INFO] Worker (pid:2285202) was sent SIGTERM!
+[2026-06-17 02:24:21 -0700] [2285200] [INFO] Worker (pid:2285203) was sent SIGTERM!
+[2026-06-17 02:24:21 -0700] [2285200] [INFO] Shutting down: Master
+[2026-06-17 02:24:23 -0700] [1135562] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 02:24:23 -0700] [1135562] [INFO] Listening at: https://0.0.0.0:5000 (1135562)
+[2026-06-17 02:24:23 -0700] [1135562] [INFO] Using worker: gthread
+[2026-06-17 02:24:23 -0700] [1135564] [INFO] Booting worker with pid: 1135564
+[2026-06-17 02:24:23 -0700] [1135565] [INFO] Booting worker with pid: 1135565
+[2026-06-17 02:24:23 -0700] [1135562] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 14:35:42 -0700] [1135562] [INFO] Handling signal: term
+[2026-06-17 14:35:42 -0700] [1135565] [INFO] Worker exiting (pid: 1135565)
+[2026-06-17 14:35:42 -0700] [1135564] [INFO] Worker exiting (pid: 1135564)
+[2026-06-17 14:35:42 -0700] [1135562] [INFO] Shutting down: Master
+[2026-06-17 14:35:44 -0700] [1875595] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 14:35:44 -0700] [1875595] [INFO] Listening at: https://0.0.0.0:5000 (1875595)
+[2026-06-17 14:35:44 -0700] [1875595] [INFO] Using worker: gthread
+[2026-06-17 14:35:44 -0700] [1875596] [INFO] Booting worker with pid: 1875596
+[2026-06-17 14:35:44 -0700] [1875598] [INFO] Booting worker with pid: 1875598
+[2026-06-17 14:35:44 -0700] [1875595] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 14:41:36 -0700] [1875595] [INFO] Handling signal: term
+[2026-06-17 14:41:36 -0700] [1875596] [INFO] Worker exiting (pid: 1875596)
+[2026-06-17 14:41:36 -0700] [1875598] [INFO] Worker exiting (pid: 1875598)
+[2026-06-17 14:41:36 -0700] [1875595] [INFO] Shutting down: Master
+[2026-06-17 14:41:38 -0700] [1881815] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 14:41:38 -0700] [1881815] [INFO] Listening at: https://0.0.0.0:5000 (1881815)
+[2026-06-17 14:41:38 -0700] [1881815] [INFO] Using worker: gthread
+[2026-06-17 14:41:38 -0700] [1881817] [INFO] Booting worker with pid: 1881817
+[2026-06-17 14:41:38 -0700] [1881818] [INFO] Booting worker with pid: 1881818
+[2026-06-17 14:41:38 -0700] [1881815] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 15:00:49 -0700] [1881815] [INFO] Handling signal: term
+[2026-06-17 15:00:49 -0700] [1881818] [INFO] Worker exiting (pid: 1881818)
+[2026-06-17 15:00:49 -0700] [1881817] [INFO] Worker exiting (pid: 1881817)
+[2026-06-17 15:00:49 -0700] [1881815] [INFO] Shutting down: Master
+[2026-06-17 15:00:51 -0700] [1904681] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 15:00:51 -0700] [1904681] [INFO] Listening at: https://0.0.0.0:5000 (1904681)
+[2026-06-17 15:00:51 -0700] [1904681] [INFO] Using worker: gthread
+[2026-06-17 15:00:51 -0700] [1904683] [INFO] Booting worker with pid: 1904683
+[2026-06-17 15:00:51 -0700] [1904684] [INFO] Booting worker with pid: 1904684
+[2026-06-17 15:00:51 -0700] [1904681] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 15:38:32 -0700] [1904681] [INFO] Handling signal: term
+[2026-06-17 15:38:32 -0700] [1904684] [INFO] Worker exiting (pid: 1904684)
+[2026-06-17 15:38:32 -0700] [1904683] [INFO] Worker exiting (pid: 1904683)
+[2026-06-17 15:38:33 -0700] [1904681] [INFO] Shutting down: Master
+[2026-06-17 15:38:34 -0700] [1944636] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 15:38:34 -0700] [1944636] [INFO] Listening at: https://0.0.0.0:5000 (1944636)
+[2026-06-17 15:38:34 -0700] [1944636] [INFO] Using worker: gthread
+[2026-06-17 15:38:34 -0700] [1944637] [INFO] Booting worker with pid: 1944637
+[2026-06-17 15:38:34 -0700] [1944638] [INFO] Booting worker with pid: 1944638
+[2026-06-17 15:38:35 -0700] [1944636] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 17:46:08 -0700] [1944636] [INFO] Handling signal: term
+[2026-06-17 17:46:08 -0700] [1944637] [INFO] Worker exiting (pid: 1944637)
+[2026-06-17 17:46:08 -0700] [1944638] [INFO] Worker exiting (pid: 1944638)
+[2026-06-17 17:46:08 -0700] [1944636] [INFO] Worker (pid:1944638) was sent SIGTERM!
+[2026-06-17 17:46:08 -0700] [1944636] [INFO] Shutting down: Master
+[2026-06-17 17:46:10 -0700] [2095543] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 17:46:10 -0700] [2095543] [INFO] Listening at: https://0.0.0.0:5000 (2095543)
+[2026-06-17 17:46:10 -0700] [2095543] [INFO] Using worker: gthread
+[2026-06-17 17:46:10 -0700] [2095545] [INFO] Booting worker with pid: 2095545
+[2026-06-17 17:46:10 -0700] [2095546] [INFO] Booting worker with pid: 2095546
+[2026-06-17 17:46:10 -0700] [2095543] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 18:45:17 -0700] [2095543] [INFO] Handling signal: term
+[2026-06-17 18:45:17 -0700] [2095545] [INFO] Worker exiting (pid: 2095545)
+[2026-06-17 18:45:17 -0700] [2095546] [INFO] Worker exiting (pid: 2095546)
+[2026-06-17 18:45:17 -0700] [2095543] [INFO] Worker (pid:2095545) was sent SIGTERM!
+[2026-06-17 18:45:17 -0700] [2095543] [INFO] Worker (pid:2095546) was sent SIGTERM!
+[2026-06-17 18:45:18 -0700] [2095543] [INFO] Shutting down: Master
+[2026-06-17 18:45:19 -0700] [2158503] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 18:45:19 -0700] [2158503] [INFO] Listening at: https://0.0.0.0:5000 (2158503)
+[2026-06-17 18:45:19 -0700] [2158503] [INFO] Using worker: gthread
+[2026-06-17 18:45:19 -0700] [2158505] [INFO] Booting worker with pid: 2158505
+[2026-06-17 18:45:19 -0700] [2158507] [INFO] Booting worker with pid: 2158507
+[2026-06-17 18:45:20 -0700] [2158503] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-17 18:45:27 -0700] [2158503] [INFO] Handling signal: term
+[2026-06-17 18:45:27 -0700] [2158505] [INFO] Worker exiting (pid: 2158505)
+[2026-06-17 18:45:27 -0700] [2158507] [INFO] Worker exiting (pid: 2158507)
+[2026-06-17 18:45:27 -0700] [2158503] [INFO] Worker (pid:2158505) was sent SIGTERM!
+[2026-06-17 18:45:27 -0700] [2158503] [INFO] Worker (pid:2158507) was sent SIGTERM!
+[2026-06-17 18:45:27 -0700] [2158503] [INFO] Shutting down: Master
+[2026-06-17 18:45:29 -0700] [2158584] [INFO] Starting gunicorn 26.0.0
+[2026-06-17 18:45:29 -0700] [2158584] [INFO] Listening at: https://0.0.0.0:5000 (2158584)
+[2026-06-17 18:45:29 -0700] [2158584] [INFO] Using worker: gthread
+[2026-06-17 18:45:29 -0700] [2158585] [INFO] Booting worker with pid: 2158585
+[2026-06-17 18:45:29 -0700] [2158586] [INFO] Booting worker with pid: 2158586
+[2026-06-17 18:45:29 -0700] [2158584] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-18 03:24:22 -0700] [2158585] [WARNING] Invalid request from ip=127.0.0.1: [SSL: UNEXPECTED_EOF_WHILE_READING] unexpected eof while reading (_ssl.c:2659)
+[2026-06-18 03:36:44 -0700] [2158586] [WARNING] Invalid request from ip=127.0.0.1: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-18 03:36:46 -0700] [2158586] [WARNING] Invalid request from ip=127.0.0.1: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-18 03:41:00 -0700] [2158584] [INFO] Handling signal: term
+[2026-06-18 03:41:00 -0700] [2158586] [INFO] Worker exiting (pid: 2158586)
+[2026-06-18 03:41:00 -0700] [2158585] [INFO] Worker exiting (pid: 2158585)
+[2026-06-18 03:41:00 -0700] [2158584] [INFO] Worker (pid:2158585) was sent SIGTERM!
+[2026-06-18 03:41:00 -0700] [2158584] [INFO] Worker (pid:2158586) was sent SIGTERM!
+[2026-06-18 03:41:01 -0700] [2158584] [INFO] Shutting down: Master
+[2026-06-18 03:41:02 -0700] [139917] [INFO] Starting gunicorn 26.0.0
+[2026-06-18 03:41:02 -0700] [139917] [INFO] Listening at: https://0.0.0.0:5000 (139917)
+[2026-06-18 03:41:02 -0700] [139917] [INFO] Using worker: gthread
+[2026-06-18 03:41:02 -0700] [139920] [INFO] Booting worker with pid: 139920
+[2026-06-18 03:41:02 -0700] [139921] [INFO] Booting worker with pid: 139921
+[2026-06-18 03:41:03 -0700] [139917] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-18 10:23:09,922] ERROR in app: Exception on /settings/ [GET]
+Traceback (most recent call last):
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/routes/decorators.py", line 12, in decorated
+    return f(*args, **kwargs)
+  File "/home/jackmehoff/pwnbroker/app/routes/settings.py", line 152, in index
+    try:
+        ZoneInfo(new_tz)
+    except Exception:
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/jackmehoff/pwnbroker/app/templates/settings/index.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/jackmehoff/pwnbroker/app/templates/base.html", line 200, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/app/templates/settings/index.html", line 17, in block 'content'
+    {% if ntp_status.ntp_synced is none %}
+    ^^^^^^^^^^^^^^^
+  File "/home/jackmehoff/pwnbroker/venv/lib/python3.13/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+jinja2.exceptions.UndefinedError: 'ntp_status' is undefined
+[2026-06-18 10:23:24 -0700] [139917] [INFO] Handling signal: term
+[2026-06-18 10:23:24 -0700] [139921] [INFO] Worker exiting (pid: 139921)
+[2026-06-18 10:23:24 -0700] [139920] [INFO] Worker exiting (pid: 139920)
+[2026-06-18 10:23:24 -0700] [139917] [INFO] Shutting down: Master
+[2026-06-18 10:23:26 -0700] [515476] [INFO] Starting gunicorn 26.0.0
+[2026-06-18 10:23:26 -0700] [515476] [INFO] Listening at: https://0.0.0.0:5000 (515476)
+[2026-06-18 10:23:26 -0700] [515476] [INFO] Using worker: gthread
+[2026-06-18 10:23:26 -0700] [515478] [INFO] Booting worker with pid: 515478
+[2026-06-18 10:23:26 -0700] [515479] [INFO] Booting worker with pid: 515479
+[2026-06-18 10:23:26 -0700] [515476] [INFO] Control socket listening at /root/.gunicorn/gunicorn.ctl
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:07 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: VERSION_TOO_LOW] version too low (_ssl.c:1033)
+[2026-06-20 02:06:13 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: Invalid HTTP request line: ''
+[2026-06-20 02:06:17 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: UNKNOWN_PROTOCOL] unknown protocol (_ssl.c:1033)
+[2026-06-20 02:06:17 -0700] [515478] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:17 -0700] [515478] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:17 -0700] [515478] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:17 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:18 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1033)
+[2026-06-20 02:06:18 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:18 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:18 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-20 02:06:18 -0700] [515479] [WARNING] Invalid request from ip=192.168.1.2: [SSL: HTTP_REQUEST] http request (_ssl.c:1033)
+[2026-06-21 12:32:19 -0700] [515476] [INFO] Handling signal: term
+[2026-06-21 12:32:19 -0700] [515478] [INFO] Worker exiting (pid: 515478)
+[2026-06-21 12:32:19 -0700] [515479] [INFO] Worker exiting (pid: 515479)
+[2026-06-21 12:32:19 -0700] [515476] [WARNING] Worker (pid:515478) was sent SIGHUP!
+[2026-06-21 12:32:19 -0700] [515476] [WARNING] Worker (pid:515479) was sent SIGHUP!
+[2026-06-21 12:32:19 -0700] [515476] [INFO] Shutting down: Master
