@@ -40,8 +40,9 @@ PwnBroker is a self-hosted security operations platform that combines network sc
 ### Quick Install
 
 ```bash
-git clone https://github.com/your-org/pwnbroker.git /opt/pwnbroker-src
-cd /opt/pwnbroker-src
+git clone https://github.com/ChimneyFish/PWNBroker.git /opt/PWNBrokerbroker
+cd /opt/PWNBroker
+chmod +x setup.sh
 sudo bash setup.sh
 ```
 
