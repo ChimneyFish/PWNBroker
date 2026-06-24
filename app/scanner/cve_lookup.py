@@ -4,12 +4,26 @@ from flask import current_app
 from typing import List, Dict
 
 
+def _get_nvd_api_key() -> str:
+    """Return NVD API key: env var first, DB ThreatConfig as fallback."""
+    key = current_app.config.get("NVD_API_KEY", "")
+    if not key:
+        try:
+            from ..models import ThreatConfig
+            cfg = ThreatConfig.query.first()
+            if cfg and cfg.nvd_api_key:
+                key = cfg.nvd_api_key
+        except Exception:
+            pass
+    return key
+
+
 def lookup_cves_for_service(product: str, version: str = "", max_results: int = 5) -> List[Dict]:
     if not product or product in ("unknown", ""):
         return []
 
     keyword = f"{product} {version}".strip()
-    api_key = current_app.config.get("NVD_API_KEY", "")
+    api_key = _get_nvd_api_key()
     url = current_app.config.get("NVD_API_URL")
 
     headers = {}
