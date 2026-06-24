@@ -326,30 +326,42 @@ def test_email():
 @login_required
 @admin_required
 def test_keys():
-    """Test each threat intel API key and return {service: {status, detail}}."""
+    """Test each threat intel API key and return {service: {status, detail}}.
+
+    Accepts an optional JSON body containing key values typed into the form but
+    not yet saved.  Values from the body take precedence over the DB so users
+    can test a key before committing it.
+    """
     import requests as _req
 
-    cfg = ThreatConfig.query.first()
-    if not cfg:
-        return {"error": "No threat config found"}, 404
+    cfg = ThreatConfig.query.first() or ThreatConfig()
+
+    # Key values submitted from the form (optional — empty string = not provided)
+    body = request.get_json(silent=True) or {}
+
+    def _key(field: str) -> str | None:
+        """Return the form-submitted value if non-empty, else fall back to DB."""
+        v = body.get(field, "").strip()
+        return v if v else getattr(cfg, field, None)
 
     results = {}
 
     def _get(url, headers=None, params=None, timeout=8):
         try:
             r = _req.get(url, headers=headers or {}, params=params or {},
-                         timeout=timeout, allow_redirects=False)
+                         timeout=timeout, allow_redirects=True)
             return r.status_code, r
         except Exception as e:
             return None, str(e)
 
     # ── OTX ──────────────────────────────────────────────────────────────────
-    if cfg.otx_api_key:
+    otx_key = _key("otx_api_key")
+    if otx_key:
         code, resp = _get("https://otx.alienvault.com/api/v1/user/me",
-                          headers={"X-OTX-API-KEY": cfg.otx_api_key})
+                          headers={"X-OTX-API-KEY": otx_key})
         if code == 200:
             results["otx"] = {"status": "ok", "detail": "Valid"}
-        elif code == 403:
+        elif code in (401, 403):
             results["otx"] = {"status": "error", "detail": "Invalid key"}
         elif code is None:
             results["otx"] = {"status": "error", "detail": f"Network error: {resp}"}
@@ -359,25 +371,28 @@ def test_keys():
         results["otx"] = {"status": "not_set", "detail": "Not configured"}
 
     # ── VirusTotal ───────────────────────────────────────────────────────────
-    if cfg.virustotal_api_key:
-        # Domain lookup — lightweight, always exists, returns 200 on valid key, 401 on invalid
+    vt_key = _key("virustotal_api_key")
+    if vt_key:
         code, resp = _get("https://www.virustotal.com/api/v3/domains/virustotal.com",
-                          headers={"x-apikey": cfg.virustotal_api_key})
+                          headers={"x-apikey": vt_key})
         if code == 200:
             results["virustotal"] = {"status": "ok", "detail": "Valid"}
         elif code in (401, 403):
             results["virustotal"] = {"status": "error", "detail": "Invalid key"}
+        elif code == 429:
+            results["virustotal"] = {"status": "ok", "detail": "Rate limited (key accepted)"}
         elif code is None:
             results["virustotal"] = {"status": "error", "detail": f"Network error: {resp}"}
         else:
             results["virustotal"] = {"status": "error", "detail": f"HTTP {code}"}
     else:
-        results["virustotal"] = {"status": "not_set", "detail": "Not configured"}
+        results["virustotal"] = {"status": "not_set", "detail": "Not configured — save key first"}
 
     # ── AbuseIPDB ─────────────────────────────────────────────────────────────
-    if cfg.abuseipdb_api_key:
+    ab_key = _key("abuseipdb_api_key")
+    if ab_key:
         code, resp = _get("https://api.abuseipdb.com/api/v2/check",
-                          headers={"Key": cfg.abuseipdb_api_key, "Accept": "application/json"},
+                          headers={"Key": ab_key, "Accept": "application/json"},
                           params={"ipAddress": "8.8.8.8", "maxAgeInDays": "90"})
         if code == 200:
             results["abuseipdb"] = {"status": "ok", "detail": "Valid"}
@@ -391,9 +406,10 @@ def test_keys():
         results["abuseipdb"] = {"status": "not_set", "detail": "Not configured"}
 
     # ── GreyNoise ─────────────────────────────────────────────────────────────
-    if cfg.greynoise_api_key:
+    gn_key = _key("greynoise_api_key")
+    if gn_key:
         code, resp = _get("https://api.greynoise.io/ping",
-                          headers={"key": cfg.greynoise_api_key})
+                          headers={"key": gn_key})
         if code == 200:
             results["greynoise"] = {"status": "ok", "detail": "Valid"}
         elif code in (401, 403):
@@ -406,10 +422,10 @@ def test_keys():
         results["greynoise"] = {"status": "not_set", "detail": "Not configured"}
 
     # ── DNSDumpster ──────────────────────────────────────────────────────────
-    if cfg.dnsdumpster_api_key:
-        # Any non-401/403 response means the key was accepted
+    dd_key = _key("dnsdumpster_api_key")
+    if dd_key:
         code, resp = _get("https://api.dnsdumpster.com/domain/example.com",
-                          headers={"X-API-Key": cfg.dnsdumpster_api_key})
+                          headers={"X-API-Key": dd_key})
         if code in (200, 400, 404, 429):
             results["dnsdumpster"] = {"status": "ok", "detail": "Valid"}
         elif code in (401, 403):
@@ -422,9 +438,10 @@ def test_keys():
         results["dnsdumpster"] = {"status": "not_set", "detail": "Not configured"}
 
     # ── NVD ───────────────────────────────────────────────────────────────────
-    if cfg.nvd_api_key:
+    nvd_key = _key("nvd_api_key")
+    if nvd_key:
         code, resp = _get("https://services.nvd.nist.gov/rest/json/cves/2.0",
-                          headers={"apiKey": cfg.nvd_api_key},
+                          headers={"apiKey": nvd_key},
                           params={"resultsPerPage": 1})
         if code == 200:
             results["nvd"] = {"status": "ok", "detail": "Valid"}

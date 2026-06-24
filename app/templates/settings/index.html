@@ -672,14 +672,37 @@ async function testAllKeys() {
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:.75rem;height:.75rem;border-width:1.5px"></span>Testing…';
   status.textContent = '';
 
-  // Set all configured pills to "testing" immediately
+  // Collect any key values currently typed into the form (unsaved keys can be tested live)
+  const keyFields = ['otx_api_key','virustotal_api_key','abuseipdb_api_key',
+                     'greynoise_api_key','dnsdumpster_api_key','nvd_api_key'];
+  const liveKeys = {};
+  const threatForm = document.querySelector('input[name="form"][value="threat"]')?.closest('form');
+  if (threatForm) {
+    keyFields.forEach(f => {
+      const val = threatForm.querySelector(`[name="${f}"]`)?.value?.trim();
+      if (val) liveKeys[f] = val;
+    });
+  }
+
+  // Mark pills that have a value (saved or typed) as "testing"
   document.querySelectorAll('.key-pill').forEach(el => {
-    const current = el.innerHTML;
-    if (!current.includes('NOT SET')) el.innerHTML = PILL_HTML.testing;
+    if (!el.innerHTML.includes('NOT SET')) el.innerHTML = PILL_HTML.testing;
+  });
+  // Also mark pills for keys typed but not yet saved
+  keyFields.forEach(f => {
+    if (liveKeys[f]) {
+      const svc = f.replace('_api_key','');
+      const pill = document.getElementById(`pill-${svc}`);
+      if (pill) pill.innerHTML = PILL_HTML.testing;
+    }
   });
 
   try {
-    const res  = await fetch('/settings/test-keys', {method: 'POST'});
+    const res  = await fetch('/settings/test-keys', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(liveKeys),
+    });
     const data = await res.json();
 
     Object.entries(data).forEach(([svc, {status: st, detail}]) => {

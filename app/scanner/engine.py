@@ -5,11 +5,17 @@ from flask import current_app
 from ..extensions import db
 from ..models import Scan, ScanResult
 
-_IP_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+_IP_RE   = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+_CIDR_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$')
 
 
-def _is_domain(host):
-    return not _IP_RE.match(host.strip())
+def _is_cidr(host: str) -> bool:
+    return bool(_CIDR_RE.match(host.strip()))
+
+
+def _is_domain(host: str) -> bool:
+    h = host.strip()
+    return not _IP_RE.match(h) and not _CIDR_RE.match(h)
 
 
 def _enrich_assets(target_id, host_meta: dict):
@@ -45,6 +51,7 @@ def run_scan(scan_id: int, app=None):
             results = []
             host = scan.target.host
             scan_type = scan.scan_type
+            host_meta = {}
 
             if scan_type == "osv":
                 from .osv_scanner import run_osv_scan
@@ -108,7 +115,8 @@ def run_scan(scan_id: int, app=None):
                 if host_meta:
                     _enrich_assets(scan.target_id, host_meta)
 
-            if scan_type in ("full", "web"):
+            # Web checks only make sense against a single host/IP, not a subnet
+            if scan_type in ("full", "web") and not _is_cidr(host):
                 from .web_checks import run_web_checks
                 web_findings = run_web_checks(host)
                 for f in web_findings:
@@ -125,27 +133,30 @@ def run_scan(scan_id: int, app=None):
             if scan_type not in ("osv", "subdomain") and not _is_domain(host):
                 from ..threat.triage import run as triage_run, severity_for
                 from ..models import ThreatConfig
-                cfg = ThreatConfig.query.first()
-                t_result = triage_run(
-                    host,
-                    greynoise_key=cfg.greynoise_api_key if cfg else None,
-                    vt_key=cfg.virustotal_api_key       if cfg else None,
-                )
-                v = t_result["verdict"]
-                results.append(ScanResult(
-                    scan_id=scan_id,
-                    result_type="triage",
-                    host=host,
-                    severity=severity_for(v["label"]),
-                    title=f"SOC Triage: {v['label']}",
-                    description=v["reason"],
-                    raw_data=json.dumps(t_result),
-                ))
+                _tc = ThreatConfig.query.first()
+                # For CIDR targets, triage each discovered host individually
+                triage_hosts = list(host_meta.keys()) if _is_cidr(host) and host_meta else [host]
+                for triage_host in triage_hosts:
+                    t_result = triage_run(
+                        triage_host,
+                        greynoise_key=_tc.greynoise_api_key if _tc else None,
+                        vt_key=_tc.virustotal_api_key       if _tc else None,
+                    )
+                    v = t_result["verdict"]
+                    results.append(ScanResult(
+                        scan_id=scan_id,
+                        result_type="triage",
+                        host=triage_host,
+                        severity=severity_for(v["label"]),
+                        title=f"SOC Triage: {v['label']}",
+                        description=v["reason"],
+                        raw_data=json.dumps(t_result),
+                    ))
 
             if scan_type in ("full", "subdomain") and _is_domain(host):
                 from ..threat.subdomain import enumerate as sub_enum
-                from ..models import ThreatConfig as _TC
-                _tc = _TC.query.first()
+                from ..models import ThreatConfig
+                _tc = ThreatConfig.query.first()
                 sub_result = sub_enum(host, dnsdumpster_key=_tc.dnsdumpster_api_key if _tc else None)
                 for sub in sub_result["subdomains"]:
                     results.append(ScanResult(
