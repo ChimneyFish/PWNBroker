@@ -37,7 +37,8 @@
       "Bash(/bin/curl --version)",
       "Bash(/usr/bin/curl -sk -c /tmp/ck2.txt -b /tmp/ck2.txt https://localhost:5000/grc/ -o /tmp/grc_live.txt)",
       "Bash(/usr/bin/curl -sk -c /tmp/ck2.txt -b /tmp/ck2.txt https://localhost:5000/vulns/tickets -w \"\\\\nHTTP: %{http_code}\" -o /dev/null)",
-      "Bash(kill -HUP 2539977)"
+      "Bash(kill -HUP 2539977)",
+      "Bash(python3 *)"
     ]
   }
 }

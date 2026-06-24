@@ -12,6 +12,59 @@
 
 {% block content %}
 
+<!-- ── Quick Reports ── -->
+<div class="section-header mt-0 mb-3">
+  <span class="section-title">Quick Reports</span>
+  <span class="text-muted small ms-2">Generated instantly from all system data</span>
+</div>
+<div class="row g-3 mb-4">
+
+  <div class="col-md-6">
+    <div class="stat-card h-100" style="border-color:var(--brand)">
+      <div class="d-flex align-items-start gap-3">
+        <div class="flex-shrink-0" style="font-size:2rem;line-height:1">&#128202;</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold fs-6 mb-1">Technical Vulnerability Overview</div>
+          <div class="text-muted small mb-3">
+            Deep-dive technical report covering severity distribution, top CVEs,
+            exposed services, dependency vulnerabilities, and SLA/remediation metrics
+            across all completed scans.
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('reports.quick_tech_overview') }}"
+               class="btn btn-sm btn-primary">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="stat-card h-100" style="border-color:var(--success)">
+      <div class="d-flex align-items-start gap-3">
+        <div class="flex-shrink-0" style="font-size:2rem;line-height:1">&#127970;</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold fs-6 mb-1">Executive Summary</div>
+          <div class="text-muted small mb-3">
+            Board-ready executive report covering security posture score, compliance
+            standings across all frameworks, risk register summary, SLA performance,
+            policy governance status, and audit readiness assessment.
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('reports.quick_executive') }}"
+               class="btn btn-sm btn-success">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ── Latest Scan Banner ── -->
 {% if latest_scan %}
 <div class="stat-card mb-4" style="border-color:{% if latest_scan.critical_count > 0 %}var(--critical){% elif latest_scan.vuln_count > 0 %}var(--high){% else %}var(--success){% endif %}">

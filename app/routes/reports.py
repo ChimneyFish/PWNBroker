@@ -6,6 +6,7 @@ from ..models import Scan, Target, ScheduledReport, GeneratedReport, CloudConfig
 from ..extensions import db
 from ..email_utils.report_builder import (
     build_pdf_report, build_html_report,
+    build_tech_overview_pdf, build_executive_summary_pdf,
     save_report_to_disk, load_report_from_disk, delete_report_from_disk,
 )
 from ..email_utils.cloud_push import push_report_to_cloud
@@ -194,6 +195,28 @@ def schedule_new():
         return redirect(url_for("reports.index"))
 
     return render_template("reports/schedule_new.html", targets=targets)
+
+
+@reports_bp.route("/quick/tech-overview")
+@login_required
+def quick_tech_overview():
+    data = build_tech_overview_pdf()
+    ts   = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return send_file(
+        io.BytesIO(data), mimetype="application/pdf",
+        download_name=f"tech_overview_{ts}.pdf", as_attachment=True,
+    )
+
+
+@reports_bp.route("/quick/executive")
+@login_required
+def quick_executive():
+    data = build_executive_summary_pdf()
+    ts   = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return send_file(
+        io.BytesIO(data), mimetype="application/pdf",
+        download_name=f"executive_summary_{ts}.pdf", as_attachment=True,
+    )
 
 
 @reports_bp.route("/schedule/<int:sched_id>/delete", methods=["POST"])
