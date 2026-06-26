@@ -188,6 +188,7 @@ def index():
             gn_key  = request.form.get("greynoise_api_key", "").strip()
             dd_key  = request.form.get("dnsdumpster_api_key", "").strip()
             nvd_key = request.form.get("nvd_api_key", "").strip()
+            gh_key  = request.form.get("github_advisory_token", "").strip()
             now = datetime.now(timezone.utc)
 
             if otx_key:
@@ -202,6 +203,8 @@ def index():
                 threat_cfg.dnsdumpster_api_key = dd_key
             if nvd_key:
                 threat_cfg.nvd_api_key = nvd_key
+            if gh_key:
+                threat_cfg.github_advisory_token = gh_key
             from ..audit import log_action
             log_action("settings.threat_save", detail="Threat Intel API keys updated")
             threat_cfg.updated_at = now

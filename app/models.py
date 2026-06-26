@@ -246,6 +246,7 @@ class ThreatConfig(db.Model):
     greynoise_api_key       = db.Column(db.String(512))
     dnsdumpster_api_key     = db.Column(db.String(512))
     nvd_api_key             = db.Column(db.String(512))
+    github_advisory_token   = db.Column(db.String(512))
     registration_token      = db.Column(db.String(128))   # pre-shared secret for agent registration
     updated_at              = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

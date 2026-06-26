@@ -56,7 +56,7 @@
           </div>
         </div>
 
-        <div class="p-3 rounded mb-4" style="background:rgba(var(--bs-info-rgb),0.06);border:1px solid rgba(var(--bs-info-rgb),0.18)">
+        <div class="p-3 rounded mb-3" style="background:rgba(var(--bs-info-rgb),0.06);border:1px solid rgba(var(--bs-info-rgb),0.18)">
           <div class="small fw-semibold text-info mb-2"><i class="bi bi-file-earmark-text me-1"></i>Supported Lockfiles</div>
           <div class="row g-1 small text-muted">
             <div class="col-6"><code>requirements.txt</code> → PyPI</div>
@@ -66,7 +66,19 @@
             <div class="col-6"><code>go.mod</code> → Go</div>
             <div class="col-6"><code>Cargo.lock</code> → crates.io</div>
             <div class="col-6"><code>Gemfile.lock</code> → RubyGems</div>
+            <div class="col-6"><code>composer.lock</code> → Packagist/PHP</div>
+            <div class="col-6"><code>composer.json</code> → Packagist/PHP <span class="text-muted">(fallback)</span></div>
           </div>
+        </div>
+
+        <div class="p-3 rounded mb-4 small" style="background:rgba(var(--bs-warning-rgb),0.05);border:1px solid rgba(var(--bs-warning-rgb),0.2)">
+          <i class="bi bi-github me-1 text-warning"></i>
+          <span class="fw-semibold text-warning">GitHub Advisory Database</span>
+          <span class="text-muted ms-1">
+            — automatically enriches results with GHSA advisories (including PHP/Composer packages)
+            when a GitHub token is configured in
+            <a href="{{ url_for('settings.index') }}#threat" class="text-warning">Settings → Threat Intel APIs</a>.
+          </span>
         </div>
 
         <div class="d-flex gap-2">

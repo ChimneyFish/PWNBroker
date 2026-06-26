@@ -97,8 +97,12 @@ def run_scan(scan_id: int, app=None):
             # ── OSV dependency scan ───────────────────────────────────────────
             if scan_type == "osv":
                 from .osv_scanner import run_osv_scan
+                from ..models import ThreatConfig
+                _tc = ThreatConfig.query.first()
+                gh_token = _tc.github_advisory_token if _tc else None
                 scan_path = scan.scan_path or host
-                osv_results = run_osv_scan(scan, scan_path, target=scan.target)
+                osv_results = run_osv_scan(scan, scan_path, target=scan.target,
+                                           github_token=gh_token)
                 for r in osv_results:
                     results.append(ScanResult(
                         scan_id=scan_id,

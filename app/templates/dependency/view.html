@@ -157,11 +157,34 @@
         {% endif %}
       </div>
 
-      <!-- OSV ID -->
-      {% set osv_parts = r.title.split(' — ') %}
-      {% if osv_parts | length > 1 %}
-      <div class="small text-muted mb-2">
-        OSV: <code class="text-primary">{{ osv_parts[-1] }}</code>
+      <!-- Advisory ID + source badge -->
+      {% set adv_parts = r.title.split(' — ') %}
+      {% if adv_parts | length > 1 %}
+      {% set adv_id = adv_parts[-1] %}
+      {% set raw = r.raw_data | fromjson %}
+      <div class="small text-muted mb-2 d-flex align-items-center gap-2 flex-wrap">
+        {% if raw.get('source') == 'ghsa' or adv_id.startswith('GHSA-') %}
+          <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.65rem">
+            <i class="bi bi-github me-1"></i>GHSA
+          </span>
+          <a href="https://github.com/advisories/{{ adv_id }}" target="_blank"
+             class="text-warning text-decoration-none font-monospace" style="font-size:0.8rem">
+            {{ adv_id }}
+          </a>
+          {% for alias in raw.get('aliases', []) %}
+            {% if alias.startswith('CVE-') and alias != r.cve_id %}
+            <span class="text-muted font-monospace" style="font-size:0.75rem">{{ alias }}</span>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <span class="badge bg-info bg-opacity-20 text-info" style="font-size:0.65rem">OSV</span>
+          <code class="text-primary" style="font-size:0.8rem">{{ adv_id }}</code>
+        {% endif %}
+        {% if raw.get('range') %}
+        <span class="text-muted" style="font-size:0.7rem">
+          Affected: <code>{{ raw['range'] }}</code>
+        </span>
+        {% endif %}
       </div>
       {% endif %}
 

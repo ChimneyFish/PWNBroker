@@ -139,10 +139,11 @@ def _migrate_columns(app):
             ("is_remediated", "BOOLEAN DEFAULT 0"),
         ],
         "threat_configs": [
-            ("securitytrails_api_key", "VARCHAR(512)"),
-            ("greynoise_api_key",      "VARCHAR(512)"),
-            ("dnsdumpster_api_key",    "VARCHAR(512)"),
-            ("nvd_api_key",            "VARCHAR(512)"),
+            ("securitytrails_api_key",  "VARCHAR(512)"),
+            ("greynoise_api_key",       "VARCHAR(512)"),
+            ("dnsdumpster_api_key",     "VARCHAR(512)"),
+            ("nvd_api_key",             "VARCHAR(512)"),
+            ("github_advisory_token",   "VARCHAR(512)"),
         ],
         "vuln_tickets": [
             ("vuln_name", "VARCHAR(300)"),

@@ -193,6 +193,43 @@ def _parse_gemfile_lock(path):
     return pkgs
 
 
+def _parse_composer_lock(path):
+    """Parse composer.lock → list of (name, version, ecosystem)."""
+    pkgs = []
+    with open(path) as f:
+        data = json.load(f)
+    for section in ("packages", "packages-dev"):
+        for pkg in data.get(section, []):
+            name = pkg.get("name", "").strip()
+            ver  = pkg.get("version", "").lstrip("v").strip()
+            if name and ver and re.match(r"^\d+\.\d+", ver):
+                pkgs.append((name, ver, "Packagist"))
+    return pkgs
+
+
+def _parse_composer_json(path):
+    """
+    Parse composer.json — only includes packages with exact/tilde versions
+    that resolve to a concrete semver (e.g. "1.2.3" or "~1.2.3").
+    Prefer composer.lock when available; this is a fallback.
+    """
+    # If composer.lock exists alongside, the lock parser is preferred — skip here
+    lock_path = os.path.join(os.path.dirname(path), "composer.lock")
+    if os.path.exists(lock_path):
+        return []
+    pkgs = []
+    with open(path) as f:
+        data = json.load(f)
+    for section in ("require", "require-dev"):
+        for name, ver_spec in data.get(section, {}).items():
+            if name in ("php", "ext-*") or name.startswith("ext-"):
+                continue
+            ver = ver_spec.lstrip("^~>=v").strip()
+            if ver and re.match(r"^\d+\.\d+", ver):
+                pkgs.append((name, ver, "Packagist"))
+    return pkgs
+
+
 LOCKFILE_PARSERS = {
     "requirements.txt": _parse_requirements_txt,
     "package.json":     _parse_package_json,
@@ -201,6 +238,8 @@ LOCKFILE_PARSERS = {
     "Cargo.lock":       _parse_cargo_lock,
     "go.mod":           _parse_go_mod,
     "Gemfile.lock":     _parse_gemfile_lock,
+    "composer.lock":    _parse_composer_lock,
+    "composer.json":    _parse_composer_json,
 }
 
 
@@ -381,17 +420,19 @@ def test_ssh_connection(target) -> dict:
 
 # ── Public entry point ─────────────────────────────────────────────────────────
 
-def run_osv_scan(scan, scan_path, target=None):
+def run_osv_scan(scan, scan_path, target=None, github_token=None):
     """
     Scan for dependency vulnerabilities.
-    If target has SSH credentials and scan_path is not a local dir,
-    fetches lockfiles via SSH first.
-    Returns a list of ScanResult-ready dicts.
+
+    Runs OSV (via CLI binary or REST API) and, when *github_token* is set,
+    also queries the GitHub Advisory Database for additional coverage.
+    Results from both sources are de-duplicated before returning.
     """
     results = []
     scanned_files = []
     tmp_dir = None
     effective_path = scan_path
+    host = target.host if target else scan_path
 
     # SSH fetch if path doesn't exist locally and target has SSH creds
     if not os.path.isdir(scan_path) and target and target.ssh_username:
@@ -401,13 +442,14 @@ def run_osv_scan(scan, scan_path, target=None):
         except Exception as e:
             return [{
                 "result_type": "info",
-                "host": target.host if target else scan_path,
+                "host": host,
                 "severity": "info",
                 "title": "SSH Connection Failed",
                 "description": f"Could not connect to {target.host}: {e}",
             }]
 
     cli_findings = _run_cli(effective_path)
+    packages = []   # accumulated for GHSA enrichment
 
     try:
         if cli_findings is not None:
@@ -418,9 +460,10 @@ def run_osv_scan(scan, scan_path, target=None):
                 fixed = _fixed_version(vuln)
                 cves = _aliases(vuln)
                 name, ver, eco = f["package"], f["version"], f["ecosystem"]
+                packages.append((name, ver, eco))
                 results.append({
                     "result_type": "vulnerability",
-                    "host": target.host if target else scan_path,
+                    "host": host,
                     "severity": severity,
                     "title": f"{name} — {vuln.get('id', 'Unknown')}",
                     "description": vuln.get("summary", vuln.get("details", ""))[:1000],
@@ -431,7 +474,11 @@ def run_osv_scan(scan, scan_path, target=None):
                     "package_version": ver,
                     "ecosystem": eco,
                     "fixed_version": fixed,
-                    "raw_data": json.dumps({"osv_id": vuln.get("id"), "aliases": vuln.get("aliases", [])}),
+                    "raw_data": json.dumps({
+                        "source": "osv",
+                        "osv_id": vuln.get("id"),
+                        "aliases": vuln.get("aliases", []),
+                    }),
                 })
         else:
             packages, local_files = _collect_packages(effective_path)
@@ -440,13 +487,14 @@ def run_osv_scan(scan, scan_path, target=None):
             if not packages:
                 return [{
                     "result_type": "info",
-                    "host": target.host if target else scan_path,
+                    "host": host,
                     "severity": "info",
                     "title": "No lockfiles found",
                     "description": (
                         f"No supported lockfiles found in {scan_path}. "
                         "Supported: requirements.txt, package.json, Pipfile.lock, "
-                        "poetry.lock, Cargo.lock, go.mod, Gemfile.lock"
+                        "poetry.lock, Cargo.lock, go.mod, Gemfile.lock, "
+                        "composer.lock, composer.json"
                     ),
                 }]
 
@@ -459,7 +507,7 @@ def run_osv_scan(scan, scan_path, target=None):
                     cves = _aliases(vuln)
                     results.append({
                         "result_type": "vulnerability",
-                        "host": target.host if target else scan_path,
+                        "host": host,
                         "severity": severity,
                         "title": f"{name} — {vuln.get('id', 'Unknown')}",
                         "description": vuln.get("summary", vuln.get("details", ""))[:1000],
@@ -470,18 +518,49 @@ def run_osv_scan(scan, scan_path, target=None):
                         "package_version": ver,
                         "ecosystem": eco,
                         "fixed_version": fixed,
-                        "raw_data": json.dumps({"osv_id": vuln.get("id"), "aliases": vuln.get("aliases", [])}),
+                        "raw_data": json.dumps({
+                            "source": "osv",
+                            "osv_id": vuln.get("id"),
+                            "aliases": vuln.get("aliases", []),
+                        }),
                     })
 
+        # ── GitHub Advisory Database enrichment ───────────────────────────────
+        ghsa_added = 0
+        if github_token and packages:
+            try:
+                from .github_advisory import query_ghsa, dedupe_key
+                # Build de-dup set from OSV findings
+                seen = {dedupe_key(r) for r in results if r["result_type"] == "vulnerability"}
+                ghsa_findings = query_ghsa(
+                    list({(n, v, e) for n, v, e in packages}),  # unique packages
+                    github_token,
+                    host=host,
+                )
+                for gf in ghsa_findings:
+                    k = dedupe_key(gf)
+                    if k not in seen:
+                        seen.add(k)
+                        results.append(gf)
+                        ghsa_added += 1
+            except Exception:
+                pass  # GHSA enrichment is best-effort; never fail the whole scan
+
         binary_mode = cli_findings is not None
-        ssh_mode = tmp_dir is not None
+        ssh_mode    = tmp_dir is not None
+        vuln_count  = sum(1 for r in results if r["result_type"] == "vulnerability")
+
+        source_note = "osv-scanner CLI" if binary_mode else "OSV API (lockfile parser)"
+        if github_token:
+            source_note += f" + GitHub Advisory DB ({ghsa_added} additional findings)"
+
         results.insert(0, {
             "result_type": "info",
-            "host": target.host if target else scan_path,
+            "host": host,
             "severity": "info",
-            "title": f"OSV Scan Complete — {len([r for r in results if r['result_type']=='vulnerability'])} vulnerabilities found",
+            "title": f"Dependency Scan Complete — {vuln_count} vulnerabilities found",
             "description": (
-                f"Scanner: {'osv-scanner CLI' if binary_mode else 'OSV API (lockfile parser)'}\n"
+                f"Scanner: {source_note}\n"
                 f"{'Remote path (SSH): ' if ssh_mode else 'Path: '}{scan_path}\n"
                 + (f"Files scanned: {', '.join(scanned_files)}" if scanned_files else "")
             ),

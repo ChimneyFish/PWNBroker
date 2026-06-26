@@ -241,6 +241,24 @@
             </div>
           </div>
 
+          <!-- GitHub Advisory -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              GitHub Advisory Token
+              <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.6rem">DEP SCAN</span>
+              <span class="key-pill" id="pill-github" data-svc="github">
+                {% if threat_cfg.github_advisory_token %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="github_advisory_token" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">
+              GitHub Advisory Database — enriches dependency scans with GHSA advisories
+              including Composer/PHP packages. Any GitHub PAT works (no special scopes needed).
+              <a href="https://github.com/settings/tokens" target="_blank" rel="noopener" class="text-info ms-1">Create token</a>
+            </div>
+          </div>
+
           <div class="col-12 mt-2 d-flex align-items-center gap-3 flex-wrap">
             <button type="submit" class="btn btn-primary">Save Threat Intel Settings</button>
             <span id="test-keys-status" class="small text-muted"></span>
