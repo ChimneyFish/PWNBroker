@@ -71,6 +71,11 @@
         </a>
       </li>
       <li class="nav-item">
+        <a href="{{ url_for('eol.index') }}" class="nav-link {% if 'eol' in (request.endpoint or '') %}active{% endif %}">
+          <i class="bi bi-calendar-x me-2"></i>EOL Scanner
+        </a>
+      </li>
+      <li class="nav-item">
         <a href="{{ url_for('vulns.index') }}" class="nav-link {% if 'vulns' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-bug me-2"></i>Vuln Management
         </a>

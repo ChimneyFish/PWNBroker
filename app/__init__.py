@@ -50,6 +50,7 @@ def create_app(config_class=Config):
     from .routes.assets import assets_bp
     from .routes.grc import grc_bp
     from .routes.activity import activity_bp
+    from .routes.eol import eol_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -66,6 +67,7 @@ def create_app(config_class=Config):
     app.register_blueprint(assets_bp)
     app.register_blueprint(grc_bp)
     app.register_blueprint(activity_bp)
+    app.register_blueprint(eol_bp)
 
     @app.template_global("now")
     def _now():
@@ -130,6 +132,7 @@ def _migrate_columns(app):
         ],
         "scans": [
             ("scan_path", "VARCHAR(512)"),
+            ("auto_remediate", "BOOLEAN DEFAULT 0"),
         ],
         "scan_results": [
             ("fixed_version", "VARCHAR(100)"),

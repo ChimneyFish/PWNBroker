@@ -6,8 +6,8 @@
 <div class="row justify-content-center">
   <div class="col-lg-7">
     <div class="form-card">
-      <h5 class="fw-bold mb-1">Scan Remote Dependencies via SSH</h5>
-      <p class="text-muted small mb-4">
+      <h5 class="fw-bold mb-1" id="form_title">Scan Remote Dependencies via SSH</h5>
+      <p class="text-muted small mb-4" id="form_desc">
         PwnBroker will SSH into the target, locate all dependency lockfiles under the
         specified path, and check them against the
         <a href="https://osv.dev" target="_blank" class="text-primary">OSV vulnerability database</a>.
@@ -27,9 +27,11 @@
               {% for t in targets %}
               <option value="{{ t.id }}"
                       data-has-ssh="{{ 'true' if t.ssh_username else 'false' }}"
-                      data-host="{{ t.host }}">
+                      data-host="{{ t.host }}"
+                      data-target-type="{{ t.target_type or 'host' }}">
                 {{ t.name }} ({{ t.host }})
-                {% if not t.ssh_username %}<span class="text-muted"> — no SSH</span>{% endif %}
+                {% if t.target_type == 'github_repo' %} — GitHub repo
+                {% elif not t.ssh_username %} — no SSH{% endif %}
               </option>
               {% endfor %}
             </select>
@@ -46,13 +48,31 @@
           <div id="ssh_test_result" class="mt-1 small" style="display:none"></div>
         </div>
 
-        <div class="mb-4">
-          <label class="form-label">Remote Path to Scan</label>
-          <input type="text" name="scan_path" class="form-control font-monospace"
-                 placeholder="/home/appuser/myproject" required>
-          <div class="form-text text-muted">
+        <div class="mb-4" id="scan_path_group">
+          <label class="form-label" id="scan_path_label">Remote Path to Scan</label>
+          <input type="text" name="scan_path" id="scan_path" class="form-control font-monospace"
+                 placeholder="/home/appuser/myproject">
+          <div class="form-text text-muted" id="scan_path_hint">
             Absolute path on the <strong>remote machine</strong> to search for lockfiles.
             Subdirectories are scanned recursively (node_modules, .git, venv excluded).
+          </div>
+        </div>
+
+        <!-- Auto-remediation (GitHub repo targets only) -->
+        <div class="mb-4" id="auto_remediate_group" style="display:none">
+          <div class="p-3 rounded" style="background:rgba(var(--bs-warning-rgb),0.06);border:1px solid rgba(var(--bs-warning-rgb),0.25)">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="auto_remediate" id="auto_remediate" value="1">
+              <label class="form-check-label fw-semibold" for="auto_remediate">
+                <i class="bi bi-git me-1 text-warning"></i>Open fix PRs after scan
+              </label>
+            </div>
+            <div class="form-text text-muted mt-1">
+              After scanning, PwnBroker will open a GitHub pull request for each vulnerable
+              dependency that has a known fixed version, bumping it directly in the manifest.
+              Requires a GitHub token with <code>repo</code> scope in
+              <a href="{{ url_for('settings.index') }}#threat" class="text-muted">Settings → Threat Intel APIs</a>.
+            </div>
           </div>
         </div>
 
@@ -95,17 +115,46 @@
 
 {% block scripts %}
 <script>
-const sel     = document.getElementById('target_select');
-const warning = document.getElementById('ssh_warning');
-const testBtn = document.getElementById('ssh_test_btn');
-const testRes = document.getElementById('ssh_test_result');
+const sel            = document.getElementById('target_select');
+const warning        = document.getElementById('ssh_warning');
+const testBtn        = document.getElementById('ssh_test_btn');
+const testRes        = document.getElementById('ssh_test_result');
+const formTitle      = document.getElementById('form_title');
+const formDesc       = document.getElementById('form_desc');
+const scanPathGroup  = document.getElementById('scan_path_group');
+const scanPathInput  = document.getElementById('scan_path');
+const scanPathLabel  = document.getElementById('scan_path_label');
+const scanPathHint   = document.getElementById('scan_path_hint');
+const autoRemGroup   = document.getElementById('auto_remediate_group');
 
 sel.addEventListener('change', function() {
-  const opt = this.options[this.selectedIndex];
-  const hasSsh = opt.dataset.hasSsh === 'true';
-  warning.style.display = hasSsh ? 'none' : (this.value ? '' : 'none');
-  testBtn.style.display = hasSsh ? '' : 'none';
-  testRes.style.display = 'none';
+  const opt        = this.options[this.selectedIndex];
+  const hasSsh     = opt.dataset.hasSsh === 'true';
+  const targetType = opt.dataset.targetType || 'host';
+  const isGitHub   = targetType === 'github_repo';
+
+  warning.style.display = (!isGitHub && !hasSsh && this.value) ? '' : 'none';
+  testBtn.style.display  = (!isGitHub && hasSsh) ? '' : 'none';
+  testRes.style.display  = 'none';
+
+  if (isGitHub) {
+    formTitle.textContent = 'Scan GitHub Repository Dependencies';
+    formDesc.innerHTML    = 'PwnBroker will fetch dependency lockfiles from the GitHub repository via the API and check them against OSV and the GitHub Advisory Database.';
+    scanPathLabel.textContent = 'Subdirectory (optional)';
+    scanPathInput.placeholder = 'e.g. services/api  (leave blank to scan entire repo)';
+    scanPathInput.removeAttribute('required');
+    scanPathHint.textContent  = 'Restrict the scan to a subdirectory within the repo. Leave blank to scan all lockfiles.';
+    autoRemGroup.style.display = '';
+  } else {
+    formTitle.textContent = 'Scan Remote Dependencies via SSH';
+    formDesc.innerHTML    = 'PwnBroker will SSH into the target, locate all dependency lockfiles under the specified path, and check them against the <a href="https://osv.dev" target="_blank" class="text-primary">OSV vulnerability database</a>.';
+    scanPathLabel.textContent = 'Remote Path to Scan';
+    scanPathInput.placeholder = '/home/appuser/myproject';
+    scanPathInput.setAttribute('required', '');
+    scanPathHint.innerHTML    = 'Absolute path on the <strong>remote machine</strong> to search for lockfiles. Subdirectories are scanned recursively (node_modules, .git, venv excluded).';
+    autoRemGroup.style.display = 'none';
+    document.getElementById('auto_remediate').checked = false;
+  }
 });
 
 testBtn.addEventListener('click', function() {

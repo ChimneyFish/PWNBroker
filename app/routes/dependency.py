@@ -22,24 +22,34 @@ def index():
 def new():
     targets = Target.query.order_by(Target.name).all()
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        target_id = request.form.get("target_id", type=int)
-        scan_path = request.form.get("scan_path", "").strip()
+        name            = request.form.get("name", "").strip()
+        target_id       = request.form.get("target_id", type=int)
+        scan_path       = request.form.get("scan_path", "").strip()
+        auto_remediate  = bool(request.form.get("auto_remediate"))
 
-        if not name or not target_id or not scan_path:
-            flash("Name, target, and remote path are required.", "danger")
+        if not name or not target_id:
+            flash("Name and target are required.", "danger")
             return render_template("dependency/new.html", targets=targets)
 
         target = Target.query.get_or_404(target_id)
-        if not target.ssh_username:
-            flash("Selected target has no SSH credentials configured. Edit the target first.", "warning")
-            return render_template("dependency/new.html", targets=targets)
+
+        if target.target_type == "github_repo":
+            # GitHub repo scans use the API — no SSH needed, scan_path is optional subpath
+            pass
+        else:
+            if not scan_path:
+                flash("Remote path is required for SSH-based scans.", "danger")
+                return render_template("dependency/new.html", targets=targets)
+            if not target.ssh_username:
+                flash("Selected target has no SSH credentials configured. Edit the target first.", "warning")
+                return render_template("dependency/new.html", targets=targets)
 
         scan = Scan(
             name=name,
             target_id=target_id,
             scan_type="osv",
             scan_path=scan_path,
+            auto_remediate=auto_remediate,
             created_by=current_user.id,
             status="pending",
         )

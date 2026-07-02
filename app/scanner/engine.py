@@ -94,20 +94,71 @@ def run_scan(scan_id: int, app=None):
             scan_type = scan.scan_type
             host_meta = {}
 
+            # ── EOL scan ──────────────────────────────────────────────────────
+            if scan_type == "eol":
+                from .eol_scanner import run_eol_scan
+                eol_results = run_eol_scan(scan, scan.target)
+                for r in eol_results:
+                    results.append(ScanResult(
+                        scan_id=scan_id,
+                        result_type=r.get("result_type", "info"),
+                        host=r.get("host", host),
+                        severity=r.get("severity", "info"),
+                        title=r.get("title", ""),
+                        description=r.get("description", ""),
+                        remediation=r.get("remediation", ""),
+                        raw_data=r.get("raw_data"),
+                    ))
+
             # ── OSV dependency scan ───────────────────────────────────────────
             if scan_type == "osv":
-                from .osv_scanner import run_osv_scan
                 from ..models import ThreatConfig
                 _tc = ThreatConfig.query.first()
                 gh_token = _tc.github_advisory_token if _tc else None
-                scan_path = scan.scan_path or host
-                osv_results = run_osv_scan(scan, scan_path, target=scan.target,
-                                           github_token=gh_token)
-                for r in osv_results:
+
+                if scan.target and scan.target.target_type == "github_repo":
+                    from .github_repo_scanner import run_github_dep_scan, create_fix_pr
+                    raw_host = scan.target.host.strip()
+                    # Strip leading github.com/ or https://github.com/
+                    for prefix in ("https://github.com/", "http://github.com/", "github.com/"):
+                        if raw_host.startswith(prefix):
+                            raw_host = raw_host[len(prefix):]
+                            break
+                    parts = raw_host.strip("/").split("/", 1)
+                    owner = parts[0]
+                    repo  = parts[1] if len(parts) > 1 else ""
+                    dep_results = run_github_dep_scan(
+                        scan, owner, repo, gh_token, subpath=scan.scan_path or ""
+                    )
+
+                    if scan.auto_remediate and gh_token:
+                        pr_notes = []
+                        for r in dep_results:
+                            if r.get("result_type") == "vulnerability" and r.get("fixed_version"):
+                                pr = create_fix_pr(owner, repo, r, gh_token)
+                                if pr["ok"]:
+                                    pr_notes.append(f"✓ {r['package_name']}: {pr['pr_url']}")
+                                else:
+                                    pr_notes.append(f"✗ {r['package_name']}: {pr['error']}")
+                        if pr_notes:
+                            dep_results.append({
+                                "result_type": "info",
+                                "host": f"github.com/{owner}/{repo}",
+                                "severity": "info",
+                                "title": f"Auto-Remediation — {sum(1 for n in pr_notes if n.startswith('✓'))} PR(s) opened",
+                                "description": "\n".join(pr_notes),
+                            })
+                else:
+                    from .osv_scanner import run_osv_scan
+                    scan_path = scan.scan_path or host
+                    dep_results = run_osv_scan(scan, scan_path, target=scan.target,
+                                               github_token=gh_token)
+
+                for r in dep_results:
                     results.append(ScanResult(
                         scan_id=scan_id,
                         result_type=r.get("result_type", "vulnerability"),
-                        host=r.get("host", scan_path),
+                        host=r.get("host", host),
                         severity=r.get("severity", "info"),
                         title=r.get("title", ""),
                         description=r.get("description", ""),
@@ -149,7 +200,7 @@ def run_scan(scan_id: int, app=None):
             # Domains are excluded (triage is IP-only).
             # For CIDR, triage the first N discovered hosts to avoid exhausting
             # external API rate limits across a large subnet.
-            if scan_type not in ("osv", "subdomain") and not _is_domain(host):
+            if scan_type not in ("osv", "eol", "subdomain") and not _is_domain(host):
                 from ..threat.triage import run as triage_run, severity_for
                 from ..models import ThreatConfig
                 _tc = ThreatConfig.query.first()

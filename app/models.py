@@ -72,6 +72,7 @@ class Scan(db.Model):
     status = db.Column(db.String(20), default="pending")  # pending | running | done | failed
     port_range = db.Column(db.String(50), default="1-1024")
     scan_path = db.Column(db.String(512))  # filesystem path for OSV dependency scans
+    auto_remediate = db.Column(db.Boolean, default=False)  # open fix PRs after github_repo scan
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
