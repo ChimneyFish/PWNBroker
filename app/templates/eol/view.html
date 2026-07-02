@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ scan.name }} — EOL Scanner — PwnBroker{% endblock %}
+{% block page_title %}{{ scan.name }}{% endblock %}
+
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <form method="POST" action="{{ url_for('eol.delete', scan_id=scan.id) }}" class="d-inline"
+        data-confirm="Delete this scan and all findings?">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% set vulns   = results | selectattr('result_type', 'equalto', 'vulnerability') | list %}
+{% set infos   = results | selectattr('result_type', 'equalto', 'info') | list %}
+{% set os_info = infos | selectattr('title', 'startswith', 'OS Detected') | list %}
+
+<!-- Stats bar -->
+<div class="row g-3 mb-4">
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Target</div>
+      <div class="fw-semibold">{{ scan.target.host }}</div>
+    </div>
+  </div>
+  {% if os_info %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">OS Detected</div>
+      <div class="fw-semibold small">{{ os_info[0].title | replace('OS Detected: ', '') }}</div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <span id="scan-status-badge" class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">EOL Findings</div>
+      <div class="fw-semibold {% if vulns %}text-danger{% else %}text-success{% endif %}">{{ vulns | length }}</div>
+    </div>
+  </div>
+  {% if scan.duration %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Duration</div>
+      <div class="fw-semibold">{{ scan.duration }}s</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if scan.status in ('pending', 'running') %}
+<div class="alert alert-primary d-flex align-items-center gap-2">
+  <span class="pulse text-primary"><i class="bi bi-circle-fill" style="font-size:0.6rem"></i></span>
+  Scan is <strong>{{ scan.status }}</strong> — connecting via SSH and checking end-of-life status…
+</div>
+{% endif %}
+
+<!-- Findings -->
+{% if vulns %}
+<div class="section-header mt-2 mb-3" id="eol-results">
+  <span class="section-title">EOL Findings ({{ vulns | length }})</span>
+</div>
+
+{% for sev in ['critical', 'high', 'medium', 'low'] %}
+{% set sev_items = vulns | selectattr('severity', 'equalto', sev) | list %}
+{% if sev_items %}
+<div class="mb-1 mt-3 text-uppercase fw-bold small
+  {% if sev == 'critical' %}text-danger
+  {% elif sev == 'high' %}text-warning
+  {% elif sev == 'medium' %}text-warning-emphasis
+  {% else %}text-info{% endif %}" style="letter-spacing:0.08em">
+  {{ sev }} — {{ sev_items | length }} finding{% if sev_items | length != 1 %}s{% endif %}
+</div>
+
+{% for r in sev_items %}
+<div class="mb-3 p-3 rounded"
+     style="background:var(--bg-card);border:1px solid {% if sev == 'critical' %}var(--critical){% elif sev == 'high' %}rgba(255,171,0,0.4){% elif sev == 'medium' %}rgba(255,171,0,0.2){% else %}var(--border-color){% endif %}">
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span>
+    <span class="fw-semibold">{{ r.title }}</span>
+  </div>
+  {% if r.description %}
+  <div class="small text-muted mb-2" style="white-space:pre-line">{{ r.description }}</div>
+  {% endif %}
+  {% if r.remediation %}
+  <div class="small fw-semibold text-warning mt-2">
+    <i class="bi bi-arrow-right-circle me-1"></i>{{ r.remediation }}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% elif scan.status == 'done' %}
+<div class="text-center py-5">
+  <i class="bi bi-shield-check fs-1 d-block mb-2 text-success"></i>
+  <div class="fw-semibold text-success">No EOL issues found.</div>
+  <div class="text-muted small mt-1">This system is running a supported OS version.</div>
+</div>
+{% endif %}
+
+<!-- Info / detection details -->
+{% set detail_infos = infos | rejectattr('title', 'startswith', 'OS Detected') | list %}
+{% if detail_infos %}
+<div class="section-header mt-4 mb-3">
+  <span class="section-title">Detection Details</span>
+</div>
+{% for r in detail_infos %}
+<div class="mb-2 p-3 rounded small text-muted"
+     style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+  <div class="fw-semibold text-light mb-1">{{ r.title }}</div>
+  {% if r.description %}
+  <div style="white-space:pre-line">{{ r.description }}</div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if scan.status in ('pending', 'running') %}
+<script>pollScanStatus({{ scan.id }});</script>
+{% endif %}
+{% endblock %}

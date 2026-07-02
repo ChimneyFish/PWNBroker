@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}EOL Scanner — PwnBroker{% endblock %}
+{% block page_title %}EOL Scanner{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <a href="{{ url_for('eol.new') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i>New Scan
+  </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Total Scans</div>
+      <div class="fw-semibold">{{ scans | length }}</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">EOL Targets Found</div>
+      <div class="fw-semibold text-danger">
+        {{ scans | selectattr('status', 'equalto', 'done') | list | length }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-header" id="scans-table">
+  <span class="section-title">EOL Scans</span>
+</div>
+
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Target</th>
+        <th>Findings</th>
+        <th>Status</th>
+        <th>Run At</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr>
+        <td class="fw-semibold">
+          <a href="{{ url_for('eol.view', scan_id=scan.id) }}" class="text-decoration-none">{{ scan.name }}</a>
+        </td>
+        <td class="text-muted small">{{ scan.target.host }}</td>
+        <td>
+          {% set vulns = scan.results.filter_by(result_type='vulnerability').count() %}
+          {% set crits = scan.results.filter_by(result_type='vulnerability', severity='critical').count() %}
+          {% if crits %}<span class="badge-severity sev-critical me-1">{{ crits }} EOL</span>{% endif %}
+          <span class="text-muted">{{ vulns }} finding{% if vulns != 1 %}s{% endif %}</span>
+        </td>
+        <td><span class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span></td>
+        <td class="text-muted small">
+          {{ scan.completed_at | localdt('%Y-%m-%d %H:%M') if scan.completed_at else scan.created_at | localdt('%Y-%m-%d %H:%M') }}
+        </td>
+        <td>
+          {% if current_user.is_admin %}
+          <form method="POST" action="{{ url_for('eol.delete', scan_id=scan.id) }}"
+                data-confirm="Delete this EOL scan and all its findings?">
+            <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" class="text-center text-muted py-5">
+          <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+          No EOL scans yet.
+          {% if current_user.is_admin %}
+          <div class="mt-2">
+            <a href="{{ url_for('eol.new') }}" class="btn btn-primary btn-sm">Run your first scan</a>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if not targets %}
+<div class="alert alert-warning mt-3">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  No targets configured.
+  <a href="{{ url_for('targets.index') }}" class="alert-link">Add a target with SSH credentials</a> to enable EOL scanning.
+</div>
+{% endif %}
+
+{% endblock %}
