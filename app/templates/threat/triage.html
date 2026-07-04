@@ -70,6 +70,8 @@
           <span class="badge ms-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
           {% elif src == 'AbuseIPDB' %}
           <span class="badge ms-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">AbuseIPDB</span>
+          {% elif src.startswith('pulseDrive:') %}
+          <span class="badge ms-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
           {% endif %}
         {% endfor %}
       </div>
@@ -170,6 +172,7 @@
             {% if src == 'VirusTotal' %}<span class="badge me-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>
             {% elif src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
             {% elif src == 'AbuseIPDB' %}<span class="badge me-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>
+            {% elif src.startswith('pulseDrive:') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
             {% endif %}
           {% endfor %}
         </td>
@@ -185,7 +188,7 @@
 <!-- ── Manual Triage Lookup ───────────────────────────────────────────────── -->
 <div class="section-header mb-3 mt-4">
   <span class="section-title">Manual IP Triage</span>
-  <span class="text-muted small">GreyNoise · Shodan InternetDB · VirusTotal</span>
+  <span class="text-muted small">pulseDrive · Shodan InternetDB · VirusTotal</span>
 </div>
 
 <div class="form-card mb-4">
@@ -196,7 +199,7 @@
         <input type="text" name="ip" class="form-control form-control-lg font-monospace"
                value="{{ ip }}" placeholder="e.g. 198.51.100.1" required autofocus>
         <div class="form-text">
-          Queries GreyNoise (noise/RIOT), Shodan InternetDB (ports/CVEs), and VirusTotal simultaneously.
+          Queries pulseDrive (ThreatMiner, URLhaus, Criminal IP), Shodan InternetDB (ports/CVEs), and VirusTotal simultaneously.
         </div>
       </div>
       <div class="col-lg-3">
@@ -214,7 +217,7 @@
 
 {% if result %}
 {% set v = result.verdict %}
-{% set gn  = result.gn %}
+{% set pd  = result.pd %}
 {% set idb = result.idb %}
 {% set vt  = result.vt %}
 
@@ -256,53 +259,64 @@
 <!-- Three source panels -->
 <div class="row g-3 mb-4">
 
-  <!-- GreyNoise -->
+  <!-- pulseDrive -->
+  {% set crim = pd.criminalip if pd else None %}
+  {% set urlh = pd.urlhaus if pd else None %}
+  {% set tm   = pd.threatminer if pd else None %}
   <div class="col-md-4">
     <div class="form-card h-100">
       <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="badge fw-bold" style="background:#1a9e5c;font-size:0.75rem">GN</span>
-        <span class="fw-semibold">GreyNoise</span>
-        {% if not gn %}
-          <span class="badge bg-secondary ms-auto">No Key</span>
-        {% elif gn.error is defined %}
-          <span class="badge bg-secondary ms-auto">Error</span>
-        {% elif gn.riot %}
-          <span class="badge bg-success ms-auto">RIOT</span>
-        {% elif gn.noise and gn.classification == 'malicious' %}
-          <span class="badge bg-danger ms-auto">Malicious Scanner</span>
-        {% elif gn.noise and gn.classification == 'benign' %}
-          <span class="badge bg-info text-dark ms-auto">Benign Scanner</span>
-        {% elif gn.not_seen %}
-          <span class="badge bg-secondary ms-auto">Not Seen</span>
+        <span class="badge fw-bold" style="background:#7c3aed;font-size:0.75rem">PD</span>
+        <span class="fw-semibold">pulseDrive</span>
+        {% if not pd %}
+          <span class="badge bg-secondary ms-auto">No Data</span>
+        {% elif crim and crim.risk_score in ('critical', 'dangerous') %}
+          <span class="badge bg-danger ms-auto">High Risk</span>
+        {% elif urlh and urlh.found and urlh.url_count %}
+          <span class="badge bg-danger ms-auto">URLhaus Hit</span>
+        {% elif crim and (crim.is_scanner or crim.is_vpn) %}
+          <span class="badge bg-info text-dark ms-auto">Scanner/VPN</span>
         {% else %}
-          <span class="badge bg-secondary ms-auto">Unknown</span>
+          <span class="badge bg-success ms-auto">Clean</span>
         {% endif %}
       </div>
-      {% if not gn %}
-        <p class="text-muted small">Configure GreyNoise API key in Settings → Threat Intelligence.</p>
-      {% elif gn.error is defined %}
-        <p class="text-danger small">{{ gn.error }}</p>
-      {% elif gn.not_seen %}
-        <p class="text-muted small">IP not observed by GreyNoise.</p>
+      {% if not pd %}
+        <p class="text-muted small">No pulseDrive data returned for this IP.</p>
       {% else %}
+        {% if crim and not crim.error %}
         <div class="d-flex gap-2 mb-3 flex-wrap">
           <div class="px-3 py-2 rounded text-center flex-grow-1"
-               style="background:{% if gn.noise %}rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3){% else %}rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.25){% endif %}">
-            <div class="fw-bold {% if gn.noise %}text-danger{% else %}text-success{% endif %}" style="font-size:1.1rem">{{ 'YES' if gn.noise else 'NO' }}</div>
-            <div class="text-muted" style="font-size:0.7rem">NOISE</div>
+               style="background:{% if crim.is_scanner %}rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3){% else %}rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.25){% endif %}">
+            <div class="fw-bold {% if crim.is_scanner %}text-danger{% else %}text-success{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_scanner else 'NO' }}</div>
+            <div class="text-muted" style="font-size:0.7rem">SCANNER</div>
           </div>
           <div class="px-3 py-2 rounded text-center flex-grow-1"
-               style="background:{% if gn.riot %}rgba(22,163,74,0.12);border:1px solid rgba(22,163,74,0.3){% else %}rgba(255,255,255,0.04);border:1px solid var(--border-color){% endif %}">
-            <div class="fw-bold {% if gn.riot %}text-success{% else %}text-muted{% endif %}" style="font-size:1.1rem">{{ 'YES' if gn.riot else 'NO' }}</div>
-            <div class="text-muted" style="font-size:0.7rem">RIOT</div>
+               style="background:{% if crim.is_vpn %}rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.3){% else %}rgba(255,255,255,0.04);border:1px solid var(--border-color){% endif %}">
+            <div class="fw-bold {% if crim.is_vpn %}text-warning{% else %}text-muted{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_vpn else 'NO' }}</div>
+            <div class="text-muted" style="font-size:0.7rem">VPN</div>
           </div>
         </div>
-        {% if gn.name %}<div class="small mb-1"><span class="text-muted">Entity:</span> <strong>{{ gn.name }}</strong></div>{% endif %}
-        {% if gn.classification %}<div class="small mb-1"><span class="text-muted">Classification:</span>
-          <span class="{% if gn.classification == 'malicious' %}text-danger{% elif gn.classification == 'benign' %}text-success{% else %}text-muted{% endif %}">{{ gn.classification | title }}</span>
-        </div>{% endif %}
-        {% if gn.last_seen %}<div class="small text-muted">Last seen: {{ gn.last_seen }}</div>{% endif %}
-        {% if gn.link %}<div class="mt-2"><a href="{{ gn.link }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.7rem"><i class="bi bi-box-arrow-up-right me-1"></i>GreyNoise Details</a></div>{% endif %}
+        <div class="small mb-1"><span class="text-muted">Criminal IP risk:</span>
+          <span class="{% if crim.risk_score in ('critical','dangerous') %}text-danger{% elif crim.risk_score == 'moderate' %}text-warning{% else %}text-success{% endif %}">{{ crim.risk_score | title }}</span>
+        </div>
+        {% elif crim and crim.error %}
+        <p class="text-muted small mb-2">Criminal IP: {{ crim.error }}</p>
+        {% endif %}
+        {% if urlh and not urlh.error and urlh.found %}
+        <div class="small mb-1"><span class="text-muted">URLhaus:</span>
+          <span class="text-danger">{{ urlh.url_count }} malicious URL(s) hosted</span>
+        </div>
+        {% endif %}
+        {% if tm and not tm.error and tm.tags %}
+        <div class="small mt-2">
+          <span class="text-muted">ThreatMiner tags:</span>
+          <div class="d-flex flex-wrap gap-1 mt-1">
+            {% for tag in tm.tags[:6] %}
+            <span class="badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;font-size:0.65rem">{{ tag }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
       {% endif %}
     </div>
   </div>
@@ -389,6 +403,7 @@
                 {% if src == 'VirusTotal' %}<span class="badge" style="background:rgba(57,80,222,0.2);color:#8599ff;font-size:0.6rem">VT</span>
                 {% elif src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#e17c00;font-size:0.6rem">OTX</span>
                 {% elif src == 'AbuseIPDB' %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d;font-size:0.6rem">Abuse</span>
+                {% elif src.startswith('pulseDrive:') %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;font-size:0.6rem">{{ src.split(':')[1] }}</span>
                 {% endif %}
               {% endfor %}
             </td>

@@ -1,27 +1,33 @@
-from . import greynoise as gn_mod, internetdb as idb_mod, virustotal as vt_mod
+from . import pulsedrive, internetdb as idb_mod, virustotal as vt_mod
 
 
-def run(ip, greynoise_key=None, vt_key=None):
-    """Query GreyNoise + InternetDB + VirusTotal for an IP and return a unified triage dict."""
-    gn  = gn_mod.lookup(ip, greynoise_key) if greynoise_key else None
+def run(ip, cfg=None, vt_key=None):
+    """Query pulseDrive (ThreatMiner/URLhaus/Criminal IP) + InternetDB + VirusTotal
+    for an IP and return a unified triage dict."""
+    pd  = pulsedrive.enrich_ip(ip, cfg) if cfg else {}
     idb = idb_mod.lookup(ip)
-    vt  = vt_mod.lookup(ip, "ip", vt_key)  if vt_key        else None
-    v   = verdict(gn, vt)
-    return {"ip": ip, "gn": gn, "idb": idb, "vt": vt, "verdict": v}
+    vt  = vt_mod.lookup(ip, "ip", vt_key) if vt_key else None
+    v   = verdict(pd, vt)
+    return {"ip": ip, "pd": pd, "idb": idb, "vt": vt, "verdict": v}
 
 
-def verdict(gn, vt):
+def verdict(pd, vt):
     """
     Returns dict with keys: label, level, reason.
-    Labels: DISMISS | NOISE | INVESTIGATE | ESCALATE
+    Labels: NOISE | INVESTIGATE | ESCALATE
     """
-    if gn and not gn.get("error") and gn.get("riot"):
-        return {"label": "DISMISS",    "level": "success",
-                "reason": f"RIOT: known benign infrastructure ({gn.get('name', 'known service')})"}
+    pd   = pd or {}
+    crim = pd.get("criminalip") or {}
+    urlh = pd.get("urlhaus") or {}
+    tm   = pd.get("threatminer") or {}
 
-    if gn and not gn.get("error") and gn.get("noise") and gn.get("classification") == "malicious":
+    if crim and not crim.get("error") and crim.get("risk_score") in ("critical", "dangerous"):
         return {"label": "ESCALATE",   "level": "danger",
-                "reason": "GreyNoise: known malicious internet scanner"}
+                "reason": f"Criminal IP: {crim.get('risk_score')} risk score"}
+
+    if urlh and not urlh.get("error") and urlh.get("found") and urlh.get("url_count", 0) > 0:
+        return {"label": "ESCALATE",   "level": "danger",
+                "reason": f"URLhaus: {urlh.get('url_count')} malicious URL(s) hosted on this IP"}
 
     if vt and not vt.get("error") and not vt.get("not_found"):
         malicious = vt.get("malicious", 0)
@@ -32,9 +38,13 @@ def verdict(gn, vt):
             return {"label": "INVESTIGATE", "level": "warning",
                     "reason": f"VirusTotal: {malicious} engine(s) detected — low confidence"}
 
-    if gn and not gn.get("error") and gn.get("noise") and gn.get("classification") == "benign":
+    if crim and not crim.get("error") and (crim.get("is_scanner") or crim.get("is_vpn")):
         return {"label": "NOISE",      "level": "info",
-                "reason": "GreyNoise: benign internet scanner (research/crawler)"}
+                "reason": "Criminal IP: known scanner/VPN infrastructure"}
+
+    if tm and not tm.get("error") and tm.get("tags"):
+        return {"label": "INVESTIGATE", "level": "warning",
+                "reason": f"ThreatMiner: tagged ({', '.join(tm['tags'][:3])})"}
 
     return {"label": "INVESTIGATE", "level": "warning",
             "reason": "No definitive signal — manual review recommended"}

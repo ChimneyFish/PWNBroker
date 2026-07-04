@@ -207,7 +207,7 @@
 {% for r in triage_results %}
 {% set td = triage_data.get(r.host, {}) %}
 {% set v  = td.get('verdict', {}) %}
-{% set gn  = td.get('gn') %}
+{% set pd  = td.get('pd') %}
 {% set idb = td.get('idb', {}) %}
 {% set vt  = td.get('vt') %}
 <div class="mb-4 p-3 rounded-3"
@@ -248,45 +248,43 @@
   <!-- Three source panels -->
   <div class="row g-2">
 
-    <!-- GreyNoise -->
+    <!-- pulseDrive -->
+    {% set crim = pd.criminalip if pd else None %}
+    {% set urlh = pd.urlhaus if pd else None %}
     <div class="col-md-4">
       <div class="p-2 rounded h-100" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
         <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge fw-bold" style="background:#1a9e5c;font-size:0.65rem">GN</span>
-          <span class="small fw-semibold">GreyNoise</span>
-          {% if not gn %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">No Key</span>
-          {% elif gn.error is defined %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Error</span>
-          {% elif gn.riot %}
-            <span class="badge bg-success ms-auto" style="font-size:0.6rem">RIOT</span>
-          {% elif gn.noise and gn.classification == 'malicious' %}
-            <span class="badge bg-danger ms-auto" style="font-size:0.6rem">Malicious</span>
-          {% elif gn.noise and gn.classification == 'benign' %}
-            <span class="badge bg-info text-dark ms-auto" style="font-size:0.6rem">Benign Scanner</span>
-          {% elif gn.not_seen %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Not Seen</span>
+          <span class="badge fw-bold" style="background:#7c3aed;font-size:0.65rem">PD</span>
+          <span class="small fw-semibold">pulseDrive</span>
+          {% if not pd %}
+            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">No Data</span>
+          {% elif crim and crim.risk_score in ('critical', 'dangerous') %}
+            <span class="badge bg-danger ms-auto" style="font-size:0.6rem">High Risk</span>
+          {% elif urlh and urlh.found and urlh.url_count %}
+            <span class="badge bg-danger ms-auto" style="font-size:0.6rem">URLhaus Hit</span>
+          {% elif crim and (crim.is_scanner or crim.is_vpn) %}
+            <span class="badge bg-info text-dark ms-auto" style="font-size:0.6rem">Scanner/VPN</span>
           {% else %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Unknown</span>
+            <span class="badge bg-success ms-auto" style="font-size:0.6rem">Clean</span>
           {% endif %}
         </div>
-        {% if not gn %}
-          <p class="text-muted small mb-0" style="font-size:0.72rem">Add GreyNoise key in Settings.</p>
-        {% elif gn.error is defined %}
-          <p class="text-danger small mb-0" style="font-size:0.72rem">{{ gn.error }}</p>
-        {% elif gn.not_seen %}
-          <p class="text-muted small mb-0" style="font-size:0.72rem">Not observed by GreyNoise.</p>
+        {% if not pd %}
+          <p class="text-muted small mb-0" style="font-size:0.72rem">No pulseDrive data returned.</p>
         {% else %}
+          {% if crim and not crim.error %}
           <div class="d-flex gap-2 mb-1">
-            <span class="small {% if gn.noise %}text-danger{% else %}text-success{% endif %}">
-              Noise: <strong>{{ 'Yes' if gn.noise else 'No' }}</strong>
+            <span class="small {% if crim.is_scanner %}text-danger{% else %}text-success{% endif %}">
+              Scanner: <strong>{{ 'Yes' if crim.is_scanner else 'No' }}</strong>
             </span>
-            <span class="small {% if gn.riot %}text-success{% else %}text-muted{% endif %}">
-              RIOT: <strong>{{ 'Yes' if gn.riot else 'No' }}</strong>
+            <span class="small {% if crim.is_vpn %}text-warning{% else %}text-muted{% endif %}">
+              VPN: <strong>{{ 'Yes' if crim.is_vpn else 'No' }}</strong>
             </span>
           </div>
-          {% if gn.name %}<div class="small text-muted" style="font-size:0.72rem">{{ gn.name }}</div>{% endif %}
-          {% if gn.last_seen %}<div class="small text-muted" style="font-size:0.7rem">Last: {{ gn.last_seen }}</div>{% endif %}
+          <div class="small text-muted" style="font-size:0.72rem">Risk: {{ crim.risk_score | title }}</div>
+          {% endif %}
+          {% if urlh and not urlh.error and urlh.found %}
+          <div class="small text-danger" style="font-size:0.7rem">URLhaus: {{ urlh.url_count }} malicious URL(s)</div>
+          {% endif %}
         {% endif %}
       </div>
     </div>

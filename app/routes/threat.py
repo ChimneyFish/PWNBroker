@@ -193,9 +193,7 @@ def triage():
         if ip and not error:
             cfg = _get_cfg()
             from ..threat.triage import run as triage_run
-            result = triage_run(ip,
-                                greynoise_key=cfg.greynoise_api_key or None,
-                                vt_key=cfg.virustotal_api_key or None)
+            result = triage_run(ip, cfg=cfg, vt_key=cfg.virustotal_api_key or None)
 
     return render_template("threat/triage.html",
                            pending=pending, alerted=alerted, dismissed=dismissed,

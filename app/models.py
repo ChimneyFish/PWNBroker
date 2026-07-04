@@ -244,10 +244,16 @@ class ThreatConfig(db.Model):
     virustotal_api_key      = db.Column(db.String(512))
     abuseipdb_api_key       = db.Column(db.String(512))
     securitytrails_api_key  = db.Column(db.String(512))
-    greynoise_api_key       = db.Column(db.String(512))
     dnsdumpster_api_key     = db.Column(db.String(512))
     nvd_api_key             = db.Column(db.String(512))
     github_advisory_token   = db.Column(db.String(512))
+    # pulseDrive sources
+    urlhaus_api_key         = db.Column(db.String(512))
+    criminalip_api_key      = db.Column(db.String(512))
+    vulners_api_key         = db.Column(db.String(512))
+    hybridanalysis_api_key  = db.Column(db.String(512))
+    phishtank_api_key       = db.Column(db.String(512))
+    socradar_api_key        = db.Column(db.String(512))  # stored for future use — no lookup wired yet
     registration_token      = db.Column(db.String(128))   # pre-shared secret for agent registration
     updated_at              = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -290,9 +296,10 @@ class SocCase(db.Model):
     verdict          = db.Column(db.String(20))           # suspicious | malicious
     flagging_sources = db.Column(db.Text)                 # JSON list e.g. ["VT","OTX"]
     source_count     = db.Column(db.Integer, default=0)
-    otx_result       = db.Column(db.Text)
-    vt_result        = db.Column(db.Text)
-    abuseipdb_result = db.Column(db.Text)
+    otx_result        = db.Column(db.Text)
+    vt_result         = db.Column(db.Text)
+    abuseipdb_result  = db.Column(db.Text)
+    pulsedrive_result = db.Column(db.Text)
     status           = db.Column(db.String(20), default="pending")  # pending|alerted|dismissed
     analyst_notes    = db.Column(db.Text)
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -308,9 +315,10 @@ class IOCRecord(db.Model):
     ioc_type         = db.Column(db.String(50))    # ip | domain | url | hash
     threat_score     = db.Column(db.Integer, default=0)
     verdict          = db.Column(db.String(20))    # clean | suspicious | malicious | unknown
-    otx_result       = db.Column(db.Text)
-    vt_result        = db.Column(db.Text)
-    abuseipdb_result = db.Column(db.Text)
+    otx_result        = db.Column(db.Text)
+    vt_result         = db.Column(db.Text)
+    abuseipdb_result  = db.Column(db.Text)
+    pulsedrive_result = db.Column(db.Text)
     looked_up_by     = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     expires_at       = db.Column(db.DateTime)

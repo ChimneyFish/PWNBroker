@@ -238,6 +238,51 @@
     </div>
   </div>
 </div>
+
+{% if result.pulsedrive %}
+<!-- pulseDrive sources -->
+<div class="data-table mb-4">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">
+      <span class="badge me-2" style="background:#7c3aed">pulseDrive</span>
+      Additional Sources
+    </span>
+  </div>
+  <div class="row g-3 p-3">
+    {% for name, src in result.pulsedrive.items() %}
+    <div class="col-md-4">
+      <div class="p-3 rounded h-100" style="background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.2)">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="fw-semibold text-capitalize">{{ name }}</span>
+          {% if src.error %}<span class="badge bg-secondary ms-auto">Error</span>
+          {% elif src.verdict == 'malicious' %}<span class="badge bg-danger ms-auto">Malicious</span>
+          {% elif src.verdict == 'suspicious' %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
+          {% elif src.verdict %}<span class="badge bg-success ms-auto">Clean</span>
+          {% endif %}
+        </div>
+        {% if src.error %}
+        <p class="text-danger small mb-0">{{ src.error }}</p>
+        {% else %}
+          {% if src.tags %}
+          <div class="d-flex flex-wrap gap-1 mb-1">
+            {% for t in src.tags[:6] %}<span class="badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;font-size:0.62rem">{{ t }}</span>{% endfor %}
+          </div>
+          {% endif %}
+          {% if src.url_count is defined %}<div class="small"><span class="text-muted">URLs:</span> {{ src.url_count }}</div>{% endif %}
+          {% if src.risk_score is defined %}<div class="small"><span class="text-muted">Risk:</span> {{ src.risk_score }}</div>{% endif %}
+          {% if src.cvss_score is defined %}<div class="small"><span class="text-muted">CVSS:</span> {{ src.cvss_score }}</div>{% endif %}
+          {% if src.threat_score is defined %}<div class="small"><span class="text-muted">Threat score:</span> {{ src.threat_score }}</div>{% endif %}
+          {% if src.in_database is defined %}<div class="small"><span class="text-muted">In DB:</span> {{ 'Yes' if src.in_database else 'No' }}</div>{% endif %}
+          {% if src.summary %}<div class="small text-muted mt-1">{{ src.summary[:180] }}</div>{% endif %}
+          {% if src.description %}<div class="small text-muted mt-1">{{ src.description[:180] }}</div>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% if result and result.otx and result.otx.pulses %}
 <!-- OTX Pulse Detail -->
 <div class="collapse mb-4" id="otx-pulses">
@@ -327,6 +372,7 @@
           {% if rec.otx_result %}{% set _o = rec.otx_result | fromjson %}{% if _o.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>{% endif %}{% endif %}
           {% if rec.vt_result %}{% set _v = rec.vt_result | fromjson %}{% if _v.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>{% endif %}{% endif %}
           {% if rec.abuseipdb_result %}{% set _a = rec.abuseipdb_result | fromjson %}{% if _a.verdict in ('suspicious','malicious') %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>{% endif %}{% endif %}
+          {% if rec.pulsedrive_result %}{% set _pd = rec.pulsedrive_result | fromjson %}{% for _name, _src in _pd.items() %}{% if _src.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ _name }}</span>{% endif %}{% endfor %}{% endif %}
         </td>
         <td class="text-muted small">{{ rec.expires_at | localdt('%m/%d %H:%M') if rec.expires_at else '—' }}</td>
         <td>

@@ -195,18 +195,100 @@
             </div>
           </div>
 
-          <!-- GreyNoise -->
+          <!-- URLhaus (pulseDrive) -->
           <div class="col-md-4">
             <label class="form-label d-flex align-items-center gap-2">
-              GreyNoise API Key
-              <span class="key-pill" id="pill-greynoise" data-svc="greynoise">
-                {% if threat_cfg.greynoise_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              URLhaus API Key
+              <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
+              <span class="key-pill" id="pill-urlhaus" data-svc="urlhaus">
+                {% if threat_cfg.urlhaus_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
               </span>
             </label>
-            <input type="password" name="greynoise_api_key" class="form-control font-monospace"
+            <input type="password" name="urlhaus_api_key" class="form-control font-monospace"
                    placeholder="Leave blank to keep current" autocomplete="new-password">
-            <div class="form-text text-muted">SOC triage — noise/RIOT classification.
-              <a href="https://viz.greynoise.io/account/api-key" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            <div class="form-text text-muted">Malicious URL/host database (abuse.ch).
+              <a href="https://auth.abuse.ch/" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- Criminal IP (pulseDrive) -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              Criminal IP API Key
+              <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
+              <span class="key-pill" id="pill-criminalip" data-svc="criminalip">
+                {% if threat_cfg.criminalip_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="criminalip_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">SOC triage — IP risk score, VPN/scanner flags.
+              <a href="https://www.criminalip.io/mypage/information" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- Vulners (pulseDrive) -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              Vulners API Key
+              <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
+              <span class="key-pill" id="pill-vulners" data-svc="vulners">
+                {% if threat_cfg.vulners_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="vulners_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">CVE Lookup — CVSS/EPSS enrichment.
+              <a href="https://vulners.com/" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- Hybrid Analysis (pulseDrive) -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              Hybrid Analysis API Key
+              <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
+              <span class="key-pill" id="pill-hybridanalysis" data-svc="hybridanalysis">
+                {% if threat_cfg.hybridanalysis_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="hybridanalysis_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">IOC Lookup — file hash sandbox verdicts (Falcon Sandbox).
+              <a href="https://hybrid-analysis.com/apikeys/info" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- PhishTank (pulseDrive) -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              PhishTank API Key <span class="text-muted small">(optional)</span>
+              <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
+              <span class="key-pill" id="pill-phishtank" data-svc="phishtank">
+                {% if threat_cfg.phishtank_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="phishtank_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank — works without a key">
+            <div class="form-text text-muted">IOC Lookup (URLs) — phishing database. Works keyless; a key only raises the rate limit.
+              <a href="https://www.phishtank.com/api_register.php" target="_blank" rel="noopener" class="text-info ms-1">Get key</a>
+            </div>
+          </div>
+
+          <!-- SOCRadar (pulseDrive — not yet wired up) -->
+          <div class="col-md-4">
+            <label class="form-label d-flex align-items-center gap-2">
+              SOCRadar API Key
+              <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.6rem">NOT WIRED UP</span>
+              <span class="key-pill" id="pill-socradar" data-svc="socradar">
+                {% if threat_cfg.socradar_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="socradar_api_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+            <div class="form-text text-muted">
+              SOCRadar has no public self-serve API endpoint — this key is stored for when
+              your account-specific endpoint URL is available, but no lookup is active yet.
             </div>
           </div>
 
@@ -692,7 +774,8 @@ async function testAllKeys() {
 
   // Collect any key values currently typed into the form (unsaved keys can be tested live)
   const keyFields = ['otx_api_key','virustotal_api_key','abuseipdb_api_key',
-                     'greynoise_api_key','dnsdumpster_api_key','nvd_api_key'];
+                     'dnsdumpster_api_key','nvd_api_key',
+                     'urlhaus_api_key','criminalip_api_key','vulners_api_key','hybridanalysis_api_key'];
   const liveKeys = {};
   const threatForm = document.querySelector('input[name="form"][value="threat"]')?.closest('form');
   if (threatForm) {

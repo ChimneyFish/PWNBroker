@@ -185,10 +185,15 @@ def index():
             otx_key = request.form.get("otx_api_key", "").strip()
             vt_key  = request.form.get("virustotal_api_key", "").strip()
             ab_key  = request.form.get("abuseipdb_api_key", "").strip()
-            gn_key  = request.form.get("greynoise_api_key", "").strip()
             dd_key  = request.form.get("dnsdumpster_api_key", "").strip()
             nvd_key = request.form.get("nvd_api_key", "").strip()
             gh_key  = request.form.get("github_advisory_token", "").strip()
+            uh_key  = request.form.get("urlhaus_api_key", "").strip()
+            ci_key  = request.form.get("criminalip_api_key", "").strip()
+            vn_key  = request.form.get("vulners_api_key", "").strip()
+            ha_key  = request.form.get("hybridanalysis_api_key", "").strip()
+            pt_key  = request.form.get("phishtank_api_key", "").strip()
+            sr_key  = request.form.get("socradar_api_key", "").strip()
             now = datetime.now(timezone.utc)
 
             if otx_key:
@@ -197,14 +202,24 @@ def index():
                 threat_cfg.virustotal_api_key = vt_key
             if ab_key:
                 threat_cfg.abuseipdb_api_key = ab_key
-            if gn_key:
-                threat_cfg.greynoise_api_key = gn_key
             if dd_key:
                 threat_cfg.dnsdumpster_api_key = dd_key
             if nvd_key:
                 threat_cfg.nvd_api_key = nvd_key
             if gh_key:
                 threat_cfg.github_advisory_token = gh_key
+            if uh_key:
+                threat_cfg.urlhaus_api_key = uh_key
+            if ci_key:
+                threat_cfg.criminalip_api_key = ci_key
+            if vn_key:
+                threat_cfg.vulners_api_key = vn_key
+            if ha_key:
+                threat_cfg.hybridanalysis_api_key = ha_key
+            if pt_key:
+                threat_cfg.phishtank_api_key = pt_key
+            if sr_key:
+                threat_cfg.socradar_api_key = sr_key
             from ..audit import log_action
             log_action("settings.threat_save", detail="Threat Intel API keys updated")
             threat_cfg.updated_at = now
@@ -408,21 +423,76 @@ def test_keys():
     else:
         results["abuseipdb"] = {"status": "not_set", "detail": "Not configured"}
 
-    # ── GreyNoise ─────────────────────────────────────────────────────────────
-    gn_key = _key("greynoise_api_key")
-    if gn_key:
-        code, resp = _get("https://api.greynoise.io/ping",
-                          headers={"key": gn_key})
-        if code == 200:
-            results["greynoise"] = {"status": "ok", "detail": "Valid"}
-        elif code in (401, 403):
-            results["greynoise"] = {"status": "error", "detail": "Invalid key"}
-        elif code is None:
-            results["greynoise"] = {"status": "error", "detail": f"Network error: {resp}"}
-        else:
-            results["greynoise"] = {"status": "error", "detail": f"HTTP {code}"}
+    # ── URLhaus (pulseDrive) ─────────────────────────────────────────────────
+    uh_key = _key("urlhaus_api_key")
+    if uh_key:
+        try:
+            r  = _req.post("https://urlhaus-api.abuse.ch/v1/url/",
+                           headers={"Auth-Key": uh_key},
+                           data={"url": "http://example.com/"}, timeout=8)
+            qs = (r.json() or {}).get("query_status", "") if r.ok else ""
+            if r.status_code == 200 and qs != "invalid_auth":
+                results["urlhaus"] = {"status": "ok", "detail": "Valid"}
+            elif qs == "invalid_auth" or r.status_code in (401, 403):
+                results["urlhaus"] = {"status": "error", "detail": "Invalid key"}
+            else:
+                results["urlhaus"] = {"status": "error", "detail": f"HTTP {r.status_code}"}
+        except Exception as e:
+            results["urlhaus"] = {"status": "error", "detail": f"Network error: {e}"}
     else:
-        results["greynoise"] = {"status": "not_set", "detail": "Not configured"}
+        results["urlhaus"] = {"status": "not_set", "detail": "Not configured"}
+
+    # ── Criminal IP (pulseDrive) ─────────────────────────────────────────────
+    ci_key = _key("criminalip_api_key")
+    if ci_key:
+        code, resp = _get("https://api.criminalip.io/v1/ip/data",
+                          headers={"x-api-key": ci_key}, params={"ip": "8.8.8.8"})
+        if code == 200:
+            results["criminalip"] = {"status": "ok", "detail": "Valid"}
+        elif code in (401, 403):
+            results["criminalip"] = {"status": "error", "detail": "Invalid key"}
+        elif code is None:
+            results["criminalip"] = {"status": "error", "detail": f"Network error: {resp}"}
+        else:
+            results["criminalip"] = {"status": "error", "detail": f"HTTP {code}"}
+    else:
+        results["criminalip"] = {"status": "not_set", "detail": "Not configured"}
+
+    # ── Vulners (pulseDrive) ─────────────────────────────────────────────────
+    vn_key = _key("vulners_api_key")
+    if vn_key:
+        try:
+            r = _req.post("https://vulners.com/api/v3/search/id",
+                          headers={"X-Api-Key": vn_key, "Content-Type": "application/json"},
+                          json={"id": "CVE-2021-44228"}, timeout=8)
+            if r.status_code == 200:
+                results["vulners"] = {"status": "ok", "detail": "Valid"}
+            elif r.status_code in (401, 403):
+                results["vulners"] = {"status": "error", "detail": "Invalid key"}
+            else:
+                results["vulners"] = {"status": "error", "detail": f"HTTP {r.status_code}"}
+        except Exception as e:
+            results["vulners"] = {"status": "error", "detail": f"Network error: {e}"}
+    else:
+        results["vulners"] = {"status": "not_set", "detail": "Not configured"}
+
+    # ── Hybrid Analysis (pulseDrive) ─────────────────────────────────────────
+    ha_key = _key("hybridanalysis_api_key")
+    if ha_key:
+        code, resp = _get("https://hybrid-analysis.com/api/v2/search/hash",
+                          headers={"api-key": ha_key, "User-Agent": "Falcon Sandbox",
+                                   "Accept": "application/json"},
+                          params={"hash": "d41d8cd98f00b204e9800998ecf8427e"})
+        if code == 200:
+            results["hybridanalysis"] = {"status": "ok", "detail": "Valid"}
+        elif code in (401, 403):
+            results["hybridanalysis"] = {"status": "error", "detail": "Invalid key"}
+        elif code is None:
+            results["hybridanalysis"] = {"status": "error", "detail": f"Network error: {resp}"}
+        else:
+            results["hybridanalysis"] = {"status": "error", "detail": f"HTTP {code}"}
+    else:
+        results["hybridanalysis"] = {"status": "not_set", "detail": "Not configured"}
 
     # ── DNSDumpster ──────────────────────────────────────────────────────────
     dd_key = _key("dnsdumpster_api_key")

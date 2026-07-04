@@ -107,6 +107,10 @@ def create_app(config_class=Config):
         except Exception:
             return {}
 
+    @app.template_test("startswith")
+    def _startswith(s, prefix):
+        return isinstance(s, str) and s.startswith(prefix)
+
     with app.app_context():
         db.create_all()
         _migrate_columns(app)
@@ -143,10 +147,16 @@ def _migrate_columns(app):
         ],
         "threat_configs": [
             ("securitytrails_api_key",  "VARCHAR(512)"),
-            ("greynoise_api_key",       "VARCHAR(512)"),
+            ("greynoise_api_key",       "VARCHAR(512)"),  # legacy — no longer read by app code
             ("dnsdumpster_api_key",     "VARCHAR(512)"),
             ("nvd_api_key",             "VARCHAR(512)"),
             ("github_advisory_token",   "VARCHAR(512)"),
+            ("urlhaus_api_key",        "VARCHAR(512)"),
+            ("criminalip_api_key",     "VARCHAR(512)"),
+            ("vulners_api_key",        "VARCHAR(512)"),
+            ("hybridanalysis_api_key", "VARCHAR(512)"),
+            ("phishtank_api_key",      "VARCHAR(512)"),
+            ("socradar_api_key",       "VARCHAR(512)"),
         ],
         "vuln_tickets": [
             ("vuln_name", "VARCHAR(300)"),
@@ -154,6 +164,12 @@ def _migrate_columns(app):
         ],
         "scheduled_scans": [
             ("asset_group_id", "INTEGER"),
+        ],
+        "ioc_records": [
+            ("pulsedrive_result", "TEXT"),
+        ],
+        "soc_cases": [
+            ("pulsedrive_result", "TEXT"),
         ],
     }
     with db.engine.connect() as conn:

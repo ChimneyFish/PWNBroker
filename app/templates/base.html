@@ -1,33 +1,40 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}PwnBroker{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PwnBroker{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}"
+      rel="stylesheet">
+  </head>
+  <body>
 
 {% if current_user.is_authenticated %}
 <div class="d-flex" id="app-wrapper">
 
   <!-- Sidebar -->
   <nav id="sidebar" class="d-flex flex-column p-3">
-    <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand d-block mb-4">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="PwnBroker" class="sidebar-logo">
+    <a href="{{ url_for("dashboard.index") }}" class="sidebar-brand d-block mb-4">
+      <img src="{{ url_for("static", filename = "img/logo.png") }}" alt="PwnBroker" class="sidebar-logo">
     </a>
 
     <ul class="nav flex-column gap-1">
       <li class="nav-item">
-        <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+        <a href="{{ url_for("dashboard.index") }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
           <i class="bi bi-speedometer2 me-2"></i>Dashboard
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('targets.index') }}" class="nav-link {% if 'targets' in request.endpoint %}active{% endif %}">
+        <a href="{{ url_for("targets.index") }}" class="nav-link {% if 'targets' in request.endpoint %}active{% endif %}">
           <i class="bi bi-bullseye me-2"></i>Targets
         </a>
       </li>
@@ -43,12 +50,12 @@
         <div class="collapse {% if 'assets' in (request.endpoint or '') %}show{% endif %}" id="assets-group">
           <ul class="nav flex-column gap-1 mt-1">
             <li class="nav-item">
-              <a href="{{ url_for('assets.index') }}" class="nav-link nav-sub {% if request.endpoint == 'assets.index' %}active{% endif %}">
+              <a href="{{ url_for("assets.index") }}" class="nav-link nav-sub {% if request.endpoint == 'assets.index' %}active{% endif %}">
                 <i class="bi bi-list-ul me-2"></i>Inventory
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('assets.groups') }}" class="nav-link nav-sub {% if request.endpoint in ('assets.groups','assets.group_detail') %}active{% endif %}">
+              <a href="{{ url_for("assets.groups") }}" class="nav-link nav-sub {% if request.endpoint in ('assets.groups','assets.group_detail') %}active{% endif %}">
                 <i class="bi bi-collection me-2"></i>Asset Groups
               </a>
             </li>
@@ -56,27 +63,27 @@
         </div>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('scans.index') }}" class="nav-link {% if 'scans' in request.endpoint %}active{% endif %}">
+        <a href="{{ url_for("scans.index") }}" class="nav-link {% if 'scans' in request.endpoint %}active{% endif %}">
           <i class="bi bi-radar me-2"></i>Scans
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('reports.index') }}" class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
+        <a href="{{ url_for("reports.index") }}" class="nav-link {% if 'reports' in request.endpoint %}active{% endif %}">
           <i class="bi bi-file-earmark-bar-graph me-2"></i>Reports
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('dependency.index') }}" class="nav-link {% if 'dependency' in request.endpoint %}active{% endif %}">
+        <a href="{{ url_for("dependency.index") }}" class="nav-link {% if 'dependency' in request.endpoint %}active{% endif %}">
           <i class="bi bi-box-seam me-2"></i>Dependency Scanner
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('eol.index') }}" class="nav-link {% if 'eol' in (request.endpoint or '') %}active{% endif %}">
+        <a href="{{ url_for("eol.index") }}" class="nav-link {% if 'eol' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-calendar-x me-2"></i>EOL Scanner
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('vulns.index') }}" class="nav-link {% if 'vulns' in (request.endpoint or '') %}active{% endif %}">
+        <a href="{{ url_for("vulns.index") }}" class="nav-link {% if 'vulns' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-bug me-2"></i>Vuln Management
         </a>
       </li>
@@ -92,22 +99,22 @@
         <div class="collapse {% if 'grc' in (request.endpoint or '') %}show{% endif %}" id="grc-group">
           <ul class="nav flex-column gap-1 mt-1">
             <li class="nav-item">
-              <a href="{{ url_for('grc.index') }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
+              <a href="{{ url_for("grc.index") }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
                 <i class="bi bi-speedometer me-2"></i>Overview
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('grc.risks') }}" class="nav-link nav-sub {% if 'grc.risk' in (request.endpoint or '') %}active{% endif %}">
+              <a href="{{ url_for("grc.risks") }}" class="nav-link nav-sub {% if 'grc.risk' in (request.endpoint or '') %}active{% endif %}">
                 <i class="bi bi-exclamation-triangle me-2"></i>Risk Register
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('grc.compliance') }}" class="nav-link nav-sub {% if 'grc.compliance' in (request.endpoint or '') or 'grc.framework' in (request.endpoint or '') %}active{% endif %}">
+              <a href="{{ url_for("grc.compliance") }}" class="nav-link nav-sub {% if 'grc.compliance' in (request.endpoint or '') or 'grc.framework' in (request.endpoint or '') %}active{% endif %}">
                 <i class="bi bi-clipboard-check me-2"></i>Compliance
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('grc.policies') }}" class="nav-link nav-sub {% if 'grc.polic' in (request.endpoint or '') %}active{% endif %}">
+              <a href="{{ url_for("grc.policies") }}" class="nav-link nav-sub {% if 'grc.polic' in (request.endpoint or '') %}active{% endif %}">
                 <i class="bi bi-file-text me-2"></i>Policies
               </a>
             </li>
@@ -126,27 +133,27 @@
         <div class="collapse {% if 'threat' in (request.endpoint or '') %}show{% endif %}" id="threat-group">
           <ul class="nav flex-column gap-1 mt-1">
             <li class="nav-item">
-              <a href="{{ url_for('threat.index') }}" class="nav-link nav-sub {% if request.endpoint == 'threat.index' %}active{% endif %}">
+              <a href="{{ url_for("threat.index") }}" class="nav-link nav-sub {% if request.endpoint == 'threat.index' %}active{% endif %}">
                 <i class="bi bi-grid me-2"></i>Overview
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('threat.lookup') }}" class="nav-link nav-sub {% if request.endpoint == 'threat.lookup' %}active{% endif %}">
+              <a href="{{ url_for("threat.lookup") }}" class="nav-link nav-sub {% if request.endpoint == 'threat.lookup' %}active{% endif %}">
                 <i class="bi bi-search me-2"></i>IOC Lookup
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('threat.feed') }}" class="nav-link nav-sub {% if request.endpoint == 'threat.feed' %}active{% endif %}">
+              <a href="{{ url_for("threat.feed") }}" class="nav-link nav-sub {% if request.endpoint == 'threat.feed' %}active{% endif %}">
                 <i class="bi bi-rss me-2"></i>OTX Feed
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('threat.triage') }}" class="nav-link nav-sub {% if request.endpoint == 'threat.triage' %}active{% endif %}">
+              <a href="{{ url_for("threat.triage") }}" class="nav-link nav-sub {% if request.endpoint == 'threat.triage' %}active{% endif %}">
                 <i class="bi bi-shield-check me-2"></i>SOC Triage
               </a>
             </li>
             <li class="nav-item">
-              <a href="{{ url_for('threat.agents_list') }}" class="nav-link nav-sub {% if request.endpoint in ('threat.agents_list', 'threat.agent_detail') %}active{% endif %}">
+              <a href="{{ url_for("threat.agents_list") }}" class="nav-link nav-sub {% if request.endpoint in ('threat.agents_list', 'threat.agent_detail') %}active{% endif %}">
                 <i class="bi bi-pc-display-horizontal me-2"></i>Agents
               </a>
             </li>
@@ -156,12 +163,12 @@
       {% if current_user.is_admin %}
       <li class="mt-3 sidebar-section-label">ADMIN</li>
       <li class="nav-item">
-        <a href="{{ url_for('activity.index') }}" class="nav-link {% if 'activity' in (request.endpoint or '') %}active{% endif %}">
+        <a href="{{ url_for("activity.index") }}" class="nav-link {% if 'activity' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-journal-text me-2"></i>Activity Log
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('settings.index') }}" class="nav-link {% if 'settings' in (request.endpoint or '') %}active{% endif %}">
+        <a href="{{ url_for("settings.index") }}" class="nav-link {% if 'settings' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-gear me-2"></i>Settings &amp; Users
         </a>
       </li>
@@ -176,8 +183,8 @@
           <div class="text-muted" style="font-size:0.7rem">{{ current_user.role }}</div>
         </div>
       </div>
-      <a href="{{ url_for('users.profile') }}" class="nav-link small"><i class="bi bi-person-gear me-1"></i>Profile</a>
-      <a href="{{ url_for('auth.logout') }}" class="nav-link small text-danger"><i class="bi bi-box-arrow-left me-1"></i>Logout</a>
+      <a href="{{ url_for("users.profile") }}" class="nav-link small"><i class="bi bi-person-gear me-1"></i>Profile</a>
+      <a href="{{ url_for("auth.logout") }}" class="nav-link small text-danger"><i class="bi bi-box-arrow-left me-1"></i>Logout</a>
     </div>
   </nav>
 
@@ -214,7 +221,7 @@
 <script>window.APP_TZ = "{{ app_timezone() }}";</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for("static", filename = "js/main.js") }}"></script>
 {% block scripts %}{% endblock %}
-</body>
+  </body>
 </html>
