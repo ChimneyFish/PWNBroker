@@ -9,6 +9,9 @@
   <a href="{{ url_for('reports.download', scan_id=scan.id, fmt='html') }}" class="btn btn-outline-secondary btn-sm">
     <i class="bi bi-file-earmark-code me-1"></i>HTML
   </a>
+  <a href="{{ url_for('reports.download', scan_id=scan.id, fmt='csv') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV
+  </a>
   {% if current_user.is_admin and jira_enabled and scan.status == 'done' %}
   <form method="POST" action="{{ url_for('atlassian.jira_create', scan_id=scan.id) }}" class="d-inline"
         data-confirm="Create Jira tickets for all untracked vulnerabilities above threshold?">

@@ -1,8 +1,9 @@
 import os
+import csv
 import base64
 import sqlalchemy as sa
 from html import escape as h
-from io import BytesIO
+from io import BytesIO, StringIO
 from datetime import datetime, timezone
 from collections import defaultdict
 
@@ -423,6 +424,71 @@ def build_pdf_report(scans) -> bytes:
 
     doc.build(story, onFirstPage=cb, onLaterPages=cb)
     return buf.getvalue()
+
+
+# ── CSV report ────────────────────────────────────────────────────────────────
+
+def build_csv_report(scans) -> bytes:
+    """Flat, spreadsheet-friendly export of findings — one row per finding.
+
+    Includes open VulnTicket tracking fields (status/assignee/due date/notes)
+    so individuals triaging vulnerabilities can work from a single sheet.
+    """
+    from ..models import ScanResult
+
+    buf = StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "Scan Name", "Target", "Scan Type", "Scan Completed",
+        "Severity", "Title", "Host", "Port", "Protocol", "Service",
+        "CVE ID", "CVSS Score", "Description", "Remediation",
+        "Package", "Package Version", "Ecosystem", "Fixed Version",
+        "Ticket Status", "Assigned To", "Due Date", "Notes",
+    ])
+
+    for scan in scans:
+        results = scan.results.filter(
+            sa.or_(
+                ScanResult.result_type == "vulnerability",
+                ScanResult.result_type == "web_check",
+            )
+        ).order_by(
+            sa.case(
+                {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4},
+                value=ScanResult.severity,
+            )
+        ).all()
+
+        for r in results:
+            ticket = r.vuln_ticket
+            assignee = ticket.assignee.username if ticket and ticket.assignee else ""
+            writer.writerow([
+                scan.name,
+                scan.target.host,
+                scan.scan_type,
+                scan.completed_at.strftime("%Y-%m-%d %H:%M") if scan.completed_at else "",
+                (r.severity or "").upper(),
+                r.title or "",
+                r.host or "",
+                r.port if r.port is not None else "",
+                r.protocol or "",
+                r.service or "",
+                r.cve_id or "",
+                r.cvss_score if r.cvss_score is not None else "",
+                r.description or "",
+                r.remediation or "",
+                r.package_name or "",
+                r.package_version or "",
+                r.ecosystem or "",
+                r.fixed_version or "",
+                ticket.status if ticket else "",
+                assignee,
+                ticket.due_date.strftime("%Y-%m-%d") if ticket and ticket.due_date else "",
+                ticket.notes if ticket else "",
+            ])
+
+    # UTF-8 BOM so Excel opens it without mangling special characters.
+    return buf.getvalue().encode("utf-8-sig")
 
 
 # ── HTML report ───────────────────────────────────────────────────────────────

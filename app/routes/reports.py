@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from ..models import Scan, Target, ScheduledReport, GeneratedReport, CloudConfig, AtlassianConfig
 from ..extensions import db
 from ..email_utils.report_builder import (
-    build_pdf_report, build_html_report,
+    build_pdf_report, build_html_report, build_csv_report,
     build_tech_overview_pdf, build_executive_summary_pdf,
     save_report_to_disk, load_report_from_disk, delete_report_from_disk,
 )
@@ -49,6 +49,10 @@ def generate(scan_id):
         report_bytes = build_pdf_report([scan])
         mime = "application/pdf"
         ext = "pdf"
+    elif file_format == "csv":
+        report_bytes = build_csv_report([scan])
+        mime = "text/csv"
+        ext = "csv"
     else:
         report_bytes = build_html_report([scan]).encode("utf-8")
         mime = "text/html"
@@ -109,7 +113,7 @@ def download_saved(report_id):
         flash("Report file not found on disk.", "danger")
         return redirect(url_for("reports.index"))
 
-    mime = "application/pdf" if gr.file_format == "pdf" else "text/html"
+    mime = {"pdf": "application/pdf", "csv": "text/csv"}.get(gr.file_format, "text/html")
     return send_file(
         io.BytesIO(data),
         mimetype=mime,
@@ -163,6 +167,10 @@ def download(scan_id, fmt):
         data = build_pdf_report([scan])
         return send_file(io.BytesIO(data), mimetype="application/pdf",
                          download_name=f"scan_{scan_id}_report.pdf", as_attachment=True)
+    elif fmt == "csv":
+        data = build_csv_report([scan])
+        return send_file(io.BytesIO(data), mimetype="text/csv",
+                         download_name=f"scan_{scan_id}_report.csv", as_attachment=True)
     else:
         html = build_html_report([scan])
         return Response(html, mimetype="text/html",

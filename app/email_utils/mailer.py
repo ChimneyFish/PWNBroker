@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from datetime import datetime, timezone
 from ..models import ScanResult, Scan, EmailConfig
-from .report_builder import build_pdf_report, build_html_report
+from .report_builder import build_pdf_report, build_html_report, build_csv_report
 
 
 def _get_smtp_config(app):
@@ -39,6 +39,10 @@ def send_scheduled_report(app, scheduled_report):
             attachment = build_pdf_report(scans)
             filename = f"report_{datetime.now(timezone.utc).strftime('%Y%m%d')}.pdf"
             mime_type = "application/pdf"
+        elif scheduled_report.report_format == "csv":
+            attachment = build_csv_report(scans)
+            filename = f"report_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+            mime_type = "text/csv"
         else:
             attachment = build_html_report(scans).encode("utf-8")
             filename = f"report_{datetime.now(timezone.utc).strftime('%Y%m%d')}.html"

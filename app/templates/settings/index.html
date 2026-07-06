@@ -516,6 +516,7 @@
               {% set ff = cloud_cfg.file_format if cloud_cfg else 'pdf' %}
               <option value="pdf" {% if ff == 'pdf' %}selected{% endif %}>PDF</option>
               <option value="html" {% if ff == 'html' %}selected{% endif %}>HTML</option>
+              <option value="csv" {% if ff == 'csv' %}selected{% endif %}>CSV</option>
             </select>
           </div>
           <div class="col-12">
