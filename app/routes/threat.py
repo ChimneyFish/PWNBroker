@@ -29,6 +29,16 @@ def _get_cfg():
     return cfg
 
 
+def _download_authorized(cfg):
+    """Allow an authenticated browser session, or the pre-shared registration
+    token as a query param — needed for non-interactive fetches (curl,
+    Invoke-WebRequest) used by the documented headless install commands."""
+    if current_user.is_authenticated:
+        return True
+    token = request.args.get("token", "")
+    return bool(cfg.registration_token) and token == cfg.registration_token
+
+
 def _is_private(ip):
     try:
         return ipaddress.ip_address(ip).is_private
@@ -262,9 +272,11 @@ def download():
 
 
 @threat_bp.route("/download/agent")
-@login_required
 def download_agent():
     cfg        = _get_cfg()
+    if not _download_authorized(cfg):
+        return Response("Unauthorized — log in or supply ?token=<registration token>.",
+                        status=401, mimetype="text/plain")
     server_url = request.url_root.rstrip("/")
     path       = os.path.join(_AGENT_DIR, "pwnbroker_agent.py")
     with open(path) as f:
@@ -276,7 +288,6 @@ def download_agent():
 
 
 @threat_bp.route("/download/script/<platform>")
-@login_required
 def download_script(platform):
     script_map = {
         "linux":   ("install_linux.sh",      "text/x-shellscript"),
@@ -287,6 +298,9 @@ def download_script(platform):
         return "Not found", 404
     filename, mime = script_map[platform]
     cfg        = _get_cfg()
+    if not _download_authorized(cfg):
+        return Response("Unauthorized — log in or supply ?token=<registration token>.",
+                        status=401, mimetype="text/plain")
     server_url = request.url_root.rstrip("/")
 
     # Build substituted agent script to embed inline
