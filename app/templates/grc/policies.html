@@ -84,7 +84,7 @@
         <td>
           <div class="d-flex gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                    onclick="openEdit({{ p.id }}, '{{ p.title | replace("'","\\'") }}', '{{ p.category }}', '{{ p.status }}', '{{ p.version }}', {{ p.owner_id or 'null' }}, '{{ p.review_date | localdt(\'%Y-%m-%d\') if p.review_date else \'\' }}')"
+                    onclick='openEdit({{ p.id }}, {{ p.title | tojson }}, {{ p.category | tojson }}, {{ p.status | tojson }}, {{ p.version | tojson }}, {{ p.owner_id | tojson }}, {{ (p.review_date | localdt("%Y-%m-%d") if p.review_date else "") | tojson }})'
                     title="Edit">
               <i class="bi bi-pencil"></i>
             </button>
