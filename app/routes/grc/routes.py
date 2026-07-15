@@ -112,7 +112,7 @@ def index():
                            total_cve_count=total_cve_count)
 
 
-# ── Risk Register ─────────────────────────────────────────────────────────────
+# ── Acceptable Risk ───────────────────────────────────────────────────────────
 
 @grc_bp.route("/risks")
 @login_required
