@@ -6,7 +6,7 @@ Flask-WTF==1.2.1
 APScheduler==3.10.4
 python-nmap==0.7.1
 requests==2.32.3
-Werkzeug==3.0.3
+Werkzeug==3.1.6
 SQLAlchemy==2.0.31
 WTForms==3.1.2
 python-dotenv==1.0.1
