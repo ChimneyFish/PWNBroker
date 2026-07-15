@@ -71,6 +71,12 @@
             <i class="bi bi-shield me-1"></i>{{ r.mitigation_plan | truncate(60) }}
           </div>
           {% endif %}
+          {% if r.vuln_ticket %}
+          <a href="{{ url_for('vulns.device', target_id=r.vuln_ticket.target_id, host=r.vuln_ticket.host_ip) }}#row-{{ r.vuln_ticket.id }}"
+             class="badge bg-secondary bg-opacity-20 text-muted text-decoration-none mt-1 d-inline-block" style="font-size:0.6rem">
+            <i class="bi bi-bug me-1"></i>From scan finding
+          </a>
+          {% endif %}
         </td>
         <td><span class="badge bg-secondary bg-opacity-20 text-muted small">{{ r.category }}</span></td>
         <td>

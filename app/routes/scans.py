@@ -3,7 +3,7 @@ import os
 import threading
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
-from ..models import Scan, Target, ScheduledScan, ScanResult, AtlassianConfig, AssetGroup, Asset, Tag
+from ..models import Scan, Target, ScheduledScan, ScanResult, AtlassianConfig, AssetGroup, Asset, Tag, VulnTicket
 from ..extensions import db
 from ..scheduler.jobs import _next_run_from_cron
 from .decorators import admin_required
@@ -199,6 +199,14 @@ def view(scan_id):
     jira_enabled = bool(atlassian_cfg and atlassian_cfg.enabled and atlassian_cfg.jira_enabled)
     existing_tickets = {t.result_id: t for t in scan.jira_tickets.all()}
 
+    # Findings already accepted as risk on this target, keyed by (host, cve-or-title), so a
+    # re-appearing finding in a later scan shows as pre-accepted instead of being re-triaged
+    # from scratch — without hiding it from the results.
+    accepted_risk = {}
+    if scan.target_id:
+        for t in VulnTicket.query.filter_by(target_id=scan.target_id, status="accepted_risk").all():
+            accepted_risk[(t.host_ip or "", t.cve_id or t.title or "")] = t
+
     # Parse triage raw_data so the template gets clean dicts, not JSON strings
     triage_data = {}
     for r in results:
@@ -210,7 +218,7 @@ def view(scan_id):
 
     return render_template("scans/view.html", scan=scan, results=results,
                            jira_enabled=jira_enabled, existing_tickets=existing_tickets,
-                           triage_data=triage_data)
+                           triage_data=triage_data, accepted_risk=accepted_risk)
 
 
 @scans_bp.route("/<int:scan_id>/delete", methods=["POST"])

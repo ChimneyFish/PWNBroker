@@ -486,6 +486,14 @@
                 <i class="bi bi-ticket-detailed me-1"></i>{{ existing_tickets[r.id].ticket_key }}
               </a>
             {% endif %}
+            {% set art = accepted_risk.get((r.host or '', r.cve_id or r.title or '')) %}
+            {% if art %}
+              <a href="{{ url_for('vulns.device', target_id=scan.target_id, host=r.host) }}#row-{{ art.id }}"
+                 class="badge bg-success bg-opacity-20 text-success ms-1 text-decoration-none" style="font-size:0.65rem"
+                 title="{{ art.risk_justification or 'Accepted risk' }}">
+                <i class="bi bi-shield-check me-1"></i>Accepted Risk
+              </a>
+            {% endif %}
           </td>
         {% else %}
           <td class="text-muted small" style="max-width:280px">{{ (r.description or '')[:140] }}</td>

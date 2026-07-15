@@ -1,11 +1,45 @@
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
-from ..models import VulnTicket, ScanResult, Scan, Target, User, _SLA_DAYS, CVEEnrichment
+from ..models import VulnTicket, ScanResult, Scan, Target, User, _SLA_DAYS, CVEEnrichment, RiskEntry, Asset
 from ..extensions import db
 from .decorators import admin_required
 
 vulns_bp = Blueprint("vulns", __name__, url_prefix="/vulns")
+
+_SEVERITY_IMPACT = {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}
+
+
+def _sync_risk_entry(ticket, justification):
+    """Create or refresh the GRC risk-register entry backing an accepted-risk
+    ticket, instead of spawning a new one every time the same finding is
+    (re)accepted."""
+    asset = Asset.query.filter_by(ip_address=ticket.host_ip).first() if ticket.host_ip else None
+    impact = _SEVERITY_IMPACT.get(ticket.severity, 3)
+    risk = ticket.risk_entry
+    if risk:
+        risk.description = justification
+        risk.status      = "accepted"
+        risk.closed_at   = None
+        risk.impact      = impact
+        if asset:
+            risk.asset_id = asset.id
+    else:
+        risk = RiskEntry(
+            title          = f"Accepted Risk: {ticket.vuln_name or ticket.title}",
+            description    = justification,
+            category       = "technical",
+            likelihood     = 3,
+            impact         = impact,
+            status         = "accepted",
+            owner_id       = ticket.assigned_to or current_user.id,
+            asset_id       = asset.id if asset else None,
+            created_by     = current_user.id,
+            vuln_ticket_id = ticket.id,
+        )
+        db.session.add(risk)
+        db.session.flush()
+    return risk
 
 
 def _derive_vuln_name(r):
@@ -193,6 +227,12 @@ def ticket_update(ticket_id):
     assigned   = request.form.get("assigned_to", "").strip()
 
     old_status = t.status
+    entering_accepted_risk = new_status == "accepted_risk" and old_status != "accepted_risk"
+    leaving_accepted_risk  = old_status == "accepted_risk" and new_status and new_status != "accepted_risk"
+
+    if entering_accepted_risk and not notes:
+        return jsonify(ok=False, error="A justification is required to accept this risk."), 400
+
     if new_status and new_status != t.status:
         t.status = new_status
         if new_status == "patched" and not t.patched_at:
@@ -207,6 +247,14 @@ def ticket_update(ticket_id):
     if assigned is not None:
         t.assigned_to = int(assigned) if assigned.isdigit() else None
 
+    risk = None
+    if entering_accepted_risk:
+        t.risk_justification = notes
+        risk = _sync_risk_entry(t, notes)
+    elif leaving_accepted_risk and t.risk_entry:
+        t.risk_entry.status    = "closed"
+        t.risk_entry.closed_at = datetime.now(timezone.utc)
+
     db.session.commit()
 
     from ..audit import log_action
@@ -214,13 +262,17 @@ def ticket_update(ticket_id):
         log_action("vuln.status_change", entity_type="vuln_ticket", entity_id=t.id,
                    entity_name=t.vuln_name or t.title,
                    detail=f"{old_status} → {new_status}")
+    if entering_accepted_risk:
+        log_action("risk.accept_from_vuln", entity_type="risk_entry", entity_id=risk.id,
+                   entity_name=risk.title, detail=f"Vuln ticket #{t.id}: {notes[:200]}")
     if assigned is not None and t.assigned_to != old_assignee:
         log_action("vuln.assign", entity_type="vuln_ticket", entity_id=t.id,
                    entity_name=t.vuln_name or t.title)
 
     return jsonify({
-        "ok":         True,
-        "status":     t.status,
-        "sla_status": t.sla_status,
-        "days_open":  t.days_open,
+        "ok":            True,
+        "status":        t.status,
+        "sla_status":    t.sla_status,
+        "days_open":     t.days_open,
+        "risk_entry_id": risk.id if risk else (t.risk_entry.id if t.risk_entry else None),
     })

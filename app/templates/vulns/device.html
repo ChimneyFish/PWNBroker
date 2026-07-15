@@ -158,6 +158,12 @@
           <span class="badge-status status-{{ t.status }}" id="status-{{ t.id }}">
             {{ t.status | replace('_',' ') | upper }}
           </span>
+          {% if t.risk_entry %}
+          <a href="{{ url_for('grc.risks') }}?status=accepted#risk-row-{{ t.risk_entry.id }}"
+             class="badge bg-info bg-opacity-20 text-info text-decoration-none d-block mt-1" style="font-size:0.6rem" id="risk-link-{{ t.id }}">
+            <i class="bi bi-journal-check me-1"></i>GRC Risk #{{ t.risk_entry.id }}
+          </a>
+          {% endif %}
         </td>
         <td>
           {% set ss = t.sla_status %}
@@ -210,7 +216,7 @@
       <div class="modal-body">
         <div class="mb-3">
           <label class="form-label small text-muted">Status</label>
-          <select id="edit-status" class="form-select form-select-sm" style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+          <select id="edit-status" class="form-select form-select-sm" onchange="toggleJustification()" style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
             <option value="open">Open</option>
             <option value="in_progress">In Progress</option>
             <option value="patched">Patched</option>
@@ -228,11 +234,15 @@
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label small text-muted">Add Note</label>
+          <label class="form-label small text-muted" id="edit-notes-label">Add Note</label>
+          <div class="text-muted mb-1" id="edit-notes-hint" style="font-size:0.7rem;display:none">
+            Required to accept this risk — saved to the GRC Risk Register as the justification.
+          </div>
           <textarea id="edit-notes" class="form-control form-control-sm" rows="3"
                     style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
                     placeholder="Timestamped note added to ticket history"></textarea>
         </div>
+        <div id="edit-error" class="text-danger small" style="display:none"></div>
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -251,33 +261,52 @@
 let _editId = null;
 const modal = new bootstrap.Modal(document.getElementById('editModal'));
 
+function toggleJustification() {
+  const isAccept = document.getElementById('edit-status').value === 'accepted_risk';
+  document.getElementById('edit-notes-hint').style.display = isAccept ? 'block' : 'none';
+  document.getElementById('edit-notes-label').textContent   = isAccept ? 'Risk Acceptance Justification' : 'Add Note';
+  document.getElementById('edit-notes').placeholder = isAccept
+    ? 'Why is this risk acceptable? (required)'
+    : 'Timestamped note added to ticket history';
+}
+
 function openEdit(id, status, assignee) {
   _editId = id;
   document.getElementById('edit-status').value   = status;
   document.getElementById('edit-assignee').value = assignee;
   document.getElementById('edit-notes').value    = '';
+  document.getElementById('edit-error').style.display = 'none';
+  toggleJustification();
   modal.show();
 }
 
 async function saveEdit() {
+  const status   = document.getElementById('edit-status').value;
+  const notesVal = document.getElementById('edit-notes').value.trim();
+  const errEl    = document.getElementById('edit-error');
+  errEl.style.display = 'none';
+
+  if (status === 'accepted_risk' && !notesVal) {
+    errEl.textContent = 'A justification is required to accept this risk.';
+    errEl.style.display = 'block';
+    return;
+  }
+
   const fd = new FormData();
-  fd.append('status',      document.getElementById('edit-status').value);
+  fd.append('status',      status);
   fd.append('assigned_to', document.getElementById('edit-assignee').value);
-  fd.append('notes',       document.getElementById('edit-notes').value);
+  fd.append('notes',       notesVal);
 
   const res  = await fetch(`/vulns/tickets/${_editId}/update`, {method:'POST', body:fd});
   const data = await res.json();
-  if (!data.ok) return;
-
-  const statusEl = document.getElementById(`status-${_editId}`);
-  if (statusEl) {
-    statusEl.className   = `badge-status status-${data.status}`;
-    statusEl.textContent = data.status.replace(/_/g,' ').toUpperCase();
+  if (!data.ok) {
+    errEl.textContent = data.error || 'Failed to save.';
+    errEl.style.display = 'block';
+    return;
   }
-  const daysEl = document.getElementById(`days-${_editId}`);
-  if (daysEl) daysEl.textContent = data.days_open + 'd';
 
-  modal.hide();
+  // Reload so the GRC risk-entry badge and SLA counts stay in sync with the server.
+  location.reload();
 }
 </script>
 {% endif %}

@@ -161,6 +161,10 @@ def _migrate_columns(app):
         "vuln_tickets": [
             ("vuln_name", "VARCHAR(300)"),
             ("host_ip",   "VARCHAR(100)"),
+            ("risk_justification", "TEXT"),
+        ],
+        "risk_entries": [
+            ("vuln_ticket_id", "INTEGER"),
         ],
         "scheduled_scans": [
             ("asset_group_id", "INTEGER"),

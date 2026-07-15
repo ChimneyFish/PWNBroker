@@ -176,9 +176,11 @@
           </div>
         </td>
         <td class="text-center">
-          {% if vuln_count %}
-          <a href="{{ url_for('vulns.tickets') }}?status=open"
-             class="badge bg-danger text-white text-decoration-none">{{ vuln_count }}</a>
+          {% if vuln_count and a.target_id %}
+          <a href="{{ url_for('vulns.device', target_id=a.target_id, host=a.ip_address) }}"
+             class="badge bg-danger text-white text-decoration-none" title="View this asset's findings">{{ vuln_count }}</a>
+          {% elif vuln_count %}
+          <span class="badge bg-danger text-white">{{ vuln_count }}</span>
           {% else %}
           <span class="text-success small"><i class="bi bi-check2"></i></span>
           {% endif %}

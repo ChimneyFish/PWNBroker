@@ -351,6 +351,7 @@ class VulnTicket(db.Model):
     patched_at     = db.Column(db.DateTime)
     assigned_to    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     notes          = db.Column(db.Text)
+    risk_justification = db.Column(db.Text)  # latest accept-risk comment, mirrored to the linked RiskEntry
 
     scan_result = db.relationship("ScanResult",
                                   backref=db.backref("vuln_ticket", uselist=False))
@@ -525,6 +526,8 @@ class RiskEntry(db.Model):
     # open | in_treatment | mitigated | accepted | transferred | closed
     owner_id             = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     asset_id             = db.Column(db.Integer, db.ForeignKey("assets.id", ondelete="SET NULL"), nullable=True)
+    vuln_ticket_id       = db.Column(db.Integer, db.ForeignKey("vuln_tickets.id", ondelete="SET NULL"),
+                                     nullable=True, unique=True)
     mitigation_plan      = db.Column(db.Text)
     target_date          = db.Column(db.DateTime)
     residual_likelihood  = db.Column(db.Integer)
@@ -534,8 +537,10 @@ class RiskEntry(db.Model):
     created_by           = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_at           = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    owner = db.relationship("User", foreign_keys=[owner_id])
-    asset = db.relationship("Asset", foreign_keys=[asset_id])
+    owner       = db.relationship("User", foreign_keys=[owner_id])
+    asset       = db.relationship("Asset", foreign_keys=[asset_id])
+    vuln_ticket = db.relationship("VulnTicket", foreign_keys=[vuln_ticket_id],
+                                  backref=db.backref("risk_entry", uselist=False))
 
     @property
     def risk_score(self):
