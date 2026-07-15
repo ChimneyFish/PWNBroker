@@ -363,6 +363,126 @@ def delete_policy(policy_id):
     return redirect(url_for("grc.policies"))
 
 
+@grc_bp.route("/policies/<int:policy_id>")
+@login_required
+def policy_detail(policy_id):
+    p = Policy.query.get_or_404(policy_id)
+    users = User.query.order_by(User.username).all()
+    files = EvidenceFile.query.filter_by(policy_id=p.id).order_by(EvidenceFile.uploaded_at.desc()).all()
+    return render_template("grc/policy_detail.html", p=p, users=users, files=files)
+
+
+@grc_bp.route("/policies/<int:policy_id>/content", methods=["POST"])
+@login_required
+@admin_required
+def update_policy_content(policy_id):
+    p = Policy.query.get_or_404(policy_id)
+    p.content = request.form.get("content", "")
+    p.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+    from ...audit import log_action
+    log_action("policy.content_update", entity_type="policy", entity_id=p.id, entity_name=p.title)
+    return jsonify(ok=True)
+
+
+@grc_bp.route("/policies/<int:policy_id>/export")
+@login_required
+def export_policy(policy_id):
+    p = Policy.query.get_or_404(policy_id)
+    fmt = request.args.get("fmt", "pdf").lower()
+    safe = "".join(c if c.isalnum() or c in " -_" else "" for c in p.title).strip().replace(" ", "_") or "policy"
+
+    if fmt == "pdf":
+        from ...reports.policy_export import generate_policy_pdf
+        pdf_bytes = generate_policy_pdf(p)
+        resp = make_response(pdf_bytes)
+        resp.headers["Content-Type"] = "application/pdf"
+        resp.headers["Content-Disposition"] = f'attachment; filename="{safe}.pdf"'
+        return resp
+
+    if fmt in ("md", "txt"):
+        body = p.content or p.description or ""
+        resp = make_response(body)
+        resp.headers["Content-Type"] = "text/markdown" if fmt == "md" else "text/plain"
+        resp.headers["Content-Disposition"] = f'attachment; filename="{safe}.{fmt}"'
+        return resp
+
+    abort(400)
+
+
+# ── Policy Templates ──────────────────────────────────────────────────────────
+
+@grc_bp.route("/policies/templates")
+@login_required
+def policy_templates():
+    from ...grc.policy_templates import TEMPLATES, categories
+    by_cat = {}
+    for t in TEMPLATES:
+        by_cat.setdefault(t["category"], []).append(t)
+    return render_template("grc/policy_templates.html", by_cat=by_cat, cat_order=categories())
+
+
+@grc_bp.route("/policies/templates/<key>")
+@login_required
+def policy_template_detail(key):
+    from ...grc.policy_templates import get_template, render
+    tpl = get_template(key)
+    if not tpl:
+        abort(404)
+    users = User.query.order_by(User.username).all()
+    preview = render(tpl["body"])
+    return render_template("grc/policy_template_detail.html", tpl=tpl, users=users, preview=preview)
+
+
+@grc_bp.route("/policies/templates/<key>/generate", methods=["POST"])
+@login_required
+@admin_required
+def generate_policy_from_template(key):
+    from ...grc.policy_templates import get_template, render
+    tpl = get_template(key)
+    if not tpl:
+        abort(404)
+
+    company_name = request.form.get("company_name", "").strip()
+    owner_id     = request.form.get("owner_id", type=int) or None
+    review_cycle = request.form.get("review_cycle", "Annually").strip() or "Annually"
+    effective    = request.form.get("effective_date", "").strip()
+    review_date  = _parse_date(request.form.get("review_date", ""))
+
+    owner_name = ""
+    if owner_id:
+        u = User.query.get(owner_id)
+        owner_name = u.username if u else ""
+
+    rendered = render(
+        tpl["body"],
+        COMPANY_NAME=company_name,
+        EFFECTIVE_DATE=effective,
+        POLICY_OWNER=owner_name,
+        REVIEW_CYCLE=review_cycle,
+    )
+
+    p = Policy(
+        title        = f"{company_name} {tpl['title']}".strip() if company_name else tpl["title"],
+        category     = tpl["category"],
+        description  = tpl["summary"],
+        content      = rendered,
+        template_key = tpl["key"],
+        version      = "1.0",
+        status       = "draft",
+        owner_id     = owner_id,
+        review_date  = review_date,
+        created_by   = current_user.id,
+    )
+    db.session.add(p)
+    db.session.commit()
+    from ...audit import log_action
+    log_action("policy.generate_from_template", entity_type="policy", entity_id=p.id,
+               entity_name=p.title, detail=f"Template: {tpl['key']}")
+    flash(f"Policy '{p.title}' generated from template. Review and customize it before activating.", "success")
+    return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+
 # ── On-demand enrichment / auto-assess triggers ───────────────────────────────
 
 @grc_bp.route("/enrich/trigger", methods=["POST"])
@@ -407,15 +527,18 @@ def trigger_auto_assess():
 @grc_bp.route("/evidence/list")
 @login_required
 def evidence_list():
-    """Return JSON list of evidence files for a control or framework."""
+    """Return JSON list of evidence files for a control, framework, or policy."""
     control_id   = request.args.get("control_id",   type=int)
     framework_id = request.args.get("framework_id", type=int)
+    policy_id    = request.args.get("policy_id",    type=int)
     if control_id:
         files = EvidenceFile.query.filter_by(control_id=control_id).order_by(EvidenceFile.uploaded_at.desc()).all()
     elif framework_id:
         files = EvidenceFile.query.filter_by(framework_id=framework_id, control_id=None).order_by(EvidenceFile.uploaded_at.desc()).all()
+    elif policy_id:
+        files = EvidenceFile.query.filter_by(policy_id=policy_id).order_by(EvidenceFile.uploaded_at.desc()).all()
     else:
-        return jsonify(ok=False, error="Specify control_id or framework_id"), 400
+        return jsonify(ok=False, error="Specify control_id, framework_id, or policy_id"), 400
 
     return jsonify(ok=True, files=[{
         "id":          f.id,
@@ -434,6 +557,7 @@ def evidence_list():
 def evidence_upload():
     control_id   = request.form.get("control_id",   type=int)
     framework_id = request.form.get("framework_id", type=int)
+    policy_id    = request.form.get("policy_id",    type=int)
     description  = request.form.get("description",  "").strip()
     f = request.files.get("file")
 
@@ -456,6 +580,7 @@ def evidence_upload():
     ev = EvidenceFile(
         framework_id = framework_id,
         control_id   = control_id,
+        policy_id    = policy_id,
         filename     = secure_filename(f.filename),
         stored_name  = stored_name,
         file_size    = len(data),

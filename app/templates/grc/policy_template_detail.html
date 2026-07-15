@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ tpl.title }} — Templates — PwnBroker{% endblock %}
+{% block page_title %}{{ tpl.title }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('grc.policy_templates') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Templates
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="form-card">
+      <div class="fw-semibold small text-muted mb-2">PREVIEW</div>
+      <pre class="small text-muted" style="white-space:pre-wrap;font-family:inherit;max-height:70vh;overflow-y:auto">{{ preview }}</pre>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if current_user.is_admin %}
+    <div class="form-card">
+      <div class="fw-semibold small text-muted mb-3">GENERATE POLICY FROM THIS TEMPLATE</div>
+      <form method="POST" action="{{ url_for('grc.generate_policy_from_template', key=tpl.key) }}">
+        <div class="mb-3">
+          <label class="form-label small text-muted">Company Name</label>
+          <input type="text" name="company_name" class="form-control form-control-sm"
+                 placeholder="e.g. Acme Corp"
+                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small text-muted">Policy Owner</label>
+          <select name="owner_id" class="form-select form-select-sm"
+                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+            <option value="">Unassigned</option>
+            {% for u in users %}<option value="{{ u.id }}">{{ u.username }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label small text-muted">Effective Date</label>
+            <input type="date" name="effective_date" class="form-control form-control-sm"
+                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+          </div>
+          <div class="col-6">
+            <label class="form-label small text-muted">Next Review</label>
+            <input type="date" name="review_date" class="form-control form-control-sm"
+                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+          </div>
+        </div>
+        <div class="mb-3 mt-2">
+          <label class="form-label small text-muted">Review Cycle</label>
+          <select name="review_cycle" class="form-select form-select-sm"
+                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+            <option value="Annually" selected>Annually</option>
+            <option value="Semi-annually">Semi-annually</option>
+            <option value="Quarterly">Quarterly</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-magic me-1"></i>Generate Policy
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <div class="form-card text-muted small">
+      Only administrators can generate policies from templates.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

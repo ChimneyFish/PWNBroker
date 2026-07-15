@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} — Policies — PwnBroker{% endblock %}
+{% block page_title %}{{ p.title }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('grc.export_policy', policy_id=p.id, fmt='pdf') }}" class="btn btn-sm btn-outline-success">
+  <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+</a>
+<a href="{{ url_for('grc.export_policy', policy_id=p.id, fmt='md') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-markdown me-1"></i>Markdown
+</a>
+<a href="{{ url_for('grc.policies') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Policy Library
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% set sc = {'active':'success','draft':'secondary','under_review':'warning','retired':'secondary'} %}
+<div class="form-card mb-4">
+  <div class="d-flex flex-wrap gap-4 align-items-center">
+    <div>
+      <span class="badge bg-{{ sc.get(p.status,'secondary') }}">{{ p.status | replace('_',' ') | upper }}</span>
+    </div>
+    <div class="text-muted small"><i class="bi bi-tag me-1"></i>{{ p.category | replace('_',' ') | title }}</div>
+    <div class="text-muted small">v{{ p.version }}</div>
+    <div class="text-muted small">Owner: {{ p.owner.username if p.owner else '—' }}</div>
+    <div class="text-muted small">
+      Review: {% if p.review_date %}{{ p.review_date | localdt('%Y-%m-%d') }}{% else %}—{% endif %}
+    </div>
+    {% if p.approver %}
+    <div class="text-muted small">Approved by {{ p.approver.username }}{% if p.approved_at %} on {{ p.approved_at | localdt('%Y-%m-%d') }}{% endif %}</div>
+    {% endif %}
+    <div class="text-muted small ms-auto"><i class="bi bi-paperclip me-1"></i>{{ files | length }} evidence file{{ 's' if files | length != 1 }}</div>
+  </div>
+  {% if p.description %}
+  <div class="text-muted small mt-2" style="border-top:1px solid var(--border-color);padding-top:0.5rem">{{ p.description }}</div>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="form-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold small text-muted">POLICY DOCUMENT</span>
+        {% if current_user.is_admin %}
+        <span id="content-save-status" class="text-muted" style="font-size:0.7rem"></span>
+        {% endif %}
+      </div>
+      {% if current_user.is_admin %}
+      <textarea id="policy-content" class="form-control form-control-sm" rows="26"
+                style="background:var(--bg-input);color:var(--text);border-color:var(--border-color);font-family:monospace;font-size:0.8rem"
+                placeholder="No content yet. Write the policy body here (# headings, - bullets, | table | rows)…">{{ p.content or '' }}</textarea>
+      <div class="text-muted mt-2" style="font-size:0.7rem">Autosaves a few seconds after you stop typing.</div>
+      {% else %}
+      <pre class="small text-muted" style="white-space:pre-wrap;font-family:inherit">{{ p.content or p.description or 'No content has been added to this policy yet.' }}</pre>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="form-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold small text-muted">EVIDENCE FILES</span>
+      </div>
+      <div id="ev-file-list" class="mb-3">Loading…</div>
+
+      {% if current_user.is_admin %}
+      <div style="border-top:1px solid var(--border-color);padding-top:1rem">
+        <div class="fw-semibold small text-muted mb-2">ATTACH NEW FILE</div>
+        <div class="mb-2">
+          <input type="file" id="ev-file-input" class="form-control form-control-sm"
+                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+        </div>
+        <div class="mb-3">
+          <input type="text" id="ev-description" class="form-control form-control-sm"
+                 placeholder="Brief description…"
+                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="uploadEvidence()" id="ev-upload-btn">
+          <i class="bi bi-upload me-1"></i>Upload
+        </button>
+        <span id="ev-upload-status" class="ms-3 small text-muted"></span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const POLICY_ID = {{ p.id }};
+
+/* ── Content autosave ─────────────────────────────────────────────────────── */
+{% if current_user.is_admin %}
+let _contentTimer = null;
+const contentEl = document.getElementById('policy-content');
+const statusEl   = document.getElementById('content-save-status');
+
+contentEl?.addEventListener('input', () => {
+  statusEl.textContent = 'Editing…';
+  clearTimeout(_contentTimer);
+  _contentTimer = setTimeout(saveContent, 1200);
+});
+
+async function saveContent() {
+  statusEl.textContent = 'Saving…';
+  const fd = new FormData();
+  fd.append('content', contentEl.value);
+  const res = await fetch(`/grc/policies/${POLICY_ID}/content`, {method: 'POST', body: fd});
+  const data = await res.json();
+  statusEl.textContent = data.ok ? 'Saved' : 'Error saving';
+  setTimeout(() => { if (statusEl.textContent === 'Saved') statusEl.textContent = ''; }, 2000);
+}
+{% endif %}
+
+/* ── Evidence management ──────────────────────────────────────────────────── */
+function _evIcon(mime) {
+  if (!mime) return 'bi-file-earmark';
+  if (mime.includes('pdf'))   return 'bi-file-earmark-pdf text-danger';
+  if (mime.startsWith('image')) return 'bi-file-earmark-image text-info';
+  if (mime.includes('word') || mime.includes('document')) return 'bi-file-earmark-word text-primary';
+  if (mime.includes('excel') || mime.includes('sheet'))  return 'bi-file-earmark-excel text-success';
+  if (mime.includes('zip') || mime.includes('compressed')) return 'bi-file-zip text-warning';
+  return 'bi-file-earmark-text';
+}
+
+function _renderFiles(files) {
+  const list = document.getElementById('ev-file-list');
+  if (!files.length) {
+    list.innerHTML = '<div class="text-muted small py-2">No evidence files attached yet.</div>';
+    return;
+  }
+  list.innerHTML = files.map(f => `
+    <div class="d-flex align-items-start gap-2 py-2" style="border-bottom:1px solid var(--border-color)" id="ev-row-${f.id}">
+      <i class="bi ${_evIcon(f.mime_type)} mt-1 flex-shrink-0"></i>
+      <div class="flex-grow-1 min-width-0">
+        <div class="fw-semibold small text-truncate">
+          <a href="/grc/evidence/${f.id}/download" class="text-info text-decoration-none">${f.filename}</a>
+        </div>
+        ${f.description ? `<div class="text-muted" style="font-size:0.7rem">${f.description}</div>` : ''}
+        <div class="text-muted" style="font-size:0.65rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at}</div>
+      </div>
+      {% if current_user.is_admin %}
+      <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+              onclick="deleteEvidence(${f.id})" title="Delete">
+        <i class="bi bi-trash"></i>
+      </button>
+      {% endif %}
+    </div>
+  `).join('');
+}
+
+async function loadEvidence() {
+  const res  = await fetch(`/grc/evidence/list?policy_id=${POLICY_ID}`);
+  const data = await res.json();
+  if (data.ok) _renderFiles(data.files);
+}
+loadEvidence();
+
+async function uploadEvidence() {
+  const fileInput = document.getElementById('ev-file-input');
+  const desc      = document.getElementById('ev-description').value.trim();
+  const statusEl2 = document.getElementById('ev-upload-status');
+  const btn       = document.getElementById('ev-upload-btn');
+
+  if (!fileInput.files.length) { statusEl2.textContent = 'Select a file first.'; return; }
+
+  const fd = new FormData();
+  fd.append('file',        fileInput.files[0]);
+  fd.append('description', desc);
+  fd.append('policy_id',   POLICY_ID);
+
+  btn.disabled = true;
+  statusEl2.textContent = 'Uploading…';
+
+  const res  = await fetch('/grc/evidence/upload', {method: 'POST', body: fd});
+  const data = await res.json();
+  btn.disabled = false;
+
+  if (!data.ok) { statusEl2.textContent = `Error: ${data.error}`; return; }
+
+  statusEl2.textContent = '';
+  fileInput.value = '';
+  document.getElementById('ev-description').value = '';
+  loadEvidence();
+}
+
+async function deleteEvidence(evId) {
+  if (!confirm('Delete this evidence file? This cannot be undone.')) return;
+  const res  = await fetch(`/grc/evidence/${evId}/delete`, {method: 'POST'});
+  const data = await res.json();
+  if (!data.ok) return;
+  document.getElementById(`ev-row-${evId}`)?.remove();
+  const list = document.getElementById('ev-file-list');
+  if (list && !list.querySelector('[id^="ev-row-"]')) {
+    list.innerHTML = '<div class="text-muted small py-2">No evidence files attached yet.</div>';
+  }
+}
+</script>
+{% endblock %}

@@ -171,6 +171,13 @@ def _migrate_columns(app):
         "soc_cases": [
             ("pulsedrive_result", "TEXT"),
         ],
+        "policies": [
+            ("content",      "TEXT"),
+            ("template_key", "VARCHAR(50)"),
+        ],
+        "evidence_files": [
+            ("policy_id", "INTEGER"),
+        ],
     }
     with db.engine.connect() as conn:
         for table, cols in new_cols.items():

@@ -608,9 +608,13 @@ class Policy(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     title       = db.Column(db.String(200), nullable=False)
     category    = db.Column(db.String(50), default="general")
-    # access_control | data_classification | incident_response | vulnerability_management
-    # change_management | acceptable_use | general
+    # access_control | data_classification | data_retention | incident_response
+    # vulnerability_management | change_management | acceptable_use | password_authentication
+    # remote_work | vendor_management | business_continuity | physical_security
+    # security_awareness | general
     description = db.Column(db.Text)
+    content     = db.Column(db.Text)   # full policy document body (markdown-style text)
+    template_key = db.Column(db.String(50))  # template this policy was generated from, if any
     version     = db.Column(db.String(20), default="1.0")
     status      = db.Column(db.String(20), default="draft")
     # draft | active | under_review | retired
@@ -654,6 +658,7 @@ class EvidenceFile(db.Model):
     id           = db.Column(db.Integer, primary_key=True)
     framework_id = db.Column(db.Integer, db.ForeignKey("compliance_frameworks.id", ondelete="CASCADE"), nullable=True)
     control_id   = db.Column(db.Integer, db.ForeignKey("compliance_controls.id",   ondelete="CASCADE"), nullable=True)
+    policy_id    = db.Column(db.Integer, db.ForeignKey("policies.id",               ondelete="CASCADE"), nullable=True)
     filename     = db.Column(db.String(256), nullable=False)
     stored_name  = db.Column(db.String(256), nullable=False)
     file_size    = db.Column(db.Integer, default=0)
@@ -665,3 +670,4 @@ class EvidenceFile(db.Model):
     uploader  = db.relationship("User",                foreign_keys=[uploaded_by])
     framework = db.relationship("ComplianceFramework", foreign_keys=[framework_id], backref="evidence_files")
     control   = db.relationship("ComplianceControl",   foreign_keys=[control_id],   backref="evidence_files")
+    policy    = db.relationship("Policy",              foreign_keys=[policy_id],   backref="files")
