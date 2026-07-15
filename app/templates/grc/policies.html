@@ -61,6 +61,11 @@
       <tr id="policy-row-{{ p.id }}">
         <td>
           <a href="{{ url_for('grc.policy_detail', policy_id=p.id) }}" class="fw-semibold small text-decoration-none">{{ p.title }}</a>
+          {% if not p.content and not p.files %}
+          <span class="badge bg-warning bg-opacity-25 text-warning ms-1" style="font-size:0.6rem" title="No written content or attached document yet">
+            <i class="bi bi-exclamation-triangle"></i> No document
+          </span>
+          {% endif %}
           {% if p.description %}
           <div class="text-muted mt-1" style="font-size:0.7rem">{{ p.description | truncate(80) }}</div>
           {% endif %}
@@ -118,6 +123,10 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <div class="text-muted small mb-3">
+            Set the basic details below. Next, you'll land on the policy's page where you can write it out,
+            paste it in, upload a document, or apply a ready-made template.
+          </div>
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label small text-muted">Title <span class="text-danger">*</span></label>

@@ -3,17 +3,27 @@
 {% block page_title %}Policy Templates{% endblock %}
 
 {% block header_actions %}
+{% if policy_id %}
+<a href="{{ url_for('grc.policy_detail', policy_id=policy_id) }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Back to Policy
+</a>
+{% else %}
 <a href="{{ url_for('grc.policies') }}" class="btn btn-sm btn-outline-secondary">
   <i class="bi bi-arrow-left me-1"></i>Policy Library
 </a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
 
 <div class="form-card mb-4">
   <div class="text-muted small">
+    {% if policy_id %}
+    Pick a template below to fill in and apply to this policy. Its rendered text will replace the policy's content.
+    {% else %}
     Generate a ready-to-customize policy from a standard template. Each template is prefilled with your
     company name, owner, and review cycle, then added to your Policy Library as a draft for you to review.
+    {% endif %}
   </div>
 </div>
 
@@ -26,7 +36,7 @@
 <div class="row g-3 mb-3">
   {% for t in by_cat[cat] %}
   <div class="col-md-6 col-lg-4">
-    <a href="{{ url_for('grc.policy_template_detail', key=t.key) }}"
+    <a href="{{ url_for('grc.policy_template_detail', key=t.key, **({'policy_id': policy_id} if policy_id else {})) }}"
        class="form-card d-block h-100 text-decoration-none" style="color:inherit">
       <div class="fw-semibold small mb-1"><i class="bi bi-file-earmark-text me-1 text-info"></i>{{ t.title }}</div>
       <div class="text-muted" style="font-size:0.75rem">{{ t.summary | truncate(140) }}</div>

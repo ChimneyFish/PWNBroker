@@ -324,8 +324,8 @@ def create_policy():
     from ...audit import log_action
     log_action("policy.create", entity_type="policy", entity_id=p.id,
                entity_name=p.title, detail=f"Category: {p.category} | Status: {p.status}")
-    flash(f"Policy '{p.title}' created.", "success")
-    return redirect(url_for("grc.policies"))
+    flash(f"Policy '{p.title}' created. Now write it, upload a document, or apply a template.", "success")
+    return redirect(url_for("grc.policy_detail", policy_id=p.id))
 
 
 @grc_bp.route("/policies/<int:policy_id>/update", methods=["POST"])
@@ -419,7 +419,9 @@ def policy_templates():
     by_cat = {}
     for t in TEMPLATES:
         by_cat.setdefault(t["category"], []).append(t)
-    return render_template("grc/policy_templates.html", by_cat=by_cat, cat_order=categories())
+    policy_id = request.args.get("policy_id", type=int)
+    return render_template("grc/policy_templates.html", by_cat=by_cat, cat_order=categories(),
+                           policy_id=policy_id)
 
 
 @grc_bp.route("/policies/templates/<key>")
@@ -431,7 +433,10 @@ def policy_template_detail(key):
         abort(404)
     users = User.query.order_by(User.username).all()
     preview = render(tpl["body"])
-    return render_template("grc/policy_template_detail.html", tpl=tpl, users=users, preview=preview)
+    policy_id = request.args.get("policy_id", type=int)
+    target_policy = Policy.query.get(policy_id) if policy_id else None
+    return render_template("grc/policy_template_detail.html", tpl=tpl, users=users, preview=preview,
+                           policy_id=policy_id, target_policy=target_policy)
 
 
 @grc_bp.route("/policies/templates/<key>/generate", methods=["POST"])
@@ -448,6 +453,7 @@ def generate_policy_from_template(key):
     review_cycle = request.form.get("review_cycle", "Annually").strip() or "Annually"
     effective    = request.form.get("effective_date", "").strip()
     review_date  = _parse_date(request.form.get("review_date", ""))
+    existing_id  = request.form.get("policy_id", type=int) or None
 
     owner_name = ""
     if owner_id:
@@ -462,24 +468,101 @@ def generate_policy_from_template(key):
         REVIEW_CYCLE=review_cycle,
     )
 
-    p = Policy(
-        title        = f"{company_name} {tpl['title']}".strip() if company_name else tpl["title"],
-        category     = tpl["category"],
-        description  = tpl["summary"],
-        content      = rendered,
-        template_key = tpl["key"],
-        version      = "1.0",
-        status       = "draft",
-        owner_id     = owner_id,
-        review_date  = review_date,
-        created_by   = current_user.id,
-    )
-    db.session.add(p)
-    db.session.commit()
     from ...audit import log_action
-    log_action("policy.generate_from_template", entity_type="policy", entity_id=p.id,
-               entity_name=p.title, detail=f"Template: {tpl['key']}")
-    flash(f"Policy '{p.title}' generated from template. Review and customize it before activating.", "success")
+
+    if existing_id:
+        # Apply this template to a policy the user already created, rather than
+        # spawning a second, disconnected record.
+        p = Policy.query.get_or_404(existing_id)
+        if not p.title and company_name:
+            p.title = f"{company_name} {tpl['title']}".strip()
+        if not p.description:
+            p.description = tpl["summary"]
+        p.content      = rendered
+        p.template_key = tpl["key"]
+        if owner_id:
+            p.owner_id = owner_id
+        if review_date:
+            p.review_date = review_date
+        p.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        log_action("policy.apply_template", entity_type="policy", entity_id=p.id,
+                   entity_name=p.title, detail=f"Template: {tpl['key']}")
+        flash(f"Template applied to '{p.title}'. Review and customize it before activating.", "success")
+    else:
+        p = Policy(
+            title        = f"{company_name} {tpl['title']}".strip() if company_name else tpl["title"],
+            category     = tpl["category"],
+            description  = tpl["summary"],
+            content      = rendered,
+            template_key = tpl["key"],
+            version      = "1.0",
+            status       = "draft",
+            owner_id     = owner_id,
+            review_date  = review_date,
+            created_by   = current_user.id,
+        )
+        db.session.add(p)
+        db.session.commit()
+        log_action("policy.generate_from_template", entity_type="policy", entity_id=p.id,
+                   entity_name=p.title, detail=f"Template: {tpl['key']}")
+        flash(f"Policy '{p.title}' generated from template. Review and customize it before activating.", "success")
+
+    return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+
+@grc_bp.route("/policies/<int:policy_id>/import", methods=["POST"])
+@login_required
+@admin_required
+def import_policy_document(policy_id):
+    """Extract text from an uploaded .docx/.txt/.md file into the policy's
+    content, and keep the original file attached as the document of record."""
+    p = Policy.query.get_or_404(policy_id)
+    f = request.files.get("file")
+    if not f or not f.filename:
+        flash("Select a .docx, .txt, or .md file to upload.", "warning")
+        return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+    from ...grc.doc_import import SUPPORTED_EXTS, extract_text
+    ext = Path(f.filename).suffix.lower()
+    if ext not in SUPPORTED_EXTS:
+        flash("Unsupported file type. Upload a .docx, .txt, or .md file.", "warning")
+        return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+    data = f.read()
+    if len(data) > _MAX_MB * 1024 * 1024:
+        flash(f"File exceeds {_MAX_MB} MB limit.", "warning")
+        return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+    try:
+        content = extract_text(f.filename, data)
+    except Exception:
+        flash("Could not read that file — make sure it's a valid .docx, .txt, or .md file.", "danger")
+        return redirect(url_for("grc.policy_detail", policy_id=p.id))
+
+    p.content = content
+    p.updated_at = datetime.now(timezone.utc)
+
+    stored_name = uuid.uuid4().hex + ext
+    upload_dir  = Path(current_app.config["EVIDENCE_UPLOAD_DIR"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    (upload_dir / stored_name).write_bytes(data)
+    ev = EvidenceFile(
+        policy_id   = p.id,
+        filename    = secure_filename(f.filename),
+        stored_name = stored_name,
+        file_size   = len(data),
+        mime_type   = f.mimetype,
+        description = "Original uploaded policy document",
+        uploaded_by = current_user.id,
+    )
+    db.session.add(ev)
+    db.session.commit()
+
+    from ...audit import log_action
+    log_action("policy.import_document", entity_type="policy", entity_id=p.id,
+               entity_name=p.title, detail=f"Imported from {f.filename}")
+    flash(f"Imported content from {f.filename}.", "success")
     return redirect(url_for("grc.policy_detail", policy_id=p.id))
 
 

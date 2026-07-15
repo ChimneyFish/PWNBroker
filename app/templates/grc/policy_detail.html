@@ -3,6 +3,11 @@
 {% block page_title %}{{ p.title }}{% endblock %}
 
 {% block header_actions %}
+{% if current_user.is_admin %}
+<a href="{{ url_for('grc.policy_templates', policy_id=p.id) }}" class="btn btn-sm btn-outline-info">
+  <i class="bi bi-magic me-1"></i>Apply Template
+</a>
+{% endif %}
 <a href="{{ url_for('grc.export_policy', policy_id=p.id, fmt='pdf') }}" class="btn btn-sm btn-outline-success">
   <i class="bi bi-file-earmark-pdf me-1"></i>PDF
 </a>
@@ -15,6 +20,18 @@
 {% endblock %}
 
 {% block content %}
+
+{% if not p.content and not files %}
+<div class="form-card mb-4" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.35)">
+  <div class="d-flex align-items-center gap-2" style="color:#fbbf24">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div class="small">
+      This policy has no written content or attached document yet — write it below, upload a document,
+      or <a href="{{ url_for('grc.policy_templates', policy_id=p.id) }}" style="color:#fbbf24;text-decoration:underline">apply a template</a>.
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% set sc = {'active':'success','draft':'secondary','under_review':'warning','retired':'secondary'} %}
 <div class="form-card mb-4">
@@ -48,10 +65,27 @@
         {% endif %}
       </div>
       {% if current_user.is_admin %}
-      <textarea id="policy-content" class="form-control form-control-sm" rows="26"
+      <textarea id="policy-content" class="form-control form-control-sm" rows="22"
                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color);font-family:monospace;font-size:0.8rem"
-                placeholder="No content yet. Write the policy body here (# headings, - bullets, | table | rows)…">{{ p.content or '' }}</textarea>
-      <div class="text-muted mt-2" style="font-size:0.7rem">Autosaves a few seconds after you stop typing.</div>
+                placeholder="No content yet. Type or paste the policy body here (# headings, - bullets, | table | rows)…">{{ p.content or '' }}</textarea>
+      <div class="text-muted mt-2 mb-3" style="font-size:0.7rem">Autosaves a few seconds after you stop typing.</div>
+
+      <div style="border-top:1px solid var(--border-color);padding-top:0.75rem">
+        <div class="fw-semibold small text-muted mb-2">OR IMPORT FROM A FILE</div>
+        <div class="text-muted mb-2" style="font-size:0.7rem">
+          Upload a .docx, .txt, or .md file — its text replaces the content above, and the original file
+          is kept attached under Evidence Files as the document of record.
+        </div>
+        <form method="POST" action="{{ url_for('grc.import_policy_document', policy_id=p.id) }}"
+              enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center"
+              onsubmit="return confirm('This replaces the current policy content with the text from the uploaded file. Continue?')">
+          <input type="file" name="file" accept=".docx,.txt,.md" required
+                 class="form-control form-control-sm" style="max-width:280px;background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
+          <button type="submit" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-upload me-1"></i>Import &amp; Replace Content
+          </button>
+        </form>
+      </div>
       {% else %}
       <pre class="small text-muted" style="white-space:pre-wrap;font-family:inherit">{{ p.content or p.description or 'No content has been added to this policy yet.' }}</pre>
       {% endif %}
