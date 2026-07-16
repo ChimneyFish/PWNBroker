@@ -1,45 +1,12 @@
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
-from ..models import VulnTicket, ScanResult, Scan, Target, User, _SLA_DAYS, CVEEnrichment, RiskEntry, Asset
+from ..models import VulnTicket, ScanResult, Scan, Target, User, _SLA_DAYS, CVEEnrichment
 from ..extensions import db
+from ..grc.risk_sync import sync_risk_entry
 from .decorators import admin_required
 
 vulns_bp = Blueprint("vulns", __name__, url_prefix="/vulns")
-
-_SEVERITY_IMPACT = {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}
-
-
-def _sync_risk_entry(ticket, justification):
-    """Create or refresh the GRC risk-register entry backing an accepted-risk
-    ticket, instead of spawning a new one every time the same finding is
-    (re)accepted."""
-    asset = Asset.query.filter_by(ip_address=ticket.host_ip).first() if ticket.host_ip else None
-    impact = _SEVERITY_IMPACT.get(ticket.severity, 3)
-    risk = ticket.risk_entry
-    if risk:
-        risk.description = justification
-        risk.status      = "accepted"
-        risk.closed_at   = None
-        risk.impact      = impact
-        if asset:
-            risk.asset_id = asset.id
-    else:
-        risk = RiskEntry(
-            title          = f"Accepted Risk: {ticket.vuln_name or ticket.title}",
-            description    = justification,
-            category       = "technical",
-            likelihood     = 3,
-            impact         = impact,
-            status         = "accepted",
-            owner_id       = ticket.assigned_to or current_user.id,
-            asset_id       = asset.id if asset else None,
-            created_by     = current_user.id,
-            vuln_ticket_id = ticket.id,
-        )
-        db.session.add(risk)
-        db.session.flush()
-    return risk
 
 
 def _derive_vuln_name(r):
@@ -250,7 +217,7 @@ def ticket_update(ticket_id):
     risk = None
     if entering_accepted_risk:
         t.risk_justification = notes
-        risk = _sync_risk_entry(t, notes)
+        risk = sync_risk_entry(t, notes, current_user.id)
     elif leaving_accepted_risk and t.risk_entry:
         t.risk_entry.status    = "closed"
         t.risk_entry.closed_at = datetime.now(timezone.utc)

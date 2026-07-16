@@ -135,6 +135,76 @@ def risks():
                            users=users, assets=assets)
 
 
+@grc_bp.route("/risks/open-vulns")
+@login_required
+def risk_open_vulns():
+    """Open/in-progress findings for an asset, to populate the cascading
+    vulnerability dropdown when accepting a risk. These are only ever closed
+    out of vuln management once explicitly accepted here or remediated."""
+    asset_id = request.args.get("asset_id", type=int)
+    asset = Asset.query.get_or_404(asset_id)
+    q = VulnTicket.query.filter(VulnTicket.status.in_(["open", "in_progress"]))
+    if asset.target_id:
+        q = q.filter_by(target_id=asset.target_id, host_ip=asset.ip_address)
+    else:
+        q = q.filter_by(host_ip=asset.ip_address)
+    tickets = q.order_by(VulnTicket.severity).all()
+    return jsonify(ok=True, vulns=[{
+        "id":       t.id,
+        "label":    (t.vuln_name or t.title or "Untitled finding"),
+        "severity": t.severity,
+        "cve_id":   t.cve_id,
+    } for t in tickets])
+
+
+@grc_bp.route("/risks/accept-vuln", methods=["POST"])
+@login_required
+@admin_required
+def accept_vuln_risk():
+    """Mark an open vulnerability finding as an accepted risk directly from
+    GRC — the same acceptance path used on the Vulnerability Tickets pages,
+    so the underlying ticket closes out of vuln management and future scans
+    remember the acceptance instead of re-flagging it."""
+    vuln_ticket_id = request.form.get("vuln_ticket_id", type=int)
+    justification  = request.form.get("description", "").strip()
+    if not vuln_ticket_id or not justification:
+        flash("Choose an asset and a finding, and provide a justification.", "warning")
+        return redirect(url_for("grc.risks"))
+
+    t = VulnTicket.query.get_or_404(vuln_ticket_id)
+    old_status = t.status
+    t.status = "accepted_risk"
+    t.patched_at = None
+    t.risk_justification = justification
+
+    from ...grc.risk_sync import sync_risk_entry
+    risk = sync_risk_entry(t, justification, current_user.id)
+
+    owner_id = request.form.get("owner_id", type=int)
+    if owner_id:
+        risk.owner_id = owner_id
+    likelihood = request.form.get("likelihood", type=int)
+    if likelihood:
+        risk.likelihood = likelihood
+    target_date = _parse_date(request.form.get("target_date", ""))
+    if target_date:
+        risk.target_date = target_date
+    mitigation = request.form.get("mitigation_plan", "").strip()
+    if mitigation:
+        risk.mitigation_plan = mitigation
+
+    db.session.commit()
+
+    from ...audit import log_action
+    if old_status != "accepted_risk":
+        log_action("vuln.status_change", entity_type="vuln_ticket", entity_id=t.id,
+                   entity_name=t.vuln_name or t.title, detail=f"{old_status} → accepted_risk")
+    log_action("risk.accept_from_vuln", entity_type="risk_entry", entity_id=risk.id,
+               entity_name=risk.title, detail=f"Vuln ticket #{t.id}: {justification[:200]}")
+    flash(f"'{t.vuln_name or t.title}' marked as acceptable risk.", "success")
+    return redirect(url_for("grc.risks"))
+
+
 @grc_bp.route("/risks/create", methods=["POST"])
 @login_required
 @admin_required
