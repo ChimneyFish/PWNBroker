@@ -131,11 +131,36 @@ def new():
             flash("Target and scan name are required.", "danger")
             return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
 
-        # ── Asset group: launch one scan per member asset ──────────────────
+        # ── Asset group ──────────────────────────────────────────────────────
         if raw_target.startswith("g:"):
             group_id = int(raw_target[2:])
             group    = AssetGroup.query.get_or_404(group_id)
-            assets   = _group_assets(group)
+
+            # A "network" group mirrors every asset under one subnet Target —
+            # scan that subnet directly so newly-appeared devices are found
+            # too, instead of only rescanning IPs already in the asset list.
+            if group.group_type == "network" and group.target_id:
+                target_obj = Target.query.get_or_404(group.target_id)
+                scan = Scan(
+                    name=f"{name} — {group.name}", target_id=target_obj.id, scan_type=scan_type,
+                    port_range=port_range, created_by=current_user.id, status="pending",
+                )
+                db.session.add(scan)
+                db.session.commit()
+
+                from ..audit import log_action
+                log_action("scan.create", entity_type="scan", entity_id=scan.id, entity_name=scan.name,
+                           detail=f"Type: {scan_type} | Network group: {group.name} ({target_obj.host})")
+
+                from ..scanner.engine import run_scan
+                app = current_app._get_current_object()
+                threading.Thread(target=run_scan, args=(scan.id, app), daemon=True).start()
+                flash(f"Scan '{scan.name}' started against {target_obj.host}.", "success")
+                return redirect(url_for("scans.view", scan_id=scan.id))
+
+            # Manual/tag groups: arbitrary hosts, not one contiguous subnet —
+            # launch one scan per member asset.
+            assets = _group_assets(group)
             if not assets:
                 flash(f"Group '{group.name}' has no assets.", "warning")
                 return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)

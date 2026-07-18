@@ -22,7 +22,7 @@
             <optgroup label="Asset Groups">
               {% for g in groups %}
               <option value="g:{{ g.id }}">
-                {{ g.name }}{% if g._member_count %} ({{ g._member_count }} asset{{ 's' if g._member_count != 1 }}){% endif %}
+                {{ g.name }}{% if g.group_type == 'network' %} (network — scans the subnet){% elif g._member_count %} ({{ g._member_count }} asset{{ 's' if g._member_count != 1 }}){% endif %}
               </option>
               {% endfor %}
             </optgroup>
@@ -34,7 +34,8 @@
             </optgroup>
           </select>
           <div class="mt-1 small text-muted">
-            Groups are expanded to their current members each time the schedule fires.
+            A network group scans its whole subnet directly each time the schedule fires (so new
+            devices are found too); manual/tag groups are expanded to their current members.
           </div>
         </div>
         <div class="mb-3">

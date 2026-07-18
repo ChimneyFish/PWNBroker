@@ -65,18 +65,15 @@ def _run_scheduled_scans(app):
             from ..scanner.engine import run_scan
 
             if sched.asset_group_id:
-                # Expand group to current members and launch per-IP scans
-                group  = db.session.get(AssetGroup, sched.asset_group_id)
-                assets = _resolve_group_assets(group) if group else []
-                for asset in assets:
-                    tgt = Target.query.filter_by(host=asset.ip_address).first()
-                    if not tgt:
-                        tgt = Target(name=asset.ip_address, host=asset.ip_address)
-                        db.session.add(tgt)
-                        db.session.flush()
+                group = db.session.get(AssetGroup, sched.asset_group_id)
+
+                if group and group.group_type == "network" and group.target_id:
+                    # Mirrors every asset under one subnet Target — scan the
+                    # subnet directly so newly-appeared devices are found too,
+                    # instead of only rescanning IPs already in the asset list.
                     scan = Scan(
-                        name=f"{sched.name} — {asset.ip_address}",
-                        target_id=tgt.id,
+                        name=f"{sched.name} (scheduled)",
+                        target_id=group.target_id,
                         scan_type=sched.scan_type,
                         port_range=sched.port_range,
                         created_by=sched.created_by,
@@ -86,6 +83,28 @@ def _run_scheduled_scans(app):
                     db.session.flush()
                     db.session.commit()
                     threading.Thread(target=run_scan, args=(scan.id, app), daemon=True).start()
+                else:
+                    # Manual/tag groups: arbitrary hosts, not one contiguous
+                    # subnet — expand to current members and launch per-IP scans.
+                    assets = _resolve_group_assets(group) if group else []
+                    for asset in assets:
+                        tgt = Target.query.filter_by(host=asset.ip_address).first()
+                        if not tgt:
+                            tgt = Target(name=asset.ip_address, host=asset.ip_address)
+                            db.session.add(tgt)
+                            db.session.flush()
+                        scan = Scan(
+                            name=f"{sched.name} — {asset.ip_address}",
+                            target_id=tgt.id,
+                            scan_type=sched.scan_type,
+                            port_range=sched.port_range,
+                            created_by=sched.created_by,
+                            status="pending",
+                        )
+                        db.session.add(scan)
+                        db.session.flush()
+                        db.session.commit()
+                        threading.Thread(target=run_scan, args=(scan.id, app), daemon=True).start()
             else:
                 scan = Scan(
                     name=f"{sched.name} (scheduled)",

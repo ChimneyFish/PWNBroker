@@ -20,7 +20,7 @@
             <optgroup label="Asset Groups">
               {% for g in groups %}
               <option value="g:{{ g.id }}">
-                {{ g.name }}{% if g._member_count %} ({{ g._member_count }} asset{{ 's' if g._member_count != 1 }}){% endif %}
+                {{ g.name }}{% if g.group_type == 'network' %} (network — scans the subnet){% elif g._member_count %} ({{ g._member_count }} asset{{ 's' if g._member_count != 1 }}){% endif %}
               </option>
               {% endfor %}
             </optgroup>
@@ -32,7 +32,8 @@
             </optgroup>
           </select>
           <div class="mt-1 small text-muted">
-            Selecting a group launches one scan per member asset. &nbsp;·&nbsp;
+            A network group scans its whole subnet directly (so new devices are found too);
+            manual/tag groups launch one scan per member asset. &nbsp;·&nbsp;
             <a href="{{ url_for('targets.new') }}">+ Add new target</a>
           </div>
         </div>
