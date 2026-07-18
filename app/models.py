@@ -231,8 +231,10 @@ class JiraTicket(db.Model):
     ticket_key = db.Column(db.String(50))          # e.g. SEC-42
     ticket_url = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    scan = db.relationship("Scan", backref=db.backref("jira_tickets", lazy="dynamic"))
-    result = db.relationship("ScanResult", backref=db.backref("jira_tickets", lazy="dynamic"))
+    scan = db.relationship("Scan", backref=db.backref("jira_tickets", lazy="dynamic",
+                                                       cascade="all, delete-orphan"))
+    result = db.relationship("ScanResult", backref=db.backref("jira_tickets", lazy="dynamic",
+                                                               cascade="all, delete-orphan"))
 
 
 # ── Threat Intelligence ────────────────────────────────────────────────────────
@@ -330,8 +332,8 @@ _SLA_DAYS = {"critical": 1, "high": 7, "medium": 30, "low": 90, "info": 180}
 class VulnTicket(db.Model):
     __tablename__  = "vuln_tickets"
     id             = db.Column(db.Integer, primary_key=True)
-    scan_result_id = db.Column(db.Integer, db.ForeignKey("scan_results.id", ondelete="CASCADE"),
-                               nullable=False, unique=True)
+    scan_result_id = db.Column(db.Integer, db.ForeignKey("scan_results.id", ondelete="SET NULL"),
+                               nullable=True, unique=True)
     target_id      = db.Column(db.Integer, db.ForeignKey("targets.id", ondelete="CASCADE"),
                                nullable=False)
     title          = db.Column(db.String(300))

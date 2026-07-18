@@ -113,11 +113,39 @@ def create_app(config_class=Config):
 
     with app.app_context():
         db.create_all()
+        _migrate_vuln_ticket_scan_result_nullable(app)
         _migrate_columns(app)
         _seed_admin(app)
         _start_scheduler(app)
 
     return app
+
+
+def _migrate_vuln_ticket_scan_result_nullable(app):
+    """vuln_tickets.scan_result_id used to be NOT NULL, which raised an
+    IntegrityError whenever a scan was deleted (SQLAlchemy nulls the FK on the
+    ticket instead of deleting it, since the ticket is meant to outlive the
+    scan that first surfaced it). Rebuild the table with the column nullable,
+    preserving existing rows. No-op on a fresh install or once already fixed."""
+    from sqlalchemy import text
+    from .models import VulnTicket
+
+    with db.engine.connect() as conn:
+        info = conn.execute(text("PRAGMA table_info(vuln_tickets)")).fetchall()
+        col = next((row for row in info if row[1] == "scan_result_id"), None)
+        if not col or not col[3]:
+            return  # table doesn't exist yet, or column is already nullable
+
+        conn.execute(text("ALTER TABLE vuln_tickets RENAME TO vuln_tickets_old"))
+        conn.commit()
+
+    VulnTicket.__table__.create(bind=db.engine)
+
+    with db.engine.connect() as conn:
+        cols = ", ".join(c.name for c in VulnTicket.__table__.columns)
+        conn.execute(text(f"INSERT INTO vuln_tickets ({cols}) SELECT {cols} FROM vuln_tickets_old"))
+        conn.execute(text("DROP TABLE vuln_tickets_old"))
+        conn.commit()
 
 
 def _migrate_columns(app):
