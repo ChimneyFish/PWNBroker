@@ -1,12 +1,17 @@
 """
 End-of-Life (EOL) detection scanner.
 
-SSHes into a Linux/Unix target, reads /etc/os-release, and queries the
-endoflife.date public API to determine if the OS is EOL or approaching it.
-No API key required.
+Two detection paths:
+ - check_fingerprint_eol(): credential-free, matches nmap's OS fingerprint
+   against known EOL cutoffs. Runs automatically on every port/full scan.
+ - run_eol_scan(): SSHes into a Linux/Unix target, reads /etc/os-release, and
+   queries the endoflife.date public API for a precise version-level check.
+   Runs automatically on full scans when the target has SSH credentials.
+No API key required for either path.
 """
 import io
 import json
+import re
 from datetime import date, timedelta
 
 import requests
@@ -30,6 +35,62 @@ _OS_MAP = [
     ("suse",         "sles"),
     ("alpine",       "alpine"),
 ]
+
+
+# Best-effort EOL lookup straight from nmap's OS fingerprint (`-O --osscan-guess`),
+# so a device/OS gets flagged even with no SSH access — this runs on every
+# port/full scan. Nmap's guess can be imprecise, so treat a hit as a signal to
+# verify, not ground truth. Ordered most-specific pattern first.
+_FINGERPRINT_EOL = [
+    (re.compile(r"windows server 2003", re.I), "Windows Server 2003",         date(2015, 7, 14)),
+    (re.compile(r"windows server 2008", re.I), "Windows Server 2008/2008 R2", date(2020, 1, 14)),
+    (re.compile(r"windows server 2012", re.I), "Windows Server 2012/2012 R2", date(2023, 10, 10)),
+    (re.compile(r"windows 2000",        re.I), "Windows 2000",                date(2010, 7, 13)),
+    (re.compile(r"windows xp",          re.I), "Windows XP",                  date(2014, 4, 8)),
+    (re.compile(r"windows vista",       re.I), "Windows Vista",               date(2017, 4, 11)),
+    (re.compile(r"windows 7\b",         re.I), "Windows 7",                   date(2020, 1, 14)),
+    (re.compile(r"windows 8(\.1)?\b",   re.I), "Windows 8/8.1",               date(2023, 1, 10)),
+    (re.compile(r"mac os x 10\.(6|7|8|9|10|11|12|13|14|15)\b", re.I),
+     "macOS 10.15 (Catalina) or earlier", date(2022, 9, 1)),
+    (re.compile(r"linux 2\.\d", re.I), "Linux (2.x kernel — likely an unsupported legacy distro)", date(2015, 1, 1)),
+    (re.compile(r"linux 3\.\d", re.I), "Linux (3.x kernel — likely an unsupported legacy distro)", date(2018, 1, 1)),
+]
+
+
+def check_fingerprint_eol(os_name: str, host: str):
+    """Check an nmap-detected OS string against known EOL cutoffs. Returns a
+    ScanResult-ready dict if the OS is EOL or approaching it, else None."""
+    if not os_name:
+        return None
+    today = date.today()
+    for pattern, label, eol_date in _FINGERPRINT_EOL:
+        if not pattern.search(os_name):
+            continue
+        if eol_date <= today:
+            severity, status = "critical", f"reached end of life on {eol_date}"
+        elif eol_date <= today + timedelta(days=WARN_DAYS):
+            severity, status = "high", f"reaches end of life on {eol_date}"
+        else:
+            return None
+        return {
+            "result_type": "vulnerability",
+            "host":        host,
+            "severity":    severity,
+            "title":       f"{label} — Unsupported OS Detected",
+            "description": (
+                f"Nmap OS fingerprinting identified this host as running {label} "
+                f"(matched from: \"{os_name}\"), which {status} and no longer "
+                "receives security patches.\n"
+                "This is based on network OS fingerprinting, which can be imprecise — "
+                "confirm with a credentialed EOL scan or manual verification."
+            ),
+            "remediation": f"Upgrade or replace this system — {label} no longer receives vendor security patches.",
+            "raw_data": json.dumps({
+                "source": "eol_fingerprint", "os_name": os_name,
+                "matched": label, "eol": str(eol_date),
+            }),
+        }
+    return None
 
 
 def _ssh_exec(target, commands: dict) -> dict:

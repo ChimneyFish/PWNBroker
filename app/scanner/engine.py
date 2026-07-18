@@ -181,6 +181,42 @@ def run_scan(scan_id: int, app=None):
                 if host_meta:
                     _enrich_assets(scan.target_id, host_meta)
 
+                    # EOL check on every port/full scan — no credentials needed,
+                    # just nmap's OS fingerprint. Flags unsupported OSes as alerts
+                    # without requiring a separate, manually-run EOL scan.
+                    from .eol_scanner import check_fingerprint_eol
+                    for h, meta in host_meta.items():
+                        eol_hit = check_fingerprint_eol(meta.get("os_name"), h)
+                        if eol_hit:
+                            results.append(ScanResult(
+                                scan_id=scan_id,
+                                result_type=eol_hit["result_type"],
+                                host=eol_hit["host"],
+                                severity=eol_hit["severity"],
+                                title=eol_hit["title"],
+                                description=eol_hit["description"],
+                                remediation=eol_hit.get("remediation", ""),
+                                raw_data=eol_hit.get("raw_data"),
+                            ))
+
+                # Deeper, version-precise EOL check via SSH + endoflife.date —
+                # only for full scans against a single credentialed host (skips
+                # subnets/domains, and skips port-only scans to stay fast).
+                if (scan_type == "full" and scan.target and scan.target.ssh_username
+                        and not _is_cidr(host) and not _is_domain(host)):
+                    from .eol_scanner import run_eol_scan
+                    for r in run_eol_scan(scan, scan.target):
+                        results.append(ScanResult(
+                            scan_id=scan_id,
+                            result_type=r.get("result_type", "info"),
+                            host=r.get("host", host),
+                            severity=r.get("severity", "info"),
+                            title=r.get("title", ""),
+                            description=r.get("description", ""),
+                            remediation=r.get("remediation", ""),
+                            raw_data=r.get("raw_data"),
+                        ))
+
             # ── Web checks — single host/IP only, not subnets ────────────────
             if scan_type in ("full", "web") and not _is_cidr(host):
                 from .web_checks import run_web_checks
