@@ -7,11 +7,15 @@
 set -euo pipefail
 
 # ── Tunables (override via env vars) ─────────────────────────────────────────
-INSTALL_DIR="${INSTALL_DIR:-/opt/pwnbroker}"
+# Install dir matches the project's actual name/casing (PWNBroker) — this is
+# also the directory that "git pull" gets run in to update, see step 3.
+INSTALL_DIR="${INSTALL_DIR:-/opt/PWNBroker}"
+REPO_URL="${REPO_URL:-https://github.com/ChimneyFish/PWNBroker.git}"
+BRANCH="${BRANCH:-main}"
 PORT="${PORT:-5000}"
+WEB_THREADS="${WEB_THREADS:-8}"
 SERVICE_USER=pwnbroker
 SERVICE_FILE=/etc/systemd/system/pwnbroker.service
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' B='\033[1m' N='\033[0m'
@@ -58,7 +62,7 @@ apt-get update -qq
 PKGS=(
     python3 python3-pip python3-venv python3-dev
     nmap openssl libcap2-bin
-    rsync curl git ufw
+    curl git ufw
     build-essential libssl-dev libffi-dev
 )
 info "Installing: ${PKGS[*]}"
@@ -79,22 +83,25 @@ fi
 # =============================================================================
 step "3 / 10 — Application Files"
 # =============================================================================
-if [[ "$SCRIPT_DIR" != "$INSTALL_DIR" ]]; then
-    info "Syncing app files → $INSTALL_DIR ..."
-    mkdir -p "$INSTALL_DIR"
-    # --delete removes stale files but excludes persistent data/venv dirs
-    rsync -a --delete \
-        --exclude='.git/' \
-        --exclude='venv/' \
-        --exclude='data/' \
-        --exclude='logs/' \
-        --exclude='evidence_uploads/' \
-        --exclude='__pycache__/' \
-        --exclude='*.pyc' \
-        "$SCRIPT_DIR/" "$INSTALL_DIR/"
-    ok "Files synced"
+# $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
+# deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
+# since that's who owns the checkout) && sudo systemctl restart pwnbroker.
+# Re-running this whole script does the same fetch+reset plus everything else
+# (deps, service file, etc.) in one step.
+if [[ -d "$INSTALL_DIR/.git" ]]; then
+    info "Existing git checkout found — updating to latest $BRANCH..."
+    BEFORE=$(git -C "$INSTALL_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    git -C "$INSTALL_DIR" fetch --quiet origin "$BRANCH"
+    git -C "$INSTALL_DIR" reset --hard --quiet "origin/$BRANCH"
+    AFTER=$(git -C "$INSTALL_DIR" rev-parse --short HEAD)
+    ok "Updated $BEFORE → $AFTER"
+elif [[ -e "$INSTALL_DIR" && -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]]; then
+    die "$INSTALL_DIR exists and isn't a git checkout of this project — move it aside (or set INSTALL_DIR to a different path) before re-running."
 else
-    ok "Already in $INSTALL_DIR — no copy needed"
+    info "Cloning $REPO_URL ($BRANCH) → $INSTALL_DIR ..."
+    mkdir -p "$(dirname "$INSTALL_DIR")"
+    git clone --quiet --branch "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
+    ok "Cloned"
 fi
 
 # Persistent runtime directories
@@ -209,14 +216,17 @@ fi
 # =============================================================================
 step "8 / 10 — Systemd Service"
 # =============================================================================
-# Scale workers: 2× CPU count, capped at 8 (I/O-bound Flask app)
-WORKERS=$(python3 -c "import os; print(min(8, (os.cpu_count() or 2) * 2))")
-info "Workers: $WORKERS  ·  Threads: 4  ·  Binding: 0.0.0.0:$PORT"
+# One worker, multiple threads — not scaled by CPU count. APScheduler's
+# background jobs (scan checks, report sends, the Palo Alto poller) and the
+# login rate limiter both run in-process / in-memory; more than one worker
+# means every scheduled job fires once per worker (duplicate scans, duplicate
+# report emails) and the rate limiter under-counts. See docs/deployment.md.
+info "Workers: 1  ·  Threads: $WEB_THREADS  ·  Binding: 0.0.0.0:$PORT"
 
 cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=PwnBroker Security Operations Platform
-Documentation=https://github.com/your-org/pwnbroker
+Documentation=https://github.com/ChimneyFish/PWNBroker
 After=network-online.target
 Wants=network-online.target
 
@@ -229,8 +239,8 @@ EnvironmentFile=$ENV_FILE
 
 ExecStart=$INSTALL_DIR/venv/bin/gunicorn \\
     --bind 0.0.0.0:$PORT \\
-    --workers $WORKERS \\
-    --threads 4 \\
+    --workers 1 \\
+    --threads $WEB_THREADS \\
     --worker-class gthread \\
     --timeout 120 \\
     --keep-alive 5 \\
@@ -336,6 +346,10 @@ echo "    sudo systemctl stop    pwnbroker"
 echo "    sudo systemctl restart pwnbroker"
 echo "    sudo systemctl reload  pwnbroker   # zero-downtime worker reload"
 echo "    sudo systemctl status  pwnbroker"
+echo ""
+echo -e "  ${B}To update to the latest code:${N}"
+echo "    sudo bash setup.sh                          # re-run this script, or"
+echo "    cd $INSTALL_DIR && sudo git pull && sudo systemctl restart pwnbroker"
 echo ""
 echo -e "  ${Y}${B}Action required:${N}"
 echo -e "  ${Y}►${N} Change the default admin password immediately after first login"

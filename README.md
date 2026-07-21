@@ -86,20 +86,21 @@ Optional API keys (all free tiers available):
 
 ## Quick Install
 
+`setup.sh` manages its own checkout — you don't need to clone the repo yourself first, just grab the script and run it:
+
 ```bash
-git clone https://github.com/your-org/pwnbroker.git /opt/pwnbroker-src
-cd /opt/pwnbroker-src
+curl -fsSL https://raw.githubusercontent.com/ChimneyFish/PWNBroker/main/setup.sh -o setup.sh
 sudo bash setup.sh
 ```
 
-That's it. The script installs everything, generates TLS certificates, creates a systemd service, and starts the server. When it finishes:
+That's it. The script clones the project to `/opt/PWNBroker`, installs everything, generates TLS certificates, creates a systemd service, and starts the server. When it finishes:
 
 ```
   Access URL:       https://<server-ip>:5000
   Default login:    admin / admin
 ```
 
-> **Change the default password immediately** after first login via the Profile page.
+> **You'll be forced to set a new password on first login** — the default `admin`/`admin` account can't be used to navigate anywhere else until you do.
 
 ### Custom port or install path
 
@@ -107,7 +108,15 @@ That's it. The script installs everything, generates TLS certificates, creates a
 sudo PORT=8443 INSTALL_DIR=/srv/pwnbroker bash setup.sh
 ```
 
-Re-running `setup.sh` at any time is safe and idempotent — it syncs new code, updates Python dependencies, and reloads the service without touching your data, logs, or `.env`.
+### Updating
+
+`/opt/PWNBroker` (or your custom `INSTALL_DIR`) is a live git checkout, not a one-time copy — updating is a normal git pull:
+
+```bash
+cd /opt/PWNBroker && sudo git pull && sudo systemctl restart pwnbroker
+```
+
+Re-running `setup.sh` does the same fetch-and-reset plus everything else (dependency updates, service file, etc.) in one step, and is always safe to re-run — it never touches your data, logs, or `.env`.
 
 ---
 
@@ -117,8 +126,8 @@ For development or non-Ubuntu hosts:
 
 ```bash
 # 1 — Clone
-git clone https://github.com/your-org/pwnbroker.git
-cd pwnbroker
+git clone https://github.com/ChimneyFish/PWNBroker.git
+cd PWNBroker
 
 # 2 — Virtual environment
 python3 -m venv venv
@@ -133,7 +142,9 @@ $EDITOR .env
 python run.py
 
 # 4 — Run (production)
-gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 4 "app:create_app()"
+# One worker, several threads — see docs/deployment.md for why this isn't
+# scaled up like a typical stateless web app (in-process scheduler + rate limiter).
+gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 8 "app:create_app()"
 ```
 
 The database (`data/scanner.db`) and all required directories are created automatically on first start.
@@ -147,7 +158,7 @@ All runtime configuration lives in `.env` at the project root (or the install di
 ```ini
 # ── Required ──────────────────────────────────────────────────────────────────
 SECRET_KEY=<randomly generated 64-char hex string>
-DATABASE_URL=sqlite:////opt/pwnbroker/data/scanner.db
+DATABASE_URL=sqlite:////opt/PWNBroker/data/scanner.db
 
 # ── Optional: CVE lookups ─────────────────────────────────────────────────────
 # Free key at https://nvd.nist.gov/developers/request-an-api-key
@@ -175,7 +186,7 @@ sudo -u postgres createuser pwnbroker
 sudo -u postgres createdb -O pwnbroker pwnbroker
 sudo -u postgres psql -c "ALTER USER pwnbroker WITH PASSWORD 'yourpassword';"
 
-/opt/pwnbroker/venv/bin/pip install psycopg2-binary
+/opt/PWNBroker/venv/bin/pip install psycopg2-binary
 # Update DATABASE_URL in .env, then restart
 sudo systemctl restart pwnbroker
 ```
@@ -196,7 +207,7 @@ sudo systemctl status  pwnbroker
 journalctl -u pwnbroker -f         # live log stream
 ```
 
-Application logs: `/opt/pwnbroker/logs/` (rotated daily, 14-day retention).
+Application logs: `/opt/PWNBroker/logs/` (rotated daily, 14-day retention).
 
 ### First-time setup checklist
 
@@ -317,13 +328,15 @@ Full API reference: [`docs/guide.md → Section 16`](docs/guide.md#16-api-refere
 
 ## Upgrading
 
+`/opt/PWNBroker` is a live git checkout, so upgrading is a plain git pull + restart:
+
 ```bash
-cd /path/to/pwnbroker-src
-git pull
-sudo bash setup.sh
+cd /opt/PWNBroker
+sudo git pull
+sudo systemctl restart pwnbroker
 ```
 
-`setup.sh` is fully idempotent. It syncs application files (skipping `data/`, `logs/`, `evidence_uploads/`, and `.env`), upgrades Python dependencies, and restarts the service. Database schema changes are applied automatically at startup — no manual migrations.
+Or just re-run `sudo bash setup.sh` — it's fully idempotent: it fetches and resets to the latest commit, upgrades Python dependencies, and restarts the service, without touching `data/`, `logs/`, `evidence_uploads/`, or `.env`. Database schema changes are applied automatically at startup — no manual migrations.
 
 ---
 
@@ -350,15 +363,15 @@ sudo bash setup.sh
 ```bash
 journalctl -u pwnbroker -n 50
 # Port in use?      ss -tlnp | grep 5000
-# Bad TLS cert?     openssl x509 -in /opt/pwnbroker/data/ssl/cert.pem -noout -text
-# Python error?     /opt/pwnbroker/venv/bin/python -c "from app import create_app; create_app()"
+# Bad TLS cert?     openssl x509 -in /opt/PWNBroker/data/ssl/cert.pem -noout -text
+# Python error?     /opt/PWNBroker/venv/bin/python -c "from app import create_app; create_app()"
 ```
 
 **`Permission denied` on service start / WorkingDirectory**
 
 The service user (`pwnbroker`) needs execute permission on the install directory to enter it. If the directory mode is `750` instead of `755` the service fails immediately before gunicorn launches. Re-run setup.sh to fix it, or apply manually:
 ```bash
-sudo chmod 755 /opt/pwnbroker
+sudo chmod 755 /opt/PWNBroker
 sudo systemctl restart pwnbroker
 ```
 
@@ -366,7 +379,7 @@ sudo systemctl restart pwnbroker
 ```bash
 sudo systemctl restart pwnbroker
 # Reset stuck scans:
-sqlite3 /opt/pwnbroker/data/scanner.db "UPDATE scans SET status='failed' WHERE status='running';"
+sqlite3 /opt/PWNBroker/data/scanner.db "UPDATE scans SET status='failed' WHERE status='running';"
 ```
 
 **OS detection not working**

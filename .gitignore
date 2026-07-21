@@ -2,5 +2,10 @@ data/scanner.db*
 data/secret_key.txt
 data/encryption_key.txt
 data/logs/
+data/ssl/
+evidence_uploads/
+venv/
+logs/
+.env
 __pycache__/
 *.pyc

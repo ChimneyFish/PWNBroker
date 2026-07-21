@@ -39,9 +39,10 @@ PwnBroker is a self-hosted security operations platform that combines network sc
 
 ### Quick Install
 
+`setup.sh` manages its own git checkout — grab just the script and run it, no separate clone needed:
+
 ```bash
-git clone https://github.com/your-org/pwnbroker.git /opt/pwnbroker-src
-cd /opt/pwnbroker-src
+curl -fsSL https://raw.githubusercontent.com/ChimneyFish/PWNBroker/main/setup.sh -o setup.sh
 sudo bash setup.sh
 ```
 
@@ -49,11 +50,11 @@ The script will:
 
 1. Install system packages: `python3`, `nmap`, `openssl`, `ufw`, and build tools
 2. Create a `pwnbroker` system user (no shell, no home directory)
-3. Copy the application to `/opt/pwnbroker`
+3. Clone (or, on re-runs, fetch + reset) the application into `/opt/PWNBroker`
 4. Build a Python virtual environment and install all dependencies
 5. Grant `nmap` raw-socket capabilities (`cap_net_raw`) so OS fingerprinting works without root
 6. Generate a self-signed TLS certificate (4096-bit RSA, 10-year validity)
-7. Create `/opt/pwnbroker/.env` with a randomly generated `SECRET_KEY`
+7. Create `/opt/PWNBroker/.env` with a randomly generated `SECRET_KEY`
 8. Install and enable a `systemd` service (`pwnbroker.service`) that starts automatically on boot
 9. Configure `logrotate` for daily log rotation with 14-day retention
 10. Open the HTTPS port in `ufw` if the firewall is active
@@ -84,7 +85,7 @@ journalctl -u pwnbroker -f           # live log stream
 journalctl -u pwnbroker -n 100       # last 100 log lines
 ```
 
-Application logs are also written to `/opt/pwnbroker/logs/`.
+Application logs are also written to `/opt/PWNBroker/logs/`.
 
 ### TLS Certificate
 
@@ -802,16 +803,15 @@ Send a periodic heartbeat with current network connections. Requires the agent's
 
 ## 17. Upgrading
 
-Re-running `setup.sh` is safe and idempotent. It syncs new application files without touching `data/`, `logs/`, or `evidence_uploads/`, and preserves your existing `.env` and TLS certificates.
+`/opt/PWNBroker` is a live git checkout, so upgrading is a normal git pull:
 
 ```bash
-# Pull latest code
-cd /path/to/pwnbroker-src
-git pull
-
-# Re-run setup (syncs files, updates Python deps, reloads service)
-sudo bash setup.sh
+cd /opt/PWNBroker
+sudo git pull
+sudo systemctl restart pwnbroker
 ```
+
+Or re-run `sudo bash setup.sh` — it's safe and idempotent, fetching and resetting to the latest commit, updating Python dependencies, and restarting the service, without touching `data/`, `logs/`, `evidence_uploads/`, your existing `.env`, or TLS certificates.
 
 New database columns (added by migrations) are applied automatically on startup by `_migrate_columns()` in `app/__init__.py`. No manual schema changes are needed.
 
@@ -827,9 +827,9 @@ journalctl -u pwnbroker -n 50
 
 # Common causes:
 # - Port already in use:     ss -tlnp | grep 5000
-# - Missing .env file:       ls /opt/pwnbroker/.env
-# - Bad TLS cert:            openssl x509 -in /opt/pwnbroker/data/ssl/cert.pem -noout -text
-# - Python import error:     /opt/pwnbroker/venv/bin/python -c "from app import create_app; create_app()"
+# - Missing .env file:       ls /opt/PWNBroker/.env
+# - Bad TLS cert:            openssl x509 -in /opt/PWNBroker/data/ssl/cert.pem -noout -text
+# - Python import error:     /opt/PWNBroker/venv/bin/python -c "from app import create_app; create_app()"
 ```
 
 ### Scans stuck in "running" state
@@ -840,12 +840,7 @@ The scan background thread may have died. Restart the service:
 sudo systemctl restart pwnbroker
 ```
 
-Scans that were running when the service stopped are left in `running` status. Reset them manually in the database if needed:
-
-```bash
-sqlite3 /opt/pwnbroker/data/scanner.db \
-  "UPDATE scans SET status='failed' WHERE status='running';"
-```
+Scans still marked `running` at that point were killed mid-scan, not still in progress — the app automatically sweeps any `running` scan to `failed` on every boot (`_recover_orphaned_scans` in `app/__init__.py`), so no manual database edit is needed.
 
 ### OS detection not working
 
@@ -897,13 +892,13 @@ sudo timedatectl set-ntp true
 
 ### Database locked errors
 
-SQLite allows only one writer at a time. If you see "database is locked" errors under heavy load, consider switching to PostgreSQL:
+SQLite allows only one writer at a time; the app runs it in WAL mode with a busy-timeout so concurrent reads/writes don't immediately fail, but if you still see "database is locked" errors under heavy load, consider switching to PostgreSQL:
 
 ```bash
 # Install psycopg2
-/opt/pwnbroker/venv/bin/pip install psycopg2-binary
+/opt/PWNBroker/venv/bin/pip install psycopg2-binary
 
-# Update DATABASE_URL in /opt/pwnbroker/.env
+# Update DATABASE_URL in /opt/PWNBroker/.env
 DATABASE_URL=postgresql://pwnbroker:password@localhost/pwnbroker
 
 # Create the database
