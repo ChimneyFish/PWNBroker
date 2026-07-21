@@ -32,11 +32,12 @@ echo "[1/4] Setting up virtual environment at $VENV_DIR..."
 mkdir -p "$AGENT_DIR"
 "$PYTHON" -m venv "$VENV_DIR"
 VENV_PY="$VENV_DIR/bin/python3"
-VENV_PIP="$VENV_DIR/bin/pip"
 
-# Install deps inside the venv (no system-package conflict)
-"$VENV_PIP" install --quiet --upgrade pip
-"$VENV_PIP" install --quiet requests psutil
+# Install deps inside the venv (no system-package conflict). Invoke pip via
+# "python -m pip", not the pip executable directly — pip's own recommended
+# way to upgrade itself, and avoids platform-specific self-replace quirks.
+"$VENV_PY" -m pip install --quiet --upgrade pip
+"$VENV_PY" -m pip install --quiet requests psutil
 echo "    requests + psutil installed."
 
 # Write agent script (embedded — no separate download required)

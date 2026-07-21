@@ -32,7 +32,6 @@ $DataDir     = "$env:ProgramData\PwnBroker"
 $AgentScript = "$InstallDir\agent.py"
 $VenvDir     = "$InstallDir\venv"
 $VenvPy      = "$VenvDir\Scripts\python.exe"
-$VenvPip     = "$VenvDir\Scripts\pip.exe"
 $ServiceName = "PwnBrokerAgent"
 $RegPath     = "HKLM:\SOFTWARE\PwnBroker\Agent"
 $Version     = "1.0"
@@ -158,8 +157,11 @@ if (Test-Path $VenvDir) { Remove-Item -Recurse -Force $VenvDir }
 if (-not (Test-Path $VenvPy)) { Die "venv creation failed." }
 
 Log "  Installing dependencies (requests, psutil, pywin32)..."
-& $VenvPip install --quiet --upgrade pip 2>&1 | Out-Null
-& $VenvPip install --quiet requests psutil pywin32 2>&1 | Out-Null
+# Invoke pip via "python -m pip", not pip.exe directly — pip.exe can't safely
+# replace itself while it's the running process, and refuses to try (this is
+# what caused the "To modify pip, please run..." error).
+& $VenvPy -m pip install --quiet --upgrade pip 2>&1 | Out-Null
+& $VenvPy -m pip install --quiet requests psutil pywin32 2>&1 | Out-Null
 
 # pywin32 post-install — registers COM DLLs and pythonservice.exe
 $PostInstall = "$VenvDir\Scripts\pywin32_postinstall.py"

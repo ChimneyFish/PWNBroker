@@ -133,9 +133,12 @@ if [[ ! -d "$INSTALL_DIR/venv" ]]; then
 fi
 
 info "Installing Python dependencies (this may take a minute)..."
-"$INSTALL_DIR/venv/bin/pip" install --upgrade pip setuptools wheel -q
-"$INSTALL_DIR/venv/bin/pip" install gunicorn -q
-"$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" -q
+# python -m pip, not pip's own executable directly — pip's own recommended way
+# to upgrade itself.
+VENV_PY="$INSTALL_DIR/venv/bin/python3"
+"$VENV_PY" -m pip install --upgrade pip setuptools wheel -q
+"$VENV_PY" -m pip install gunicorn -q
+"$VENV_PY" -m pip install -r "$INSTALL_DIR/requirements.txt" -q
 chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
