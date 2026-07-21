@@ -302,6 +302,7 @@ class SocCase(db.Model):
     vt_result         = db.Column(db.Text)
     abuseipdb_result  = db.Column(db.Text)
     pulsedrive_result = db.Column(db.Text)
+    paloalto_result   = db.Column(db.Text)                # JSON: {firewall, threat_name, category, action, ...}
     status           = db.Column(db.String(20), default="pending")  # pending|alerted|dismissed
     analyst_notes    = db.Column(db.Text)
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

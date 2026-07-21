@@ -34,13 +34,13 @@
     Pending Review
     {% if pending %}<span class="badge bg-warning text-dark ms-2">{{ pending | length }}</span>{% endif %}
   </span>
-  <span class="text-muted small">IOCs flagged by ≥2 sources — awaiting analyst decision</span>
+  <span class="text-muted small">IOCs flagged by ≥2 lookup sources, or any Palo Alto threat-log detection — awaiting analyst decision</span>
 </div>
 
 {% if not pending %}
 <div class="form-card text-center py-5 text-muted mb-4">
   <i class="bi bi-shield-check fs-1 d-block mb-2 text-success opacity-50"></i>
-  No cases pending review. IOCs confirmed suspicious by ≥2 sources will appear here automatically.
+  No cases pending review. IOCs confirmed suspicious by ≥2 sources, or flagged by a Palo Alto threat log, will appear here automatically.
 </div>
 {% else %}
 {% for case in pending %}
@@ -72,6 +72,8 @@
           <span class="badge ms-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">AbuseIPDB</span>
           {% elif src.startswith('pulseDrive:') %}
           <span class="badge ms-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
+          {% elif src == 'PaloAlto' %}
+          <span class="badge ms-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
           {% endif %}
         {% endfor %}
       </div>
@@ -97,6 +99,13 @@
           <span class="text-muted">AbuseIPDB:</span>
           <span class="{% if ab.confidence_score >= 50 %}text-danger{% else %}text-warning{% endif %}">
             {{ ab.confidence_score or 0 }}% confidence
+          </span>
+        </div>{% endif %}
+        {% if case.paloalto_result %}{% set pa = case.paloalto_result | fromjson %}
+        <div class="col-auto">
+          <span class="text-muted">Palo Alto:</span>
+          <span class="{% if pa.severity in ('critical', 'high') %}text-danger{% else %}text-warning{% endif %}">
+            {{ pa.threat_name or pa.category or 'detection' }} ({{ pa.severity }}) on {{ pa.firewall }}
           </span>
         </div>{% endif %}
       </div>
@@ -173,6 +182,7 @@
             {% elif src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
             {% elif src == 'AbuseIPDB' %}<span class="badge me-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>
             {% elif src.startswith('pulseDrive:') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
+            {% elif src == 'PaloAlto' %}<span class="badge me-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
             {% endif %}
           {% endfor %}
         </td>
@@ -404,6 +414,7 @@
                 {% elif src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#e17c00;font-size:0.6rem">OTX</span>
                 {% elif src == 'AbuseIPDB' %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d;font-size:0.6rem">Abuse</span>
                 {% elif src.startswith('pulseDrive:') %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;font-size:0.6rem">{{ src.split(':')[1] }}</span>
+                {% elif src == 'PaloAlto' %}<span class="badge" style="background:rgba(250,146,20,0.2);color:#fb923c;font-size:0.6rem">PA</span>
                 {% endif %}
               {% endfor %}
             </td>

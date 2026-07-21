@@ -99,6 +99,16 @@ const WIDGET_DEFS = {
     icon: 'bi-shield-exclamation', color: '#fbbf24', colorBg: 'rgba(245,158,11,0.12)',
     dataKey: 'open_soc', link: '/threat/triage', desc: 'Pending SOC triage cases'
   },
+  'stat-paloalto-fw': {
+    cat: 'stats', title: 'PA Firewalls', size: 'sm',
+    icon: 'bi-hdd-network', color: '#38bdf8', colorBg: 'rgba(56,189,248,0.12)',
+    dataKey: 'paloalto_firewalls', link: '/threat/paloalto', desc: 'Registered Palo Alto firewalls'
+  },
+  'stat-paloalto-logs': {
+    cat: 'stats', title: 'PA Threat Logs (24h)', size: 'sm',
+    icon: 'bi-shield-exclamation', color: '#fb923c', colorBg: 'rgba(251,146,60,0.12)',
+    dataKey: 'paloalto_logs_today', link: '/threat/paloalto', desc: 'Threat log entries ingested today'
+  },
   // Charts
   'chart-severity': {
     cat: 'charts', title: 'Severity Breakdown', size: 'md',
@@ -129,6 +139,10 @@ const WIDGET_DEFS = {
     cat: 'tables', title: 'Quick Actions', size: 'md',
     icon: 'bi-lightning-charge-fill', desc: 'Shortcuts to common tasks'
   },
+  'table-paloalto': {
+    cat: 'tables', title: 'Recent Palo Alto Threat Logs', size: 'lg',
+    icon: 'bi-hdd-network', desc: 'Latest ingested PAN-OS threat detections'
+  },
 };
 
 const DEFAULT_LAYOUT = [
@@ -136,6 +150,8 @@ const DEFAULT_LAYOUT = [
   'chart-severity', 'quick-actions',
   'table-scans',
   'table-findings',
+  'stat-paloalto-fw', 'stat-paloalto-logs',
+  'table-paloalto',
 ];
 
 const STORAGE_KEY = 'pb_dash_layout_v2';
@@ -307,6 +323,35 @@ function buildFindingsTable(id, def, data) {
   return wrapWidget(id, 'lg', widgetShell(id, def, html));
 }
 
+function buildPaloAltoTable(id, def, data) {
+  const logs = data.recent_paloalto_logs || [];
+  if (!logs.length) {
+    const html = `<div class="widget-empty">
+      <i class="bi bi-hdd-network"></i>
+      <p>No Palo Alto threat logs ingested yet — <a href="/threat/paloalto">add a firewall</a></p>
+    </div>`;
+    return wrapWidget(id, 'lg', widgetShell(id, def, html));
+  }
+  const rows = logs.map(l => {
+    const sevClass = l.severity === 'informational' ? 'info' : l.severity;
+    return `<tr>
+      <td><span class="badge-severity sev-${sevClass}">${escHtml(l.severity)}</span></td>
+      <td class="fw-semibold small">${escHtml(l.threat_name)}</td>
+      <td class="font-monospace small">${escHtml(l.src_ip)}</td>
+      <td class="font-monospace small">${escHtml(l.dst_ip)}</td>
+      <td class="text-muted small">${escHtml(l.firewall)}</td>
+      <td class="text-muted small">${escHtml(l.time)}</td>
+    </tr>`;
+  }).join('');
+  const html = `<div class="data-table">
+    <table class="table table-dark table-hover mb-0">
+      <thead><tr><th>Sev</th><th>Threat</th><th>Src</th><th>Dst</th><th>Firewall</th><th>Time</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+  return wrapWidget(id, 'lg', widgetShell(id, def, html));
+}
+
 function buildQuickActions(id, def) {
   const actions = [
     { href: '/scans/new',      icon: 'bi-radar',           label: 'New Scan',     sub: 'Launch a scan' },
@@ -433,6 +478,7 @@ function buildWidget(id, data) {
     case 'stat-scans': case 'stat-running': case 'stat-targets':
     case 'stat-critical': case 'stat-high': case 'stat-agents':
     case 'stat-assets': case 'stat-soc':
+    case 'stat-paloalto-fw': case 'stat-paloalto-logs':
       return buildStatWidget(id, def, data);
     case 'chart-severity':    return buildSeverityChart(id, def, data);
     case 'chart-trend':       return buildTrendChart(id, def, data);
@@ -440,6 +486,7 @@ function buildWidget(id, data) {
     case 'chart-agents':      return buildAgentChart(id, def, data);
     case 'table-scans':       return buildScansTable(id, def, data);
     case 'table-findings':    return buildFindingsTable(id, def, data);
+    case 'table-paloalto':    return buildPaloAltoTable(id, def, data);
     case 'quick-actions':     return buildQuickActions(id, def);
     default: return '';
   }

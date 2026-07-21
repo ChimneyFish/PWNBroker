@@ -202,6 +202,7 @@ def _migrate_columns(app):
         ],
         "soc_cases": [
             ("pulsedrive_result", "TEXT"),
+            ("paloalto_result",   "TEXT"),
         ],
         "policies": [
             ("content",      "TEXT"),

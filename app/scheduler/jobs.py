@@ -1,3 +1,5 @@
+import json
+import ipaddress
 from datetime import datetime, timezone
 from ..extensions import scheduler, db
 
@@ -249,6 +251,10 @@ def poll_paloalto_firewall(fw):
         if entry.get("time_generated") and (not new_max_time or entry["time_generated"] > new_max_time):
             new_max_time = entry["time_generated"]
 
+        for ip in {entry.get("src_ip"), entry.get("dst_ip")}:
+            if ip and _is_public_ip(ip):
+                _queue_paloalto_soc_case(ip, entry, fw.name)
+
     fw.last_seqno    = new_max_seqno
     fw.last_log_time = new_max_time
     fw.status          = "ok"
@@ -256,6 +262,65 @@ def poll_paloalto_firewall(fw):
     fw.last_error       = None
     db.session.commit()
     return result
+
+
+def _is_public_ip(ip):
+    try:
+        addr = ipaddress.ip_address(ip)
+        return not (addr.is_private or addr.is_loopback or addr.is_link_local
+                    or addr.is_reserved or addr.is_multicast)
+    except (ValueError, TypeError):
+        return False
+
+
+_PA_SEVERITY_SCORE = {"critical": 100, "high": 80, "medium": 50, "low": 25, "informational": 10}
+
+
+def _queue_paloalto_soc_case(ip, entry, fw_name):
+    """Create-or-update a pending SocCase for an IP seen in a PAN-OS threat log entry.
+
+    Unlike the >=2-source corroboration threshold used for lower-confidence
+    enrichment lookups (see ioc_lookup._maybe_queue_triage), a single PAN-OS
+    Threat log hit is already a confirmed firewall-signature detection, so it's
+    enough on its own to queue the IP for SOC review.
+    """
+    from ..models import SocCase
+    severity = (entry.get("severity") or "").lower()
+    score    = _PA_SEVERITY_SCORE.get(severity, 40)
+    verdict  = "malicious" if severity in ("critical", "high") else "suspicious"
+
+    detail = {
+        "firewall":    fw_name,
+        "threat_name": entry.get("threat_name"),
+        "category":    entry.get("category"),
+        "subtype":     entry.get("subtype"),
+        "severity":    entry.get("severity"),
+        "action":      entry.get("action"),
+        "rule":        entry.get("rule_name"),
+        "src_ip":      entry.get("src_ip"),
+        "dst_ip":      entry.get("dst_ip"),
+        "inbound_if":  entry.get("inbound_if"),
+        "time":        entry["time_generated"].isoformat() if entry.get("time_generated") else None,
+    }
+
+    case = SocCase.query.filter_by(ioc=ip, status="pending").first()
+    if case:
+        sources = set(json.loads(case.flagging_sources)) if case.flagging_sources else set()
+        sources.add("PaloAlto")
+        case.flagging_sources = json.dumps(sorted(sources))
+        case.source_count     = len(sources)
+        case.threat_score     = max(case.threat_score or 0, score)
+        if verdict == "malicious":
+            case.verdict = "malicious"
+        elif not case.verdict:
+            case.verdict = verdict
+        case.paloalto_result = json.dumps(detail)
+    else:
+        db.session.add(SocCase(
+            ioc=ip, ioc_type="ip", threat_score=score, verdict=verdict,
+            flagging_sources=json.dumps(["PaloAlto"]), source_count=1,
+            paloalto_result=json.dumps(detail),
+        ))
 
 
 def _next_run_from_cron(cron_expr: str):

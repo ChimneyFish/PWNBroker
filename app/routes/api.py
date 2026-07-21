@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify
 from flask_login import login_required
-from ..models import Scan, ScanResult, Target, Asset, EndpointAgent, SocCase, TimeConfig
+from ..models import (Scan, ScanResult, Target, Asset, EndpointAgent, SocCase, TimeConfig,
+                      PaloAltoFirewall, PaloAltoThreatLog)
 from ..extensions import db
 import sqlalchemy as sa
 from datetime import datetime, timezone, timedelta
@@ -119,6 +120,25 @@ def dashboard_widgets():
             'cve_id': r.cve_id,
         })
 
+    # Palo Alto threat logs
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    paloalto_logs_today = PaloAltoThreatLog.query.filter(
+        PaloAltoThreatLog.created_at >= today_start).count()
+
+    recent_paloalto = []
+    for log in (PaloAltoThreatLog.query
+                .order_by(PaloAltoThreatLog.time_generated.desc())
+                .limit(10).all()):
+        recent_paloalto.append({
+            'severity':    log.severity or 'informational',
+            'threat_name': log.threat_name or '—',
+            'src_ip':      log.src_ip or '—',
+            'dst_ip':      log.dst_ip or '—',
+            'category':    log.category or '—',
+            'firewall':    log.firewall.name if log.firewall else '—',
+            'time':        _fmt(log.time_generated) if log.time_generated else '—',
+        })
+
     return jsonify({
         'stats': {
             'total_scans':    Scan.query.count(),
@@ -132,6 +152,8 @@ def dashboard_widgets():
             'medium_vulns':   severity_map.get('medium', 0),
             'low_vulns':      severity_map.get('low', 0),
             'info_vulns':     severity_map.get('info', 0),
+            'paloalto_firewalls':    PaloAltoFirewall.query.count(),
+            'paloalto_logs_today':   paloalto_logs_today,
         },
         'severity_map':   severity_map,
         'trend':          {'labels': trend_labels, 'data': trend_data},
@@ -142,4 +164,5 @@ def dashboard_widgets():
         'agent_stats':  agent_stats,
         'recent_scans': recent_scans,
         'recent_vulns': recent_vulns,
+        'recent_paloalto_logs': recent_paloalto,
     })
