@@ -229,7 +229,7 @@ def poll_paloalto_firewall(fw):
 
     result = query_threat_logs(
         fw.hostname, fw.api_key, verify_ssl=fw.verify_ssl,
-        since_seqno=fw.last_seqno, since_time=fw.last_log_time,
+        since_time=fw.last_log_time,
     )
     fw.last_polled_at = now
 

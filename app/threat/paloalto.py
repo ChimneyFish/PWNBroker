@@ -161,17 +161,20 @@ def _parse_entry(entry):
     }
 
 
-def query_threat_logs(hostname, api_key, verify_ssl=True, since_seqno=None, since_time=None,
+def query_threat_logs(hostname, api_key, verify_ssl=True, since_time=None,
                        limit=1000, max_wait_seconds=60, poll_interval_seconds=2, timeout=12):
     """Fetch new PAN-OS threat log entries since the given cursor.
 
     PAN-OS log queries are asynchronous: submit a query to get a job id, then
     poll for completion. This function owns its own wall-clock retry budget
     since it runs inside a scheduler job thread, not a request handler.
+
+    The server-side filter is always time-based (`receive_time geq`) — PAN-OS's
+    query language rejects `seqno` as a filter field (returns "syntax error at
+    gt"), so `seqno` is only usable as a client-side dedupe key against already-
+    ingested rows, never as part of the `query=` string sent to the firewall.
     """
-    if since_seqno:
-        query = f"(seqno gt '{int(since_seqno)}')"
-    elif since_time:
+    if since_time:
         query = f"(receive_time geq '{since_time.strftime('%Y/%m/%d %H:%M:%S')}')"
     else:
         query = None
