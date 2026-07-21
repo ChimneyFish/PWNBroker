@@ -6,7 +6,8 @@ from datetime import datetime, timezone, timedelta
 from flask import (Blueprint, render_template, redirect, url_for, flash,
                    request, jsonify, Response)
 from flask_login import login_required, current_user
-from ..models import ThreatConfig, EndpointAgent, AgentAlert, IOCRecord, SocCase
+from ..models import (ThreatConfig, EndpointAgent, AgentAlert, IOCRecord, SocCase,
+                      PaloAltoFirewall, PaloAltoThreatLog)
 from ..extensions import db
 from .decorators import admin_required
 
@@ -438,6 +439,169 @@ def _secondary_confirmed(ioc_record):
             except Exception:
                 pass
     return False
+
+
+
+# ── Palo Alto (PAN-OS) threat log ingestion ────────────────────────────────
+
+@threat_bp.route("/paloalto")
+@login_required
+def paloalto_list():
+    firewalls   = PaloAltoFirewall.query.order_by(PaloAltoFirewall.name).all()
+    error_count = sum(1 for fw in firewalls if fw.status == "error")
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    logs_today  = PaloAltoThreatLog.query.filter(PaloAltoThreatLog.created_at >= today_start).count()
+    return render_template("threat/paloalto.html", firewalls=firewalls,
+                           error_count=error_count, logs_today=logs_today)
+
+
+@threat_bp.route("/paloalto/add", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_add():
+    name       = request.form.get("name", "").strip()
+    hostname   = request.form.get("hostname", "").strip()
+    verify_ssl = request.form.get("verify_ssl") == "1"
+    api_key    = request.form.get("api_key", "").strip()
+    username   = request.form.get("username", "").strip()
+    password   = request.form.get("password", "").strip()
+
+    if not name or not hostname:
+        flash("Name and hostname are required.", "danger")
+        return redirect(url_for("threat.paloalto_list"))
+
+    if not api_key:
+        if username and password:
+            from ..threat.paloalto import generate_api_key
+            result = generate_api_key(hostname, username, password, verify_ssl=verify_ssl)
+            if "error" in result:
+                flash(f"Could not generate API key: {result['error']}", "danger")
+                return redirect(url_for("threat.paloalto_list"))
+            api_key = result["api_key"]
+        else:
+            flash("Provide either an API key or a username/password.", "danger")
+            return redirect(url_for("threat.paloalto_list"))
+
+    fw = PaloAltoFirewall(name=name, hostname=hostname, verify_ssl=verify_ssl,
+                          api_key=api_key, username=username or None,
+                          created_by=current_user.id)
+    db.session.add(fw)
+    db.session.commit()
+    flash(f"Firewall '{name}' added.", "success")
+    return redirect(url_for("threat.paloalto_list"))
+
+
+@threat_bp.route("/paloalto/<int:fw_id>")
+@login_required
+def paloalto_detail(fw_id):
+    fw       = PaloAltoFirewall.query.get_or_404(fw_id)
+    severity = request.args.get("severity", "")
+    category = request.args.get("category", "")
+    page     = request.args.get("page", 1, type=int)
+    per_page = 50
+
+    query = PaloAltoThreatLog.query.filter_by(firewall_id=fw.id)
+    if severity:
+        query = query.filter_by(severity=severity)
+    if category:
+        query = query.filter_by(category=category)
+
+    total = query.count()
+    logs  = (query.order_by(PaloAltoThreatLog.time_generated.desc())
+                  .offset((page - 1) * per_page).limit(per_page).all())
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    categories = [c[0] for c in db.session.query(PaloAltoThreatLog.category)
+                          .filter_by(firewall_id=fw.id).distinct().all() if c[0]]
+
+    return render_template("threat/paloalto_detail.html", fw=fw, logs=logs,
+                           severity=severity, category=category, categories=categories,
+                           page=page, total_pages=total_pages, total=total)
+
+
+@threat_bp.route("/paloalto/<int:fw_id>/edit", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_edit(fw_id):
+    fw = PaloAltoFirewall.query.get_or_404(fw_id)
+    fw.name       = request.form.get("name", fw.name).strip() or fw.name
+    fw.hostname   = request.form.get("hostname", fw.hostname).strip() or fw.hostname
+    fw.verify_ssl = request.form.get("verify_ssl") == "1"
+    fw.enabled    = request.form.get("enabled") == "1"
+
+    api_key = request.form.get("api_key", "").strip()
+    if api_key:
+        fw.api_key = api_key
+
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "").strip()
+    if username and password:
+        from ..threat.paloalto import generate_api_key
+        result = generate_api_key(fw.hostname, username, password, verify_ssl=fw.verify_ssl)
+        if "error" in result:
+            flash(f"Could not regenerate API key: {result['error']}", "danger")
+            return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+        fw.api_key  = result["api_key"]
+        fw.username = username
+
+    db.session.commit()
+    flash(f"Firewall '{fw.name}' updated.", "success")
+    return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+
+
+@threat_bp.route("/paloalto/<int:fw_id>/delete", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_delete(fw_id):
+    fw   = PaloAltoFirewall.query.get_or_404(fw_id)
+    name = fw.name
+    db.session.delete(fw)
+    db.session.commit()
+    flash(f"Firewall '{name}' removed.", "success")
+    return redirect(url_for("threat.paloalto_list"))
+
+
+@threat_bp.route("/paloalto/<int:fw_id>/test", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_test(fw_id):
+    fw = PaloAltoFirewall.query.get_or_404(fw_id)
+    if not fw.api_key:
+        flash("No API key configured for this firewall yet.", "danger")
+        return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+
+    from ..threat.paloalto import test_connection
+    result = test_connection(fw.hostname, fw.api_key, verify_ssl=fw.verify_ssl)
+    if "error" in result:
+        fw.status     = "error"
+        fw.last_error = result["error"][:2000]
+        db.session.commit()
+        flash(f"Connection test failed: {result['error']}", "danger")
+    else:
+        fw.status     = "ok"
+        fw.last_error = None
+        db.session.commit()
+        flash(f"Connected — {result.get('hostname') or fw.hostname} "
+              f"(PAN-OS {result.get('sw_version', 'unknown')})", "success")
+    return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+
+
+@threat_bp.route("/paloalto/<int:fw_id>/poll", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_poll(fw_id):
+    fw = PaloAltoFirewall.query.get_or_404(fw_id)
+    if not fw.api_key:
+        flash("No API key configured for this firewall yet.", "danger")
+        return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+
+    from ..scheduler.jobs import poll_paloalto_firewall
+    result = poll_paloalto_firewall(fw)
+    if "error" in result:
+        flash(f"Poll failed: {result['error']}", "danger")
+    else:
+        flash(f"Poll complete — {result.get('count', 0)} log entr{'y' if result.get('count') == 1 else 'ies'} fetched.", "success")
+    return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
 
 
 def _ensure_alert(agent, ip, ioc_record):

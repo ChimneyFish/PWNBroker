@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Palo Alto Firewalls — PwnBroker{% endblock %}
+{% block page_title %}Palo Alto Firewalls{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#add-fw-form">
+  <i class="bi bi-plus-lg me-1"></i>Add Firewall
+</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <a href="#fw-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value">{{ firewalls | length }}</div>
+      <div class="stat-label">Registered Firewalls</div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="#fw-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value {% if error_count %}text-danger{% endif %}">{{ error_count }}</div>
+      <div class="stat-label">In Error State</div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="#fw-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="stat-value">{{ logs_today }}</div>
+      <div class="stat-label">Threat Logs Today</div>
+    </a>
+  </div>
+</div>
+
+<div class="collapse mb-4" id="add-fw-form">
+  <div class="form-card">
+    <h6 class="fw-bold mb-3"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Add Firewall</h6>
+    <form method="POST" action="{{ url_for('threat.paloalto_add') }}">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Name</label>
+          <input type="text" name="name" class="form-control" placeholder="HQ-Edge-FW01" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Management Hostname / IP</label>
+          <input type="text" name="hostname" class="form-control font-monospace" placeholder="192.0.2.10" required>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="verify_ssl" value="1" class="form-check-input" id="verify_ssl" checked>
+            <label class="form-check-label" for="verify_ssl">Verify TLS certificate</label>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="alert alert-warning py-2 px-3 small mb-0 d-none" id="verify-ssl-warning">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            TLS certificate validation disabled — only use this for firewalls with a self-signed
+            certificate you trust. Traffic to the management interface will not be verified against
+            a certificate authority.
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">API Key <span class="text-muted small">(if you already have one)</span></label>
+          <input type="password" name="api_key" class="form-control font-monospace"
+                 placeholder="Leave blank to generate from username/password" autocomplete="new-password">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Username <span class="text-muted small">(to generate a key)</span></label>
+          <input type="text" name="username" class="form-control" autocomplete="off">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Add Firewall</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="data-table" id="fw-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Registered Firewalls</span>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Name</th>
+        <th>Hostname</th>
+        <th>Enabled</th>
+        <th>Last Polled</th>
+        <th>Logs</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fw in firewalls %}
+      <tr>
+        <td>
+          {% if fw.status == "ok" %}
+            <span class="d-flex align-items-center gap-1">
+              <span class="pulse" style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block"></span>
+              <span class="text-success small">OK</span>
+            </span>
+          {% elif fw.status == "error" %}
+            <span class="d-flex align-items-center gap-1">
+              <span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>
+              <span class="text-danger small">Error</span>
+            </span>
+          {% else %}
+            <span class="d-flex align-items-center gap-1">
+              <span style="width:8px;height:8px;border-radius:50%;background:#475569;display:inline-block"></span>
+              <span class="text-muted small">Unknown</span>
+            </span>
+          {% endif %}
+        </td>
+        <td class="fw-semibold">{{ fw.name }}</td>
+        <td class="font-monospace small">{{ fw.hostname }}</td>
+        <td>
+          {% if fw.enabled %}<span class="badge bg-secondary">Enabled</span>
+          {% else %}<span class="badge bg-secondary bg-opacity-25 text-muted">Paused</span>{% endif %}
+        </td>
+        <td class="text-muted small">
+          {{ fw.last_polled_at | localdt('%Y-%m-%d %H:%M') if fw.last_polled_at else '—' }}
+        </td>
+        <td class="text-muted small">{{ fw.threat_logs.count() }}</td>
+        <td>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('threat.paloalto_detail', fw_id=fw.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('threat.paloalto_delete', fw_id=fw.id) }}"
+                  onsubmit="return confirm('Remove firewall {{ fw.name }} and all its ingested logs?')">
+              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-5">
+          <i class="bi bi-hdd-network fs-1 d-block mb-3 opacity-25"></i>
+          No Palo Alto firewalls registered yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const verifySsl = document.getElementById('verify_ssl');
+const warning   = document.getElementById('verify-ssl-warning');
+function syncWarning() { warning.classList.toggle('d-none', verifySsl.checked); }
+if (verifySsl) {
+  verifySsl.addEventListener('change', syncWarning);
+  syncWarning();
+}
+</script>
+{% endblock %}

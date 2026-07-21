@@ -326,6 +326,62 @@ class IOCRecord(db.Model):
     expires_at       = db.Column(db.DateTime)
 
 
+class PaloAltoFirewall(db.Model):
+    __tablename__ = "paloalto_firewalls"
+    id                = db.Column(db.Integer, primary_key=True)
+    name              = db.Column(db.String(120), nullable=False)
+    hostname          = db.Column(db.String(256), nullable=False)
+    api_key           = db.Column(db.String(512))
+    username          = db.Column(db.String(120))
+    password          = db.Column(db.String(512))  # cleared after a successful keygen
+    verify_ssl        = db.Column(db.Boolean, default=True)
+    enabled           = db.Column(db.Boolean, default=True)
+    status            = db.Column(db.String(20), default="unknown")  # unknown | ok | error
+    last_polled_at    = db.Column(db.DateTime)
+    last_success_at   = db.Column(db.DateTime)
+    last_error        = db.Column(db.Text)
+    last_seqno        = db.Column(db.BigInteger)   # primary poll cursor
+    last_log_time     = db.Column(db.DateTime)     # secondary cursor / first-poll lookback bound
+    created_by        = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at        = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at        = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                                   onupdate=lambda: datetime.now(timezone.utc))
+    threat_logs       = db.relationship("PaloAltoThreatLog", backref="firewall", lazy="dynamic",
+                                         cascade="all, delete-orphan")
+
+
+class PaloAltoThreatLog(db.Model):
+    __tablename__    = "paloalto_threat_logs"
+    id               = db.Column(db.Integer, primary_key=True)
+    firewall_id      = db.Column(db.Integer, db.ForeignKey("paloalto_firewalls.id", ondelete="CASCADE"),
+                                  nullable=False, index=True)
+    seqno            = db.Column(db.BigInteger, nullable=False)
+    time_generated   = db.Column(db.DateTime, index=True)
+    src_ip           = db.Column(db.String(45), index=True)
+    src_port         = db.Column(db.Integer)
+    dst_ip           = db.Column(db.String(45), index=True)
+    dst_port         = db.Column(db.Integer)
+    nat_src_ip       = db.Column(db.String(45))
+    nat_dst_ip       = db.Column(db.String(45))
+    rule_name        = db.Column(db.String(256))
+    application      = db.Column(db.String(120))
+    threat_name      = db.Column(db.String(256))
+    threat_id        = db.Column(db.String(50))
+    category         = db.Column(db.String(120))
+    subtype          = db.Column(db.String(50))    # spyware | vulnerability | virus | wildfire-virus | ...
+    severity         = db.Column(db.String(20), index=True)  # critical | high | medium | low | informational
+    action           = db.Column(db.String(50))    # allow | deny | drop | reset-*
+    from_zone        = db.Column(db.String(80))
+    to_zone          = db.Column(db.String(80))
+    inbound_if       = db.Column(db.String(80))    # identifies TAP-mode-sourced logs
+    outbound_if      = db.Column(db.String(80))
+    direction        = db.Column(db.String(20))
+    raw_xml          = db.Column(db.Text)
+    created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint("firewall_id", "seqno", name="uq_paloalto_log_firewall_seqno"),)
+
+
 _SLA_DAYS = {"critical": 1, "high": 7, "medium": 30, "low": 90, "info": 180}
 
 

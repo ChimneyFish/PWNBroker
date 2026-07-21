@@ -45,6 +45,15 @@ def register_jobs(app):
         hours=6,
         replace_existing=True,
     )
+    # Palo Alto threat log ingestion — every 5 minutes
+    scheduler.add_job(
+        id="poll_paloalto_firewalls",
+        func=_run_paloalto_poll,
+        args=[app],
+        trigger="interval",
+        minutes=5,
+        replace_existing=True,
+    )
 
 
 def _run_scheduled_scans(app):
@@ -193,6 +202,60 @@ def _run_auto_assess(app):
             run_auto_assess(app)
     except Exception as e:
         app.logger.error(f"Auto-assessment job failed: {e}")
+
+
+def _run_paloalto_poll(app):
+    with app.app_context():
+        from ..models import PaloAltoFirewall
+        for fw in PaloAltoFirewall.query.filter_by(enabled=True).all():
+            if not fw.api_key:
+                continue
+            try:
+                poll_paloalto_firewall(fw)
+            except Exception as e:
+                app.logger.error(f"Palo Alto poll failed for {fw.name}: {e}")
+
+
+def poll_paloalto_firewall(fw):
+    """Poll a single firewall for new threat logs and persist them.
+
+    Caller must already be inside an app/db context — used by both the
+    scheduler job above and the manual 'poll now' route so setup doesn't
+    require waiting for the next scheduled tick.
+    """
+    from ..models import PaloAltoThreatLog
+    from ..threat.paloalto import query_threat_logs
+    now = datetime.now(timezone.utc)
+
+    result = query_threat_logs(
+        fw.hostname, fw.api_key, verify_ssl=fw.verify_ssl,
+        since_seqno=fw.last_seqno, since_time=fw.last_log_time,
+    )
+    fw.last_polled_at = now
+
+    if "error" in result:
+        fw.status = "error"
+        fw.last_error = result["error"][:2000]
+        db.session.commit()
+        return result
+
+    new_max_seqno = fw.last_seqno or 0
+    new_max_time  = fw.last_log_time
+    for entry in result["logs"]:
+        if PaloAltoThreatLog.query.filter_by(firewall_id=fw.id, seqno=entry["seqno"]).first():
+            continue
+        db.session.add(PaloAltoThreatLog(firewall_id=fw.id, **entry))
+        new_max_seqno = max(new_max_seqno, entry["seqno"])
+        if entry.get("time_generated") and (not new_max_time or entry["time_generated"] > new_max_time):
+            new_max_time = entry["time_generated"]
+
+    fw.last_seqno    = new_max_seqno
+    fw.last_log_time = new_max_time
+    fw.status          = "ok"
+    fw.last_success_at = now
+    fw.last_error       = None
+    db.session.commit()
+    return result
 
 
 def _next_run_from_cron(cron_expr: str):

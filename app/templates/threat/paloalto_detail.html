@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}{{ fw.name }} — PwnBroker{% endblock %}
+{% block page_title %}Firewall: {{ fw.name }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>All Firewalls
+</a>
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('threat.paloalto_test', fw_id=fw.id) }}" class="d-inline">
+  <button class="btn btn-sm btn-outline-info"><i class="bi bi-plug me-1"></i>Test Connection</button>
+</form>
+<form method="POST" action="{{ url_for('threat.paloalto_poll', fw_id=fw.id) }}" class="d-inline">
+  <button class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Poll Now</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <!-- Firewall info -->
+  <div class="col-lg-4">
+    <div class="form-card h-100">
+      <h6 class="fw-bold mb-3"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Firewall Info</h6>
+
+      <div class="mb-2 d-flex align-items-center gap-2">
+        {% if fw.status == "ok" %}
+          <span class="pulse" style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>
+          <span class="text-success fw-semibold">OK</span>
+        {% elif fw.status == "error" %}
+          <span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block"></span>
+          <span class="text-danger fw-semibold">Error</span>
+        {% else %}
+          <span style="width:10px;height:10px;border-radius:50%;background:#475569;display:inline-block"></span>
+          <span class="text-muted fw-semibold">Unknown</span>
+        {% endif %}
+      </div>
+
+      {% if fw.last_error %}
+      <div class="alert alert-danger py-2 px-3 small">{{ fw.last_error }}</div>
+      {% endif %}
+
+      <table class="table table-sm table-dark mb-3" style="font-size:0.85rem">
+        <tbody>
+          <tr><td class="text-muted" style="width:40%">Hostname</td><td class="font-monospace">{{ fw.hostname }}</td></tr>
+          <tr><td class="text-muted">Verify TLS</td><td>{{ 'Yes' if fw.verify_ssl else 'No — self-signed cert accepted' }}</td></tr>
+          <tr><td class="text-muted">Enabled</td><td>{{ 'Yes' if fw.enabled else 'Paused' }}</td></tr>
+          <tr><td class="text-muted">Last Polled</td><td class="small">{{ fw.last_polled_at | localdt('%Y-%m-%d %H:%M') if fw.last_polled_at else '—' }}</td></tr>
+          <tr><td class="text-muted">Last Success</td><td class="small">{{ fw.last_success_at | localdt('%Y-%m-%d %H:%M') if fw.last_success_at else '—' }}</td></tr>
+          <tr><td class="text-muted">Registered</td><td class="small">{{ fw.created_at | localdt('%Y-%m-%d') if fw.created_at else '—' }}</td></tr>
+        </tbody>
+      </table>
+
+      {% if current_user.is_admin %}
+      <form method="POST" action="{{ url_for('threat.paloalto_edit', fw_id=fw.id) }}">
+        <div class="mb-2">
+          <label class="form-label small">Name</label>
+          <input type="text" name="name" class="form-control form-control-sm" value="{{ fw.name }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Hostname / IP</label>
+          <input type="text" name="hostname" class="form-control form-control-sm font-monospace" value="{{ fw.hostname }}">
+        </div>
+        <div class="mb-2 d-flex gap-3">
+          <div class="form-check">
+            <input type="checkbox" name="verify_ssl" value="1" class="form-check-input" id="edit_verify_ssl" {% if fw.verify_ssl %}checked{% endif %}>
+            <label class="form-check-label small" for="edit_verify_ssl">Verify TLS</label>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" name="enabled" value="1" class="form-check-input" id="edit_enabled" {% if fw.enabled %}checked{% endif %}>
+            <label class="form-check-label small" for="edit_enabled">Enabled</label>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">API Key <span class="text-muted">(leave blank to keep current)</span></label>
+          <input type="password" name="api_key" class="form-control form-control-sm font-monospace" autocomplete="new-password">
+        </div>
+        <div class="mb-2 row g-2">
+          <div class="col-6">
+            <label class="form-label small">Username <span class="text-muted">(regenerate key)</span></label>
+            <input type="text" name="username" class="form-control form-control-sm" autocomplete="off">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Password</label>
+            <input type="password" name="password" class="form-control form-control-sm" autocomplete="new-password">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary mt-1">Save Changes</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Log summary -->
+  <div class="col-lg-8">
+    <div class="row g-3">
+      <div class="col-4">
+        <a href="#log-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+          <div class="stat-value">{{ total }}</div>
+          <div class="stat-label">Total Logs (filtered)</div>
+        </a>
+      </div>
+      <div class="col-8">
+        <div class="form-card h-100">
+          <form method="GET" class="row g-2 align-items-end">
+            <div class="col-5">
+              <label class="form-label small mb-1">Severity</label>
+              <select name="severity" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for s in ['critical', 'high', 'medium', 'low', 'informational'] %}
+                <option value="{{ s }}" {% if severity == s %}selected{% endif %}>{{ s|capitalize }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-5">
+              <label class="form-label small mb-1">Category</label>
+              <select name="category" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for c in categories %}
+                <option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-2">
+              <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Filter</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Threat logs table -->
+<div class="data-table" id="log-table">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Threat Logs</span>
+  </div>
+  <div class="table-responsive">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Severity</th>
+        <th>Time</th>
+        <th>Source</th>
+        <th>Destination</th>
+        <th>App</th>
+        <th>Threat</th>
+        <th>Category</th>
+        <th>Action</th>
+        <th>Inbound Interface</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td><span class="badge-severity sev-{{ 'info' if log.severity == 'informational' else log.severity }}">{{ log.severity or '—' }}</span></td>
+        <td class="text-muted small">{{ log.time_generated | localdt('%Y-%m-%d %H:%M:%S') if log.time_generated else '—' }}</td>
+        <td class="font-monospace small">{{ log.src_ip or '—' }}{% if log.src_port %}:{{ log.src_port }}{% endif %}</td>
+        <td class="font-monospace small">{{ log.dst_ip or '—' }}{% if log.dst_port %}:{{ log.dst_port }}{% endif %}</td>
+        <td class="small">{{ log.application or '—' }}</td>
+        <td class="small" style="color:var(--accent-orange)">{{ log.threat_name or '—' }}</td>
+        <td class="small text-muted">{{ log.category or '—' }}</td>
+        <td class="small">{{ log.action or '—' }}</td>
+        <td class="small font-monospace">{{ log.inbound_if or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="9" class="text-center text-muted py-5">
+          <i class="bi bi-shield-check fs-1 d-block mb-3 opacity-25"></i>
+          No threat logs ingested yet for this firewall.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="d-flex justify-content-center py-3">
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('threat.paloalto_detail', fw_id=fw.id, page=page-1, severity=severity, category=category) }}">Prev</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link">{{ page }} / {{ total_pages }}</span></li>
+      <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('threat.paloalto_detail', fw_id=fw.id, page=page+1, severity=severity, category=category) }}">Next</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
