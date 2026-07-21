@@ -35,6 +35,7 @@
   <div class="form-card">
     <h6 class="fw-bold mb-3"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Add Firewall</h6>
     <form method="POST" action="{{ url_for('threat.paloalto_add') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">Name</label>
@@ -136,6 +137,7 @@
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('threat.paloalto_delete', fw_id=fw.id) }}"
                   onsubmit="return confirm('Remove firewall {{ fw.name }} and all its ingested logs?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
             {% endif %}

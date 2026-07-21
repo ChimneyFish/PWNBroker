@@ -2,6 +2,21 @@ from datetime import datetime, timezone, timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from .extensions import db
+from . import crypto
+
+
+class EncryptedString(db.TypeDecorator):
+    """Transparently encrypts/decrypts a String/Text column at rest.
+    Application code reads/writes plaintext as normal; only the DB row holds
+    the encrypted (enc:v1:-prefixed) form."""
+    impl = db.Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return crypto.encrypt(value)
+
+    def process_result_value(self, value, dialect):
+        return crypto.decrypt(value)
 
 
 class User(UserMixin, db.Model):
@@ -12,6 +27,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default="user")  # admin | user
     active = db.Column(db.Boolean, default=True)
+    must_change_password = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
@@ -39,9 +55,9 @@ class Target(db.Model):
     ssh_port = db.Column(db.Integer, default=22)
     ssh_username = db.Column(db.String(100))
     ssh_auth_type = db.Column(db.String(20), default="password")  # password | key
-    ssh_password = db.Column(db.String(512))
-    ssh_private_key = db.Column(db.Text)
-    ssh_key_passphrase = db.Column(db.String(512))
+    ssh_password = db.Column(EncryptedString)
+    ssh_private_key = db.Column(EncryptedString)
+    ssh_key_passphrase = db.Column(EncryptedString)
     scans = db.relationship("Scan", backref="target", lazy="dynamic",
                             cascade="all, delete-orphan")
     domain_records = db.relationship("DomainRecord", backref="target", lazy="dynamic",
@@ -242,20 +258,20 @@ class JiraTicket(db.Model):
 class ThreatConfig(db.Model):
     __tablename__ = "threat_configs"
     id                      = db.Column(db.Integer, primary_key=True)
-    otx_api_key             = db.Column(db.String(512))
-    virustotal_api_key      = db.Column(db.String(512))
-    abuseipdb_api_key       = db.Column(db.String(512))
-    securitytrails_api_key  = db.Column(db.String(512))
-    dnsdumpster_api_key     = db.Column(db.String(512))
-    nvd_api_key             = db.Column(db.String(512))
-    github_advisory_token   = db.Column(db.String(512))
+    otx_api_key             = db.Column(EncryptedString)
+    virustotal_api_key      = db.Column(EncryptedString)
+    abuseipdb_api_key       = db.Column(EncryptedString)
+    securitytrails_api_key  = db.Column(EncryptedString)
+    dnsdumpster_api_key     = db.Column(EncryptedString)
+    nvd_api_key             = db.Column(EncryptedString)
+    github_advisory_token   = db.Column(EncryptedString)
     # pulseDrive sources
-    urlhaus_api_key         = db.Column(db.String(512))
-    criminalip_api_key      = db.Column(db.String(512))
-    vulners_api_key         = db.Column(db.String(512))
-    hybridanalysis_api_key  = db.Column(db.String(512))
-    phishtank_api_key       = db.Column(db.String(512))
-    socradar_api_key        = db.Column(db.String(512))  # stored for future use — no lookup wired yet
+    urlhaus_api_key         = db.Column(EncryptedString)
+    criminalip_api_key      = db.Column(EncryptedString)
+    vulners_api_key         = db.Column(EncryptedString)
+    hybridanalysis_api_key  = db.Column(EncryptedString)
+    phishtank_api_key       = db.Column(EncryptedString)
+    socradar_api_key        = db.Column(EncryptedString)  # stored for future use — no lookup wired yet
     registration_token      = db.Column(db.String(128))   # pre-shared secret for agent registration
     updated_at              = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -332,9 +348,9 @@ class PaloAltoFirewall(db.Model):
     id                = db.Column(db.Integer, primary_key=True)
     name              = db.Column(db.String(120), nullable=False)
     hostname          = db.Column(db.String(256), nullable=False)
-    api_key           = db.Column(db.String(512))
+    api_key           = db.Column(EncryptedString)
     username          = db.Column(db.String(120))
-    password          = db.Column(db.String(512))  # cleared after a successful keygen
+    password          = db.Column(EncryptedString)  # cleared after a successful keygen
     verify_ssl        = db.Column(db.Boolean, default=True)
     enabled           = db.Column(db.Boolean, default=True)
     status            = db.Column(db.String(20), default="unknown")  # unknown | ok | error

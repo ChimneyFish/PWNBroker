@@ -35,6 +35,7 @@
       </div>
 
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="time">
         <div class="row g-3">
 
@@ -93,6 +94,7 @@
     <div class="form-card mb-4">
       <h5 class="fw-bold mb-4"><i class="bi bi-envelope-gear me-2 text-primary"></i>Email / SMTP</h5>
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="email">
         <div class="row g-3 mb-3">
           <div class="col-8">
@@ -129,6 +131,7 @@
     <div class="form-card">
       <h5 class="fw-bold mb-3"><i class="bi bi-send-check me-2 text-primary"></i>Test Email</h5>
       <form method="POST" action="{{ url_for('settings.test_email') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="d-flex gap-2">
           <input type="email" name="test_recipient" class="form-control" placeholder="test@example.com" required>
           <button type="submit" class="btn btn-outline-secondary flex-shrink-0">Send Test</button>
@@ -147,6 +150,7 @@
         </button>
       </div>
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="threat">
         <div class="row g-3">
 
@@ -356,6 +360,7 @@
     <div class="form-card" id="atlassian">
       <h5 class="fw-bold mb-4"><i class="bi bi-diagram-3 me-2 text-primary"></i>Atlassian Integration</h5>
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="atlassian">
 
         <!-- Shared credentials -->
@@ -463,6 +468,7 @@
     <div class="form-card" id="cloud">
       <h5 class="fw-bold mb-4"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Cloud API Integration</h5>
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="cloud">
         <div class="row g-3">
           <div class="col-12">
@@ -538,6 +544,7 @@
         The server must be restarted after uploading for the new cert to take effect.
       </p>
       <form method="POST" action="{{ url_for('settings.upload_cert') }}" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="row g-3">
           <div class="col-6">
             <label class="form-label">Certificate File <span class="text-muted fw-normal">(PEM)</span></label>
@@ -617,6 +624,7 @@
               <td>
                 {% if u.id != current_user.id %}
                 <form method="POST" action="{{ url_for('settings.user_role', user_id=u.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="role" class="form-select form-select-sm d-inline-block w-auto"
                           onchange="this.form.submit()" style="font-size:0.75rem;padding:2px 24px 2px 8px">
                     <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
@@ -637,6 +645,7 @@
                 <div class="d-flex gap-1">
                   <form method="POST" action="{{ url_for('settings.user_toggle', user_id=u.id) }}"
                         data-confirm="{% if u.active %}Disable{% else %}Enable{% endif %} '{{ u.username }}'?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
                             title="{% if u.active %}Disable{% else %}Enable{% endif %}">
                       <i class="bi bi-{% if u.active %}person-slash{% else %}person-check{% endif %}"></i>
@@ -644,6 +653,7 @@
                   </form>
                   <form method="POST" action="{{ url_for('settings.user_delete', user_id=u.id) }}"
                         data-confirm="Permanently delete '{{ u.username }}'? This cannot be undone.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
                       <i class="bi bi-trash"></i>
                     </button>
@@ -665,6 +675,7 @@
           Add New User
         </h6>
         <form method="POST" action="{{ url_for('settings.user_add') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="row g-2 mb-2">
             <div class="col-6">
               <label class="form-label">Username</label>

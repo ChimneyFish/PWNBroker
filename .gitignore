@@ -1,3 +1,6 @@
-data/scanner.db
+data/scanner.db*
+data/secret_key.txt
+data/encryption_key.txt
+data/logs/
 __pycache__/
 *.pyc

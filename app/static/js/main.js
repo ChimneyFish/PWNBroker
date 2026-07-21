@@ -1,3 +1,26 @@
+// Attach the CSRF token to every same-origin state-changing fetch() call, so
+// individual call sites across the app don't each need to set the header.
+(function () {
+  const token = document.querySelector('meta[name="csrf-token"]')?.content;
+  const mutating = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+  const originalFetch = window.fetch;
+
+  window.fetch = function (input, init = {}) {
+    const url = typeof input === 'string' ? input : input.url;
+    const method = (init.method || (input instanceof Request ? input.method : 'GET') || 'GET').toUpperCase();
+    const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+
+    if (token && isSameOrigin && mutating.has(method)) {
+      init = { ...init };
+      init.headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+      if (!init.headers.has('X-CSRFToken')) {
+        init.headers.set('X-CSRFToken', token);
+      }
+    }
+    return originalFetch(input, init);
+  };
+})();
+
 // Auto-refresh scan status on the scan view page
 function pollScanStatus(scanId) {
   const statusEl = document.getElementById('scan-status-badge');

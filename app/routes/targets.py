@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from ..models import Target, DomainRecord, ThreatConfig
 from ..extensions import db
+from ..validators import is_valid_host
 from .decorators import admin_required
 
 targets_bp = Blueprint("targets", __name__, url_prefix="/targets")
@@ -26,6 +27,9 @@ def new():
         description = request.form.get("description", "").strip()
         if not name or not host:
             flash("Name and host are required.", "danger")
+            return render_template("targets/new.html")
+        if not is_valid_host(host):
+            flash(f"'{host}' isn't a valid IP address, CIDR range, or hostname.", "danger")
             return render_template("targets/new.html")
 
         t = Target(

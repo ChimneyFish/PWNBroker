@@ -101,6 +101,7 @@
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('threat.agent_delete', agent_db_id=agent.id) }}"
                   onsubmit="return confirm('Remove agent {{ agent.hostname }}?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
             {% endif %}

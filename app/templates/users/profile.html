@@ -5,9 +5,16 @@
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-5">
+    {% if current_user.must_change_password %}
+    <div class="alert alert-warning">
+      <i class="bi bi-shield-exclamation me-1"></i>
+      You're using a default or temporary password. Set a new password below before continuing.
+    </div>
+    {% endif %}
     <div class="form-card">
       <h5 class="fw-bold mb-4">Update Profile</h5>
       <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="mb-3">
           <label class="form-label">Username</label>
           <input type="text" class="form-control" value="{{ current_user.username }}" disabled>

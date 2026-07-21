@@ -15,6 +15,7 @@
   {% if current_user.is_admin and jira_enabled and scan.status == 'done' %}
   <form method="POST" action="{{ url_for('atlassian.jira_create', scan_id=scan.id) }}" class="d-inline"
         data-confirm="Create Jira tickets for all untracked vulnerabilities above threshold?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-outline-warning btn-sm">
       <i class="bi bi-ticket-detailed me-1"></i>Create Jira Tickets
     </button>
@@ -241,6 +242,7 @@
       </div>
     </div>
     <form method="POST" action="{{ url_for('threat.triage') }}" style="display:inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="ip" value="{{ r.host }}">
       <button type="submit" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-shield-check me-1"></i>Full Triage
@@ -439,6 +441,7 @@
         <td class="text-muted small">{{ r.protocol or '—' }}</td>
         <td>
           <form method="POST" action="{{ url_for('threat.lookup') }}" style="display:inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="indicator" value="{{ r.host }}">
             <button type="submit" class="btn btn-link btn-sm p-0" title="IOC Lookup" style="color:var(--text-muted)">
               <i class="bi bi-search"></i>

@@ -34,6 +34,7 @@
         <td>
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('scans.delete', scan_id=scan.id) }}" data-confirm="Delete this scan and all results?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
           </form>
           {% endif %}
@@ -86,6 +87,7 @@
         <td>
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('scans.schedule_delete', sched_id=s.id) }}" data-confirm="Delete this schedule?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
           </form>
           {% endif %}

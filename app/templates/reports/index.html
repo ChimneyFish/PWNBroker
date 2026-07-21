@@ -108,6 +108,7 @@
       {% if current_user.is_admin and confluence_enabled %}
       <form method="POST" action="{{ url_for('atlassian.confluence_publish', scan_id=latest_scan.id) }}"
             data-confirm="Publish '{{ latest_scan.name }}' to Confluence?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-info">
           <i class="bi bi-cloud-upload me-1"></i>Publish to Confluence
         </button>
@@ -159,6 +160,7 @@
             {% if current_user.is_admin and cloud_enabled and r.cloud_status != 'ok' %}
             <form method="POST" action="{{ url_for('reports.push_saved', report_id=r.id) }}"
                   data-confirm="Push '{{ r.filename }}' to cloud API?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-primary py-0 px-2" title="Push to cloud">
                 <i class="bi bi-cloud-upload"></i>
               </button>
@@ -167,6 +169,7 @@
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('reports.delete_saved', report_id=r.id) }}"
                   data-confirm="Delete this report file permanently?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
@@ -208,6 +211,7 @@
             {% if current_user.is_admin and confluence_enabled %}
             <form method="POST" action="{{ url_for('atlassian.confluence_publish', scan_id=scan.id) }}"
                   data-confirm="Publish '{{ scan.name }}' to Confluence?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-info py-0 px-2" title="Publish to Confluence">
                 <i class="bi bi-cloud-upload"></i>
               </button>
@@ -248,6 +252,7 @@
         <td>
           <form method="POST" action="{{ url_for('reports.schedule_delete', sched_id=s.id) }}"
                 data-confirm="Delete this scheduled report?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
           </form>
         </td>

@@ -116,6 +116,7 @@
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('assets.delete_group', group_id=g.id) }}"
                 onsubmit="return confirm('Delete group {{ g.name }}?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Delete group">
               <i class="bi bi-trash" style="font-size:0.7rem"></i>
             </button>
@@ -172,6 +173,7 @@
   <div class="modal-dialog">
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <form method="POST" action="{{ url_for('assets.create_group') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border-color)">
           <h6 class="modal-title"><i class="bi bi-collection me-2"></i>New Asset Group</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

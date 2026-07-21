@@ -244,6 +244,7 @@
       <div class="modal-body">
         <!-- Create tag form -->
         <form method="POST" action="{{ url_for('assets.create_tag') }}" class="mb-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="fw-semibold small text-muted mb-2">CREATE NEW TAG</div>
           <div class="d-flex gap-2">
             <input type="text" name="label" class="form-control form-control-sm"

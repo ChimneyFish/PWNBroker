@@ -7,6 +7,7 @@
 <!-- Search bar -->
 <div class="form-card mb-4">
   <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row g-3 align-items-end">
       <div class="col-lg-8">
         <label class="form-label">Indicator (IP, Domain, URL, File Hash)</label>
@@ -379,6 +380,7 @@
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('threat.ioc_delete', ioc_id=rec.id) }}"
                 onsubmit="return confirm('Delete this IOC record?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-link text-danger p-0">
               <i class="bi bi-trash"></i>
             </button>

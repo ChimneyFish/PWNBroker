@@ -8,9 +8,11 @@
 </a>
 {% if current_user.is_admin %}
 <form method="POST" action="{{ url_for('threat.paloalto_test', fw_id=fw.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-outline-info"><i class="bi bi-plug me-1"></i>Test Connection</button>
 </form>
 <form method="POST" action="{{ url_for('threat.paloalto_poll', fw_id=fw.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Poll Now</button>
 </form>
 {% endif %}
@@ -54,6 +56,7 @@
 
       {% if current_user.is_admin %}
       <form method="POST" action="{{ url_for('threat.paloalto_edit', fw_id=fw.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="mb-2">
           <label class="form-label small">Name</label>
           <input type="text" name="name" class="form-control form-control-sm" value="{{ fw.name }}">

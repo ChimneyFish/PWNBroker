@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from ..models import Scan, Target, ScheduledScan, ScanResult, AtlassianConfig, AssetGroup, Asset, Tag, VulnTicket
 from ..extensions import db
 from ..scheduler.jobs import _next_run_from_cron
+from ..validators import is_valid_port_range
 from .decorators import admin_required
 
 scans_bp = Blueprint("scans", __name__, url_prefix="/scans")
@@ -129,6 +130,9 @@ def new():
 
         if not raw_target or not name:
             flash("Target and scan name are required.", "danger")
+            return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
+        if not is_valid_port_range(port_range):
+            flash(f"'{port_range}' isn't a valid port range (e.g. 1-1024 or 22,80,443).", "danger")
             return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
 
         # ── Asset group ──────────────────────────────────────────────────────
@@ -278,6 +282,10 @@ def schedule_new():
 
         if not name or not raw_target or not cron:
             flash("All fields are required.", "danger")
+            return render_template("scans/schedule_new.html", targets=targets,
+                                   groups=groups, scan_types=SCAN_TYPES)
+        if not is_valid_port_range(port_range):
+            flash(f"'{port_range}' isn't a valid port range (e.g. 1-1024 or 22,80,443).", "danger")
             return render_template("scans/schedule_new.html", targets=targets,
                                    groups=groups, scan_types=SCAN_TYPES)
 

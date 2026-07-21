@@ -98,6 +98,7 @@
             </button>
             <form method="POST" action="{{ url_for('grc.delete_policy', policy_id=p.id) }}"
                   onsubmit="return confirm('Delete policy?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
@@ -118,6 +119,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <form method="POST" action="{{ url_for('grc.create_policy') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border-color)">
           <h6 class="modal-title"><i class="bi bi-file-text me-2"></i>New Policy</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

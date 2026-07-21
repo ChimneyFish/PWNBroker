@@ -12,6 +12,9 @@ WTForms==3.1.2
 python-dotenv==1.0.1
 reportlab==4.2.2
 python-docx==1.2.0
-paramiko
-beautifulsoup4
-gunicorn
+paramiko==5.0.0
+beautifulsoup4==4.15.0
+gunicorn==26.0.0
+Flask-Limiter==4.1.1
+cryptography==49.0.0
+pytest==9.1.1  # dev/test only, not needed to run the app

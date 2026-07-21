@@ -18,12 +18,20 @@ def _has_certs():
 
 
 def _run_gunicorn():
-    """Launch via gunicorn — proper multi-interface WSGI server."""
+    """Launch via gunicorn — proper multi-interface WSGI server.
+
+    Single worker, multiple threads: APScheduler's in-process background jobs
+    and the in-memory login rate limiter are only correct if there's exactly
+    one process running them. Threads still give real request concurrency for
+    this app's I/O-bound workload (DB queries, subprocess calls to nmap that
+    release the GIL while waiting).
+    """
+    threads = os.environ.get("WEB_THREADS", "8")
     args = [
         "gunicorn",
         "--bind", f"{HOST}:{PORT}",
-        "--workers", "2",
-        "--threads", "4",
+        "--workers", "1",
+        "--threads", threads,
         "--timeout", "120",
         "--access-logfile", "-",
         "--error-logfile", "-",

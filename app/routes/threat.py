@@ -8,7 +8,8 @@ from flask import (Blueprint, render_template, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from ..models import (ThreatConfig, EndpointAgent, AgentAlert, IOCRecord, SocCase,
                       PaloAltoFirewall, PaloAltoThreatLog)
-from ..extensions import db
+from ..extensions import db, csrf
+from ..validators import is_valid_host
 from .decorators import admin_required
 
 threat_bp = Blueprint("threat", __name__, url_prefix="/threat")
@@ -342,8 +343,11 @@ def download_script(platform):
 
 
 # ── Agent REST API (token-based, no session) ──────────────────────────────────
+# These are called by the standalone agent script (requests, not a browser), so
+# there's no CSRF-carrying session/cookie to check — auth is the X-Agent-* headers.
 
 @threat_bp.route("/api/register", methods=["POST"])
+@csrf.exempt
 def api_register():
     cfg  = _get_cfg()
     data = request.get_json(silent=True) or {}
@@ -372,6 +376,7 @@ def api_register():
 
 
 @threat_bp.route("/api/heartbeat", methods=["POST"])
+@csrf.exempt
 def api_heartbeat():
     agent, err = _agent_auth()
     if err:
@@ -489,6 +494,9 @@ def paloalto_add():
     if not name or not hostname:
         flash("Name and hostname are required.", "danger")
         return redirect(url_for("threat.paloalto_list"))
+    if not is_valid_host(hostname):
+        flash(f"'{hostname}' isn't a valid IP address or hostname.", "danger")
+        return redirect(url_for("threat.paloalto_list"))
 
     if not api_key:
         if username and password:
@@ -544,8 +552,15 @@ def paloalto_detail(fw_id):
 @admin_required
 def paloalto_edit(fw_id):
     fw = PaloAltoFirewall.query.get_or_404(fw_id)
-    fw.name       = request.form.get("name", fw.name).strip() or fw.name
-    fw.hostname   = request.form.get("hostname", fw.hostname).strip() or fw.hostname
+    fw.name = request.form.get("name", fw.name).strip() or fw.name
+
+    new_hostname = request.form.get("hostname", "").strip()
+    if new_hostname:
+        if not is_valid_host(new_hostname):
+            flash(f"'{new_hostname}' isn't a valid IP address or hostname — hostname unchanged.", "danger")
+            return redirect(url_for("threat.paloalto_detail", fw_id=fw.id))
+        fw.hostname = new_hostname
+
     fw.verify_ssl = request.form.get("verify_ssl") == "1"
     fw.enabled    = request.form.get("enabled") == "1"
 

@@ -65,6 +65,7 @@
           {% if current_user.is_admin %}
           <form method="POST" action="{{ url_for('dependency.delete', scan_id=scan.id) }}"
                 data-confirm="Delete this dependency scan and all its findings?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
           </form>
           {% endif %}

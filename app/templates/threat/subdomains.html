@@ -9,6 +9,7 @@
 <!-- Search bar -->
 <div class="form-card mb-4">
   <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="row g-3 align-items-end">
       <div class="col-lg-9">
         <label class="form-label">Root Domain</label>
@@ -136,6 +137,7 @@
              title="IOC Lookup"
              onclick="event.preventDefault(); document.querySelector('[name=indicator]') && (document.querySelector('[name=indicator]').value='{{ sub.subdomain }}')">
             <form method="POST" action="{{ url_for('threat.lookup') }}" style="display:inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="indicator" value="{{ sub.subdomain }}">
               <button type="submit" class="btn btn-link btn-sm p-0" title="Check IOC" style="color:var(--text-muted)">
                 <i class="bi bi-search"></i>

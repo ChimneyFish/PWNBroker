@@ -79,6 +79,7 @@
         <form method="POST" action="{{ url_for('grc.import_policy_document', policy_id=p.id) }}"
               enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center"
               onsubmit="return confirm('This replaces the current policy content with the text from the uploaded file. Continue?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="file" accept=".docx,.txt,.md" required
                  class="form-control form-control-sm" style="max-width:280px;background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
           <button type="submit" class="btn btn-sm btn-outline-primary">

@@ -5,6 +5,7 @@
 {% block header_actions %}
 {% if current_user.is_admin %}
 <form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-primary">
     <i class="bi bi-arrow-repeat me-1"></i>Re-enumerate
   </button>
@@ -88,6 +89,7 @@
   No DNS records yet.
   {% if current_user.is_admin %}
   <form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="mt-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-primary btn-sm"><i class="bi bi-arrow-repeat me-1"></i>Start Enumeration</button>
   </form>
   {% endif %}

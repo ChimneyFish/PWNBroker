@@ -70,6 +70,7 @@ def profile():
                 flash("Current password is incorrect.", "danger")
                 return render_template("users/profile.html")
             current_user.set_password(new_pw)
+            current_user.must_change_password = False
             log_action("user.password_change", entity_type="user",
                        entity_id=current_user.id, entity_name=current_user.username)
         db.session.commit()
