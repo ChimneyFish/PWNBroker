@@ -82,6 +82,20 @@ def index():
     unacked         = AgentAlert.query.filter_by(acknowledged=False).count()
     recent_lookups  = IOCRecord.query.order_by(IOCRecord.created_at.desc()).limit(10).all()
     recent_alerts   = AgentAlert.query.order_by(AgentAlert.created_at.desc()).limit(10).all()
+
+    paloalto_total      = PaloAltoFirewall.query.count()
+    paloalto_ok         = PaloAltoFirewall.query.filter_by(status="ok").count()
+    paloalto_error      = PaloAltoFirewall.query.filter_by(status="error").count()
+    today_start         = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    paloalto_logs_today = PaloAltoThreatLog.query.filter(PaloAltoThreatLog.created_at >= today_start).count()
+    paloalto_critical   = PaloAltoThreatLog.query.filter(
+        PaloAltoThreatLog.created_at >= today_start,
+        PaloAltoThreatLog.severity.in_(["critical", "high"]),
+    ).count()
+    recent_paloalto = (PaloAltoThreatLog.query
+                       .order_by(PaloAltoThreatLog.time_generated.desc())
+                       .limit(10).all())
+
     return render_template("threat/index.html",
                            total_lookups=total_lookups,
                            malicious_count=malicious_count,
@@ -90,7 +104,13 @@ def index():
                            agents_total=agents_total,
                            unacked=unacked,
                            recent_lookups=recent_lookups,
-                           recent_alerts=recent_alerts)
+                           recent_alerts=recent_alerts,
+                           paloalto_total=paloalto_total,
+                           paloalto_ok=paloalto_ok,
+                           paloalto_error=paloalto_error,
+                           paloalto_logs_today=paloalto_logs_today,
+                           paloalto_critical=paloalto_critical,
+                           recent_paloalto=recent_paloalto)
 
 
 @threat_bp.route("/lookup", methods=["GET", "POST"])

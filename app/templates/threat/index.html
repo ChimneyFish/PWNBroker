@@ -97,6 +97,9 @@
         <a href="{{ url_for('threat.download') }}" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-download me-1"></i>Deploy Agent
         </a>
+        <a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-hdd-network me-1"></i>Palo Alto Firewalls
+        </a>
       </div>
     </div>
   </div>
@@ -153,6 +156,99 @@
 <form id="lookup-form" action="{{ url_for('threat.lookup') }}" method="POST" style="display:none">
   <input type="text" name="indicator">
 </form>
+
+<!-- Palo Alto -->
+<div class="section-header mb-3 mt-1">
+  <span class="section-title"><i class="bi bi-hdd-network me-2"></i>Palo Alto Firewalls</span>
+  <a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-sm btn-outline-secondary">Manage Firewalls</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if paloalto_ok > 0 %}text-success{% else %}text-muted{% endif %}">
+            {{ paloalto_ok }}<span class="fs-6 fw-normal text-muted"> / {{ paloalto_total }}</span>
+          </div>
+          <div class="stat-label">Firewalls Reporting OK{% if paloalto_error %} · <span class="text-danger">{{ paloalto_error }} error</span>{% endif %}</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(56,189,248,0.1);color:#38bdf8">
+          <i class="bi bi-hdd-network"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value">{{ paloalto_logs_today }}</div>
+          <div class="stat-label">Threat Logs Today</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+          <i class="bi bi-file-earmark-text"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-value {% if paloalto_critical > 0 %}text-danger{% endif %}">{{ paloalto_critical }}</div>
+          <div class="stat-label">Critical / High Today</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="data-table mb-4">
+  <div class="section-header px-3 pt-3 pb-2">
+    <span class="section-title">Recent Threat Logs</span>
+    <a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-sm btn-outline-secondary">All Firewalls</a>
+  </div>
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Severity</th>
+        <th>Firewall</th>
+        <th>Threat</th>
+        <th>Source → Destination</th>
+        <th>Category</th>
+        <th>Action</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in recent_paloalto %}
+      <tr>
+        <td><span class="badge-severity sev-{{ 'info' if log.severity == 'informational' else log.severity }}">{{ log.severity or '—' }}</span></td>
+        <td class="small">
+          {% if log.firewall %}
+          <a href="{{ url_for('threat.paloalto_detail', fw_id=log.firewall_id) }}" class="text-decoration-none">{{ log.firewall.name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td class="small fw-semibold" style="color:var(--accent-orange)">{{ log.threat_name or '—' }}</td>
+        <td class="font-monospace small">{{ log.src_ip or '—' }} → {{ log.dst_ip or '—' }}</td>
+        <td class="text-muted small">{{ log.category or '—' }}</td>
+        <td class="small">{{ log.action or '—' }}</td>
+        <td class="text-muted small">{{ log.time_generated | localdt('%m/%d %H:%M') if log.time_generated else '—' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" class="text-center text-muted py-4">
+          No threat logs ingested yet — <a href="{{ url_for('threat.paloalto_list') }}">add a Palo Alto firewall</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 <!-- Recent Alerts -->
 <div class="data-table">
