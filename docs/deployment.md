@@ -43,6 +43,18 @@ Schema changes ship as additive columns picked up by `_migrate_columns()` in `ap
 - Application logs: `data/logs/app.log`, rotating at 10MB × 5 backups. Level via `LOG_LEVEL` (default `INFO`). gunicorn's own access/error logs go to stdout as before — capture both if you're shipping logs somewhere.
 - `GET /healthz` — unauthenticated, pings the database, returns `{"status": "ok"}`/200 or `{"status": "error"}`/503. Point your load balancer / orchestrator health check at this.
 
+## MFA and SSO
+
+**MFA (TOTP)** needs no external setup — any user can enable it from their profile page, and admins can mark specific accounts `mfa_required` (**Users** table → shield icon) to force enrollment on next login. Backup codes are shown once at enrollment time and never stored in recoverable form; if someone loses both their device and their codes, an admin resets MFA for that account from the same table (clears enrollment, doesn't affect the `mfa_required` policy flag).
+
+**SSO (Google / Microsoft)** requires registering PwnBroker as an OAuth app with each provider first — this can't be done from inside PwnBroker itself:
+
+- **Google** — [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → Create OAuth client ID (type: Web application). Authorized redirect URI: `https://<your-domain>:<port>/login/sso/google/callback`. Copy the Client ID/Secret into **Settings → Single Sign-On**.
+- **Microsoft** — [Entra admin center](https://entra.microsoft.com/) → App registrations → New registration. Redirect URI (type: Web): `https://<your-domain>:<port>/login/sso/microsoft/callback`. Under "Supported account types," pick single-tenant unless you intend `common`. Create a client secret under Certificates & secrets. Copy the Application (client) ID, the secret, and (if single-tenant) the Directory (tenant) ID into Settings.
+- Either way, set **Allowed Email Domains** in Settings before enabling — an empty allowlist never permits sign-in or auto-provisioning, by design, regardless of the auto-provision toggle.
+- SSO credential changes require a restart to take effect (providers are registered with Authlib at boot from the DB-stored config, same reasoning as the TLS-cert-upload flow).
+- SSO logins bypass the local MFA step — the identity provider is trusted to have handled its own factors. Local username/password login keeps working for every account regardless of SSO configuration; SSO is additive, not a replacement.
+
 ## Running tests
 
 ```

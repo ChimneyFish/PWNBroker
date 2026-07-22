@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Save Your Backup Codes — PwnBroker{% endblock %}
+{% block page_title %}Two-Factor Authentication Enabled{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="alert alert-success">
+      <i class="bi bi-shield-check me-1"></i> Two-factor authentication is now active on your account.
+    </div>
+
+    <div class="form-card">
+      <h5 class="fw-bold mb-2">Save your backup codes</h5>
+      <div class="alert alert-warning py-2 px-3 small">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Each code can be used once to sign in if you lose access to your authenticator app.
+        <strong>This is the only time these will be shown.</strong>
+      </div>
+
+      <div class="p-3 rounded mb-3 font-monospace" style="background:rgba(255,255,255,0.05)">
+        {% for code in backup_codes %}
+        <div class="mb-1">{{ code }}</div>
+        {% endfor %}
+      </div>
+
+      <a href="{{ url_for('users.profile') }}" class="btn btn-primary w-100 py-2">I've saved these — continue</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

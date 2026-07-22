@@ -11,7 +11,13 @@
       You're using a default or temporary password. Set a new password below before continuing.
     </div>
     {% endif %}
-    <div class="form-card">
+    {% if current_user.mfa_required and not current_user.mfa_enabled %}
+    <div class="alert alert-warning">
+      <i class="bi bi-shield-exclamation me-1"></i>
+      Your administrator requires two-factor authentication on this account. Set it up below before continuing.
+    </div>
+    {% endif %}
+    <div class="form-card mb-3">
       <h5 class="fw-bold mb-4">Update Profile</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -35,6 +41,34 @@
         </div>
         <button type="submit" class="btn btn-primary">Save Changes</button>
       </form>
+    </div>
+
+    <div class="form-card">
+      <h5 class="fw-bold mb-3">Two-Factor Authentication</h5>
+      {% if current_user.mfa_enabled %}
+        <p class="text-success small mb-3"><i class="bi bi-shield-check me-1"></i>Enabled</p>
+        <button class="btn btn-outline-danger btn-sm" type="button"
+                data-bs-toggle="collapse" data-bs-target="#mfa-disable-form">
+          Disable Two-Factor Authentication
+        </button>
+        <div class="collapse mt-3" id="mfa-disable-form">
+          <form method="POST" action="{{ url_for('users.mfa_disable') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-2">
+              <label class="form-label small">Current Password</label>
+              <input type="password" name="password" class="form-control form-control-sm" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Authentication Code (or a backup code)</label>
+              <input type="text" name="code" class="form-control form-control-sm font-monospace" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-danger">Confirm Disable</button>
+          </form>
+        </div>
+      {% else %}
+        <p class="text-muted small mb-3">Not enabled. Add an extra layer of security with an authenticator app.</p>
+        <a href="{{ url_for('users.mfa_setup') }}" class="btn btn-primary btn-sm">Enable Two-Factor Authentication</a>
+      {% endif %}
     </div>
   </div>
 </div>

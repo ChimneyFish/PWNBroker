@@ -17,4 +17,7 @@ beautifulsoup4==4.15.0
 gunicorn==26.0.0
 Flask-Limiter==4.1.1
 cryptography==49.0.0
+pyotp==2.10.0
+qrcode==8.2
+Authlib==1.7.2
 pytest==9.1.1  # dev/test only, not needed to run the app

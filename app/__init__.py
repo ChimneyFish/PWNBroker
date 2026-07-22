@@ -2,7 +2,7 @@ import os
 import json
 from flask import Flask, redirect, url_for, flash, request
 from flask_login import current_user
-from .extensions import db, login_manager, mail, scheduler, csrf, limiter
+from .extensions import db, login_manager, mail, scheduler, csrf, limiter, oauth
 from config import Config
 
 
@@ -23,6 +23,7 @@ def create_app(config_class=Config):
     mail.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
+    oauth.init_app(app)
 
     if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
         _tune_sqlite(app)
@@ -140,14 +141,21 @@ def create_app(config_class=Config):
         return render_template("errors/500.html"), 500
 
     _PASSWORD_CHANGE_EXEMPT_ENDPOINTS = {"users.profile", "auth.logout", "static"}
+    _MFA_SETUP_EXEMPT_ENDPOINTS = {"users.profile", "users.mfa_setup", "auth.logout", "static"}
 
     @app.before_request
-    def _require_password_change():
-        if (current_user.is_authenticated
-                and getattr(current_user, "must_change_password", False)
+    def _enforce_forced_account_flows():
+        if not current_user.is_authenticated:
+            return
+        if (getattr(current_user, "must_change_password", False)
                 and request.endpoint not in _PASSWORD_CHANGE_EXEMPT_ENDPOINTS):
             flash("You must set a new password before continuing.", "warning")
             return redirect(url_for("users.profile"))
+        if (getattr(current_user, "mfa_required", False)
+                and not getattr(current_user, "mfa_enabled", False)
+                and request.endpoint not in _MFA_SETUP_EXEMPT_ENDPOINTS):
+            flash("Your administrator requires two-factor authentication on this account — set it up to continue.", "warning")
+            return redirect(url_for("users.mfa_setup"))
 
     with app.app_context():
         db.create_all()
@@ -156,9 +164,38 @@ def create_app(config_class=Config):
         _migrate_encrypt_secrets(app)
         _seed_admin(app)
         _recover_orphaned_scans(app)
+        _register_sso_providers(app)
         _start_scheduler(app)
 
     return app
+
+
+def _register_sso_providers(app):
+    """Register enabled SSO providers with Authlib from the DB-stored config.
+    Changing SSO credentials via Settings requires a restart to take effect —
+    same as the existing TLS-cert-upload flow."""
+    from .models import SSOConfig
+    cfg = SSOConfig.query.first()
+    if not cfg:
+        return
+
+    if cfg.google_enabled and cfg.google_client_id and cfg.google_client_secret:
+        oauth.register(
+            name="google",
+            client_id=cfg.google_client_id,
+            client_secret=cfg.google_client_secret,
+            server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+        )
+    if cfg.microsoft_enabled and cfg.microsoft_client_id and cfg.microsoft_client_secret:
+        tenant = cfg.microsoft_tenant or "common"
+        oauth.register(
+            name="microsoft",
+            client_id=cfg.microsoft_client_id,
+            client_secret=cfg.microsoft_client_secret,
+            server_metadata_url=f"https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
+        )
 
 
 def _configure_logging(app, base_dir):
@@ -230,6 +267,10 @@ def _migrate_columns(app):
     new_cols = {
         "users": [
             ("must_change_password", "BOOLEAN DEFAULT 0"),
+            ("mfa_secret",           "TEXT"),
+            ("mfa_enabled",          "BOOLEAN DEFAULT 0"),
+            ("mfa_required",         "BOOLEAN DEFAULT 0"),
+            ("mfa_backup_codes",     "TEXT"),
         ],
         "targets": [
             ("ssh_port",         "INTEGER DEFAULT 22"),

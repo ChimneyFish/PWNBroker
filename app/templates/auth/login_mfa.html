@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block auth_content %}
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="text-center mb-2">
+      <img src="{{ url_for('static', filename='img/logo.png') }}"
+           alt="PwnBroker" class="login-logo-img">
+    </div>
+
+    <p class="text-center mb-0" style="font-size:0.7rem;letter-spacing:0.15em;color:var(--accent);font-weight:600;text-transform:uppercase">
+      Two-Factor Authentication
+    </p>
+
+    <hr class="login-divider">
+
+    <p class="text-center text-muted small mb-4">Enter the 6-digit code from your authenticator app, or one of your backup codes</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} py-2 small">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-4">
+        <label class="form-label">Authentication Code</label>
+        <input type="text" name="code" class="form-control text-center font-monospace"
+               style="font-size:1.4rem;letter-spacing:0.3em" placeholder="000000"
+               inputmode="numeric" autocomplete="one-time-code" autofocus required maxlength="10">
+      </div>
+      <button type="submit" class="btn btn-primary w-100 py-2">Verify</button>
+    </form>
+
+    <p class="text-center mt-4 mb-0">
+      <a href="{{ url_for('auth.login') }}" class="small text-muted">&larr; Back to login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

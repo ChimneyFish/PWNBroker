@@ -534,6 +534,88 @@
     </div>
   </div>
 
+  <!-- Single Sign-On -->
+  <div class="col-12">
+    <div class="form-card" id="sso">
+      <h5 class="fw-bold mb-1"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Single Sign-On</h5>
+      <p class="text-muted small mb-4">Let users sign in with an existing Google or Microsoft account instead of a local password. Changes here require a restart to take effect.</p>
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form" value="sso">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="google_enabled" id="google_enabled"
+                     {% if sso_cfg and sso_cfg.google_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="google_enabled">Enable Google sign-in</label>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Google Client ID</label>
+            <input type="text" name="google_client_id" class="form-control"
+                   value="{{ sso_cfg.google_client_id or '' if sso_cfg else '' }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Google Client Secret</label>
+            <input type="password" name="google_client_secret" class="form-control"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+          </div>
+
+          <div class="col-12"><hr class="border-secondary my-2"></div>
+
+          <div class="col-12">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="microsoft_enabled" id="microsoft_enabled"
+                     {% if sso_cfg and sso_cfg.microsoft_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="microsoft_enabled">Enable Microsoft sign-in</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Microsoft Client ID</label>
+            <input type="text" name="microsoft_client_id" class="form-control"
+                   value="{{ sso_cfg.microsoft_client_id or '' if sso_cfg else '' }}">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Microsoft Client Secret</label>
+            <input type="password" name="microsoft_client_secret" class="form-control"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Microsoft Tenant</label>
+            <input type="text" name="microsoft_tenant" class="form-control"
+                   value="{{ sso_cfg.microsoft_tenant or 'common' if sso_cfg else 'common' }}"
+                   placeholder="common">
+            <div class="form-text text-muted">Your Entra tenant ID to restrict sign-in to one org, or <code>common</code> for any Microsoft account.</div>
+          </div>
+
+          <div class="col-12"><hr class="border-secondary my-2"></div>
+
+          <div class="col-8">
+            <label class="form-label">Allowed Email Domains</label>
+            <input type="text" name="allowed_domains" class="form-control"
+                   value="{{ sso_cfg.allowed_domains or '' if sso_cfg else '' }}"
+                   placeholder="example.com, contractor.example.com">
+            <div class="form-text text-muted">Comma-separated. Only these domains may sign in or be auto-provisioned via SSO.</div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">New Accounts</label>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" name="auto_provision" id="auto_provision"
+                     {% if not sso_cfg or sso_cfg.auto_provision %}checked{% endif %}>
+              <label class="form-check-label small" for="auto_provision">
+                Auto-create an account on first SSO login (allowed domains only)
+              </label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">Save SSO Settings</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TLS / HTTPS Certificate -->
   <div class="col-12">
     <div class="form-card" id="tls">

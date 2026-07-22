@@ -28,6 +28,10 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default="user")  # admin | user
     active = db.Column(db.Boolean, default=True)
     must_change_password = db.Column(db.Boolean, default=False)
+    mfa_secret = db.Column(EncryptedString)
+    mfa_enabled = db.Column(db.Boolean, default=False)
+    mfa_required = db.Column(db.Boolean, default=False)   # admin-mandated; forces enrollment on next login
+    mfa_backup_codes = db.Column(db.Text)                 # JSON list of {"hash": ..., "used": bool}
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
@@ -39,6 +43,43 @@ class User(UserMixin, db.Model):
     @property
     def is_admin(self):
         return self.role == "admin"
+
+    def verify_totp(self, code):
+        import pyotp
+        if not self.mfa_secret or not code:
+            return False
+        return pyotp.TOTP(self.mfa_secret).verify(code, valid_window=1)
+
+    def verify_backup_code(self, code):
+        """Check a backup code and consume it if valid. Single-use — the
+        matching entry is marked used so it can't be replayed."""
+        import json
+        if not self.mfa_backup_codes or not code:
+            return False
+        entries = json.loads(self.mfa_backup_codes)
+        for entry in entries:
+            if not entry["used"] and check_password_hash(entry["hash"], code.strip()):
+                entry["used"] = True
+                self.mfa_backup_codes = json.dumps(entries)
+                return True
+        return False
+
+    def generate_backup_codes(self, count=10):
+        """Replace any existing backup codes with a fresh set. Returns the
+        plaintext codes — only ever available at generation time, never
+        stored or shown again."""
+        import json
+        import secrets as _secrets
+        plain = [_secrets.token_hex(4) for _ in range(count)]
+        self.mfa_backup_codes = json.dumps(
+            [{"hash": generate_password_hash(c), "used": False} for c in plain]
+        )
+        return plain
+
+    def clear_mfa(self):
+        self.mfa_secret = None
+        self.mfa_enabled = False
+        self.mfa_backup_codes = None
 
 
 class Target(db.Model):
@@ -179,6 +220,30 @@ class EmailConfig(db.Model):
     password = db.Column(db.String(256))
     sender = db.Column(db.String(256))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SSOConfig(db.Model):
+    __tablename__ = "sso_config"
+    id                     = db.Column(db.Integer, primary_key=True)
+    google_enabled         = db.Column(db.Boolean, default=False)
+    google_client_id       = db.Column(db.String(256))
+    google_client_secret   = db.Column(EncryptedString)
+    microsoft_enabled      = db.Column(db.Boolean, default=False)
+    microsoft_client_id    = db.Column(db.String(256))
+    microsoft_client_secret= db.Column(EncryptedString)
+    microsoft_tenant       = db.Column(db.String(128), default="common")
+    allowed_domains        = db.Column(db.Text)     # comma-separated, e.g. "example.com,corp.example.com"
+    auto_provision         = db.Column(db.Boolean, default=True)
+    updated_at             = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def domain_allowed(self, email):
+        """Exact-suffix match on the domain after '@' — never a substring
+        match, so 'evilexample.com' can't match an allowlisted 'example.com'."""
+        if not email or "@" not in email:
+            return False
+        domain = email.rsplit("@", 1)[1].strip().lower()
+        allowed = [d.strip().lower() for d in (self.allowed_domains or "").split(",") if d.strip()]
+        return domain in allowed
 
 
 class CloudConfig(db.Model):

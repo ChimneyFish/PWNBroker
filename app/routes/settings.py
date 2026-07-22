@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, available_timezones
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig
+from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig, SSOConfig
 from ..extensions import db
 from .decorators import admin_required
 
@@ -145,6 +145,7 @@ def index():
     atlassian_cfg= AtlassianConfig.query.first()or AtlassianConfig()
     threat_cfg   = ThreatConfig.query.first()   or ThreatConfig()
     time_cfg     = TimeConfig.query.first()     or TimeConfig()
+    sso_cfg      = SSOConfig.query.first()      or SSOConfig()
     users        = User.query.order_by(User.created_at.desc()).all()
 
     if request.method == "POST":
@@ -295,10 +296,32 @@ def index():
             flash("Cloud API settings saved.", "success")
             return redirect(url_for("settings.index") + "#cloud")
 
+        if form == "sso":
+            sso_cfg.google_enabled = request.form.get("google_enabled") == "on"
+            sso_cfg.google_client_id = request.form.get("google_client_id", "").strip()
+            google_secret = request.form.get("google_client_secret", "")
+            if google_secret:
+                sso_cfg.google_client_secret = google_secret
+
+            sso_cfg.microsoft_enabled = request.form.get("microsoft_enabled") == "on"
+            sso_cfg.microsoft_client_id = request.form.get("microsoft_client_id", "").strip()
+            microsoft_secret = request.form.get("microsoft_client_secret", "")
+            if microsoft_secret:
+                sso_cfg.microsoft_client_secret = microsoft_secret
+            sso_cfg.microsoft_tenant = request.form.get("microsoft_tenant", "common").strip() or "common"
+
+            sso_cfg.allowed_domains = request.form.get("allowed_domains", "").strip()
+            sso_cfg.auto_provision = request.form.get("auto_provision") == "on"
+            sso_cfg.updated_at = datetime.now(timezone.utc)
+            db.session.add(sso_cfg)
+            db.session.commit()
+            flash("SSO settings saved — restart PwnBroker for changes to take effect.", "success")
+            return redirect(url_for("settings.index") + "#sso")
+
     return render_template(
         "settings/index.html",
         cfg=cfg, cloud_cfg=cloud_cfg, atlassian_cfg=atlassian_cfg,
-        threat_cfg=threat_cfg, time_cfg=time_cfg, users=users,
+        threat_cfg=threat_cfg, time_cfg=time_cfg, sso_cfg=sso_cfg, users=users,
         cert_info=_read_cert_info(),
         ntp_status=_ntp_status(),
         ntp_server_current=_read_ntp_server(),

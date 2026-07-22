@@ -40,6 +40,26 @@
       <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
     </form>
 
+    {% if sso_cfg and (sso_cfg.google_enabled or sso_cfg.microsoft_enabled) %}
+    <div class="d-flex align-items-center gap-2 my-3">
+      <hr class="flex-grow-1 border-secondary">
+      <span class="text-muted small">or</span>
+      <hr class="flex-grow-1 border-secondary">
+    </div>
+    <div class="d-grid gap-2">
+      {% if sso_cfg.google_enabled %}
+      <a href="{{ url_for('auth.sso_login', provider='google') }}" class="btn btn-outline-secondary py-2">
+        <i class="bi bi-google me-2"></i>Sign in with Google
+      </a>
+      {% endif %}
+      {% if sso_cfg.microsoft_enabled %}
+      <a href="{{ url_for('auth.sso_login', provider='microsoft') }}" class="btn btn-outline-secondary py-2">
+        <i class="bi bi-microsoft me-2"></i>Sign in with Microsoft
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <p class="text-center mt-4 mb-0" style="font-size:0.65rem;color:var(--text-muted)">
       PwnBroker &mdash; Unauthorized access is prohibited
     </p>
