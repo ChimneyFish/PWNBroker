@@ -318,6 +318,15 @@ def index():
             flash("SSO settings saved — restart PwnBroker for changes to take effect.", "success")
             return redirect(url_for("settings.index") + "#sso")
 
+        if form == "saml":
+            sso_cfg.saml_enabled = request.form.get("saml_enabled") == "on"
+            sso_cfg.saml_sp_entity_id = request.form.get("saml_sp_entity_id", "").strip() or None
+            sso_cfg.updated_at = datetime.now(timezone.utc)
+            db.session.add(sso_cfg)
+            db.session.commit()
+            flash("SAML settings saved — restart PwnBroker for changes to take effect.", "success")
+            return redirect(url_for("settings.index") + "#saml")
+
     return render_template(
         "settings/index.html",
         cfg=cfg, cloud_cfg=cloud_cfg, atlassian_cfg=atlassian_cfg,
@@ -326,6 +335,8 @@ def index():
         ntp_status=_ntp_status(),
         ntp_server_current=_read_ntp_server(),
         tz_list=_tz_list(),
+        saml_acs_url=url_for("auth.saml_acs", _external=True),
+        saml_default_entity_id=url_for("auth.saml_metadata", _external=True),
     )
 
 
@@ -664,6 +675,62 @@ def upload_cert():
 
     flash("Certificate uploaded successfully. Restart PwnBroker to activate it.", "success")
     return redirect(url_for("settings.index") + "#tls")
+
+
+@settings_bp.route("/sso/saml/metadata", methods=["POST"])
+@login_required
+@admin_required
+def upload_saml_metadata():
+    """Parse an IdP's Federation Metadata (uploaded file or fetched URL) and
+    auto-populate the SAML IdP fields — this is the 'upload metadata to set
+    everything up' flow admins expect from SAML, unlike the OIDC providers
+    above which have no equivalent metadata file."""
+    from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
+
+    metadata_file = request.files.get("metadata_file")
+    metadata_url = request.form.get("metadata_url", "").strip()
+
+    try:
+        if metadata_file and metadata_file.filename:
+            xml_data = metadata_file.read()
+            parsed = OneLogin_Saml2_IdPMetadataParser.parse(xml_data)
+        elif metadata_url:
+            if not metadata_url.lower().startswith("https://"):
+                flash("Metadata URL must be an https:// URL.", "danger")
+                return redirect(url_for("settings.index") + "#saml")
+            parsed = OneLogin_Saml2_IdPMetadataParser.parse_remote(metadata_url, validate_cert=True)
+            xml_data = None
+        else:
+            flash("Upload a metadata file or provide a metadata URL.", "danger")
+            return redirect(url_for("settings.index") + "#saml")
+    except Exception as e:
+        flash(f"Could not parse metadata: {e}", "danger")
+        return redirect(url_for("settings.index") + "#saml")
+
+    idp = (parsed or {}).get("idp") or {}
+    sso_url = (idp.get("singleSignOnService") or {}).get("url")
+    cert = (idp.get("x509certMulti") or {}).get("signing", [None])[0] or idp.get("x509cert")
+
+    if not idp.get("entityId") or not sso_url or not cert:
+        flash("That metadata is missing a required field (Entity ID, SSO URL, or signing certificate).",
+              "danger")
+        return redirect(url_for("settings.index") + "#saml")
+
+    sso_cfg = SSOConfig.query.first() or SSOConfig()
+    sso_cfg.saml_idp_entity_id = idp["entityId"]
+    sso_cfg.saml_idp_sso_url = sso_url
+    sso_cfg.saml_idp_x509_cert = cert
+    if xml_data:
+        sso_cfg.saml_metadata_xml = xml_data.decode("utf-8", errors="replace")
+    sso_cfg.updated_at = datetime.now(timezone.utc)
+    db.session.add(sso_cfg)
+    db.session.commit()
+
+    from ..audit import log_action
+    log_action("settings.saml_metadata_upload", detail="SAML IdP metadata parsed and saved")
+    flash("SAML metadata imported. Review and enable SAML sign-in below, then restart PwnBroker.",
+          "success")
+    return redirect(url_for("settings.index") + "#saml")
 
 
 @settings_bp.route("/users/<int:user_id>/delete", methods=["POST"])

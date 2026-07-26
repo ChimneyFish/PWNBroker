@@ -64,6 +64,7 @@ PKGS=(
     nmap openssl libcap2-bin
     curl git ufw
     build-essential libssl-dev libffi-dev
+    pkg-config libxml2-dev libxmlsec1-dev libxmlsec1-openssl
 )
 info "Installing: ${PKGS[*]}"
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKGS[@]}" -qq

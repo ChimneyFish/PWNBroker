@@ -616,6 +616,109 @@
     </div>
   </div>
 
+  <!-- SAML 2.0 -->
+  <div class="col-12">
+    <div class="form-card" id="saml">
+      <h5 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>SAML 2.0 Single Sign-On</h5>
+      <p class="text-muted small mb-4">
+        For identity providers configured as a SAML Enterprise App (e.g. Microsoft Entra) rather than
+        an OAuth app registration. Upload the IdP's Federation Metadata XML — or paste its metadata URL —
+        to auto-fill everything below instead of entering it by hand.
+      </p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-6">
+          <label class="form-label">Your Reply URL / ACS URL</label>
+          <div class="d-flex align-items-center gap-2">
+            <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input);word-break:break-all"
+                  id="saml-acs-url">{{ saml_acs_url }}</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    onclick="navigator.clipboard.writeText(document.getElementById('saml-acs-url').textContent);this.innerHTML='<i class=\'bi bi-check2\'></i>'">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Your Entity ID / Identifier</label>
+          <div class="d-flex align-items-center gap-2">
+            <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input);word-break:break-all"
+                  id="saml-entity-id">{{ sso_cfg.saml_sp_entity_id if sso_cfg and sso_cfg.saml_sp_entity_id else saml_default_entity_id }}</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                    onclick="navigator.clipboard.writeText(document.getElementById('saml-entity-id').textContent);this.innerHTML='<i class=\'bi bi-check2\'></i>'">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-text text-muted">
+          Paste these into the IdP's SAML app config as the Reply URL / Assertion Consumer Service URL
+          and the Identifier / Entity ID.
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('settings.upload_saml_metadata') }}"
+            enctype="multipart/form-data" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3 align-items-end">
+          <div class="col-5">
+            <label class="form-label">Federation Metadata File <span class="text-muted fw-normal">(XML)</span></label>
+            <input type="file" name="metadata_file" class="form-control" accept=".xml">
+          </div>
+          <div class="col-1 text-center text-muted small">or</div>
+          <div class="col-4">
+            <label class="form-label">Metadata URL</label>
+            <input type="url" name="metadata_url" class="form-control" placeholder="https://...">
+          </div>
+          <div class="col-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-upload me-1"></i>Import
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form" value="saml">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="saml_enabled" id="saml_enabled"
+                     {% if sso_cfg and sso_cfg.saml_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="saml_enabled">Enable SAML sign-in</label>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">IdP SSO URL</label>
+            <input type="text" class="form-control" disabled
+                   value="{{ sso_cfg.saml_idp_sso_url or '' if sso_cfg else '' }}"
+                   placeholder="Populated by importing metadata above">
+          </div>
+          <div class="col-6">
+            <label class="form-label">IdP Entity ID</label>
+            <input type="text" class="form-control" disabled
+                   value="{{ sso_cfg.saml_idp_entity_id or '' if sso_cfg else '' }}"
+                   placeholder="Populated by importing metadata above">
+          </div>
+          <div class="col-8">
+            <label class="form-label">SP Entity ID <span class="text-muted fw-normal">(optional override)</span></label>
+            <input type="text" name="saml_sp_entity_id" class="form-control"
+                   value="{{ sso_cfg.saml_sp_entity_id or '' if sso_cfg else '' }}"
+                   placeholder="{{ saml_default_entity_id }}">
+            <div class="form-text text-muted">Leave blank to use the default shown above.</div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">Save SAML Settings</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="form-text text-muted mt-2">
+        The allowed-domains and auto-provisioning rules from the Single Sign-On section above apply here too —
+        SAML doesn't have its own separate copy of that policy. Changes here require a restart to take effect.
+      </div>
+    </div>
+  </div>
+
   <!-- TLS / HTTPS Certificate -->
   <div class="col-12">
     <div class="form-card" id="tls">

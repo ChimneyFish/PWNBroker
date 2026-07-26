@@ -55,6 +55,16 @@ Schema changes ship as additive columns picked up by `_migrate_columns()` in `ap
 - SSO credential changes require a restart to take effect (providers are registered with Authlib at boot from the DB-stored config, same reasoning as the TLS-cert-upload flow).
 - SSO logins bypass the local MFA step — the identity provider is trusted to have handled its own factors. Local username/password login keeps working for every account regardless of SSO configuration; SSO is additive, not a replacement.
 
+**SAML 2.0** (for IdPs set up as a SAML Enterprise App rather than an OAuth registration — e.g. Microsoft Entra's **Enterprise Applications → SAML-based sign-on**, or Okta/OneLogin equivalents) is a separate mechanism from the OIDC providers above, with its own setup flow:
+
+- In the IdP's SAML app config, paste in the **Reply URL / Assertion Consumer Service URL** and **Identifier / Entity ID** shown on PwnBroker's **Settings → SAML** section (these are generated from PwnBroker's own external URL, no need to invent them).
+- Download the IdP's **Federation Metadata XML** and upload it back into **Settings → SAML** (or paste its metadata URL instead) — this single import auto-fills the IdP's SSO URL, Entity ID, and signing certificate. No client secret is involved in SAML; trust comes from the IdP's signed assertions plus that certificate.
+- The IdP must emit the user's email — Entra's default `.../claims/emailaddress` claim works out of the box; if the NameID isn't itself an email address (commonly it's the UPN), PwnBroker falls back to that claim automatically.
+- SAML shares the same **Allowed Email Domains** / auto-provisioning policy as the OIDC providers above — there's no separate copy of that setting to keep in sync.
+- Both SP-initiated (starting from PwnBroker's login page) and IdP-initiated (starting from the IdP's own app portal, e.g. Entra's "My Apps") sign-in work without extra configuration.
+- Same as OIDC: changes require a restart to take effect.
+- Not implemented: SAML Single Logout (SLO) and SP-initiated request signing — local `/logout` just ends the PwnBroker session, and Entra accepts unsigned AuthnRequests by default, so neither adds meaningful security here today.
+
 ## Running tests
 
 ```

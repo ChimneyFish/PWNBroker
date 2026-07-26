@@ -331,6 +331,14 @@ def _migrate_columns(app):
         "evidence_files": [
             ("policy_id", "INTEGER"),
         ],
+        "sso_config": [
+            ("saml_enabled",       "BOOLEAN DEFAULT 0"),
+            ("saml_sp_entity_id",  "VARCHAR(512)"),
+            ("saml_idp_entity_id", "VARCHAR(512)"),
+            ("saml_idp_sso_url",   "VARCHAR(512)"),
+            ("saml_idp_x509_cert","TEXT"),
+            ("saml_metadata_xml",  "TEXT"),
+        ],
     }
     with db.engine.connect() as conn:
         for table, cols in new_cols.items():
