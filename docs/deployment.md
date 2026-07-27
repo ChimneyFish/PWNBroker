@@ -32,6 +32,8 @@ Back up all three together. There's currently no automated backup job — this i
 
 API keys (`ThreatConfig`), Palo Alto firewall credentials, and `Target` SSH credentials are encrypted at rest (Fernet, via `app/crypto.py`). Any pre-existing plaintext values are encrypted in place automatically on the first boot after upgrading — this migration is idempotent and safe to leave running on every boot.
 
+**`.env` ownership** (setup.sh installs only): the app runs as a dedicated unprivileged `pwnbroker` system user, but `.env` is deliberately `640 root:pwnbroker` rather than world-readable, since it holds `SECRET_KEY` and SMTP credentials. `setup.sh` re-asserts this ownership/permission on every run (not just first install) — it has to, because the same script's own directory setup step does a blanket `chown -R root:root` over the whole install directory on every run, which would otherwise silently flip `.env` back to `root:root` and break the service with `[Errno 13] Permission denied` on next restart. If you ever manually `sudo`-edit `.env` directly (bypassing `setup.sh`), re-run `sudo bash setup.sh` afterward (or manually `chown root:pwnbroker .env && chmod 640 .env`) to restore the correct ownership before restarting the service.
+
 ## Database
 
 SQLite, tuned for concurrent access: WAL journal mode, `synchronous=NORMAL`, and a 30s busy-timeout (`app/__init__.py`'s `_tune_sqlite`). This assumes single-instance deployment — there's no clustering story for SQLite, and none is planned; a real multi-instance deployment would need a networked database instead.

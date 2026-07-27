@@ -205,8 +205,6 @@ MAIL_USERNAME=
 MAIL_PASSWORD=
 MAIL_DEFAULT_SENDER=
 EOF
-    chmod 640 "$ENV_FILE"
-    chown root:"$SERVICE_USER" "$ENV_FILE"
     ok ".env created with random SECRET_KEY"
 else
     # Ensure DATABASE_URL uses an absolute path (not relative to CWD)
@@ -216,6 +214,14 @@ else
     fi
     ok ".env already exists — existing config preserved"
 fi
+# Re-assert ownership/permissions every run, not just at creation — step 3's
+# blanket "chown -R root:root $INSTALL_DIR" resets .env to root:root on every
+# re-run (it lives outside data/, the only root-level dir chown'd to the
+# service user), which otherwise silently breaks the service on next restart
+# with "[Errno 13] Permission denied: '.env'". This is what makes re-running
+# setup.sh to "repair an existing installation" actually idempotent for it.
+chmod 640 "$ENV_FILE"
+chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
 step "8 / 10 — Systemd Service"
