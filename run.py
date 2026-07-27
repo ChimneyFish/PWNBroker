@@ -10,7 +10,7 @@ CERT_PATH = os.path.join(SSL_DIR, "cert.pem")
 KEY_PATH  = os.path.join(SSL_DIR, "key.pem")
 
 HOST = "0.0.0.0"
-PORT = 5000
+PORT = int(os.environ.get("PORT", 443))
 
 
 def _has_certs():
@@ -63,6 +63,10 @@ def _run_dev():
 
 
 if __name__ == "__main__":
+    if PORT < 1024 and os.geteuid() != 0:
+        print(f"[PwnBroker] ERROR: port {PORT} requires root (or CAP_NET_BIND_SERVICE) to bind.")
+        print(f"[PwnBroker] Run with sudo, or set PORT=5000 (or another port >1024) instead.")
+        sys.exit(1)
     try:
         import gunicorn  # noqa: F401
         _run_gunicorn()

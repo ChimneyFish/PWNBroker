@@ -12,7 +12,7 @@ set -euo pipefail
 INSTALL_DIR="${INSTALL_DIR:-/opt/PWNBroker}"
 REPO_URL="${REPO_URL:-https://github.com/ChimneyFish/PWNBroker.git}"
 BRANCH="${BRANCH:-main}"
-PORT="${PORT:-5000}"
+PORT="${PORT:-443}"
 WEB_THREADS="${WEB_THREADS:-8}"
 SERVICE_USER=pwnbroker
 SERVICE_FILE=/etc/systemd/system/pwnbroker.service
@@ -246,6 +246,13 @@ User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
 EnvironmentFile=$ENV_FILE
+
+# Binding port 443 (or any port < 1024) as the unprivileged $SERVICE_USER
+# needs this — it's the systemd equivalent of the setcap grant already used
+# for nmap below, scoped to exactly the one capability needed instead of
+# running the whole service as root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 ExecStart=$INSTALL_DIR/venv/bin/gunicorn \\
     --bind 0.0.0.0:$PORT \\

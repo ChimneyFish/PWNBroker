@@ -96,7 +96,7 @@ sudo bash setup.sh
 That's it. The script clones the project to `/opt/PWNBroker`, installs everything, generates TLS certificates, creates a systemd service, and starts the server. When it finishes:
 
 ```
-  Access URL:       https://<server-ip>:5000
+  Access URL:       https://<server-ip>
   Default login:    admin / admin
 ```
 
@@ -139,12 +139,14 @@ cp .env.example .env          # or create from scratch (see Configuration)
 $EDITOR .env
 
 # 4 — Run (dev)
+# Default port is 443, which needs root (or CAP_NET_BIND_SERVICE) to bind —
+# either `sudo python run.py`, or PORT=5000 python run.py for an unprivileged port.
 python run.py
 
 # 4 — Run (production)
 # One worker, several threads — see docs/deployment.md for why this isn't
 # scaled up like a typical stateless web app (in-process scheduler + rate limiter).
-gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 8 "app:create_app()"
+gunicorn --bind 0.0.0.0:443 --workers 1 --threads 8 "app:create_app()"
 ```
 
 The database (`data/scanner.db`) and all required directories are created automatically on first start.
@@ -211,7 +213,7 @@ Application logs: `/opt/PWNBroker/logs/` (rotated daily, 14-day retention).
 
 ### First-time setup checklist
 
-1. Log in at `https://<server>:5000` with `admin` / `admin`
+1. Log in at `https://<server>` with `admin` / `admin`
 2. **Profile** → change your password
 3. **Settings → Time & NTP** → set your timezone
 4. **Settings → Threat Intelligence APIs** → add API keys
@@ -247,19 +249,19 @@ PwnBroker includes a lightweight Python agent that monitors outbound network con
 ### Install on a Linux endpoint
 
 ```bash
-curl -k https://<pwnbroker-server>:5000/threat/download/script/linux | sudo bash
+curl -k https://<pwnbroker-server>/threat/download/script/linux | sudo bash
 ```
 
 ### Install on macOS
 
 ```bash
-curl -k https://<pwnbroker-server>:5000/threat/download/script/mac | sudo bash
+curl -k https://<pwnbroker-server>/threat/download/script/mac | sudo bash
 ```
 
 ### Install on Windows (PowerShell as Administrator)
 
 ```powershell
-iwr https://<pwnbroker-server>:5000/threat/download/script/windows -UseBasicParsing | iex
+iwr https://<pwnbroker-server>/threat/download/script/windows -UseBasicParsing | iex
 ```
 
 Each installer embeds the correct server URL and registration token automatically. The agent appears in **Threat Intel → Agents** within one minute of first startup.
@@ -362,7 +364,7 @@ Or just re-run `sudo bash setup.sh` — it's fully idempotent: it fetches and re
 **Service won't start**
 ```bash
 journalctl -u pwnbroker -n 50
-# Port in use?      ss -tlnp | grep 5000
+# Port in use?      ss -tlnp | grep 443
 # Bad TLS cert?     openssl x509 -in /opt/PWNBroker/data/ssl/cert.pem -noout -text
 # Python error?     /opt/PWNBroker/venv/bin/python -c "from app import create_app; create_app()"
 ```

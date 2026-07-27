@@ -62,7 +62,7 @@ The script will:
 After the script completes you will see:
 
 ```
-  Access URL:       https://<server-ip>:5000
+  Access URL:       https://<server-ip>
   Default login:    admin / admin
 ```
 
@@ -97,7 +97,7 @@ For production, upload a CA-signed certificate through **Settings → HTTPS / TL
 
 ## 2. First Login & Initial Setup
 
-1. Navigate to `https://<your-server-ip>:5000`
+1. Navigate to `https://<your-server-ip>`
 2. Log in with `admin` / `admin`
 3. Go to **Profile** (bottom of the sidebar) and change your password immediately
 4. Go to **Settings → Time & NTP** and set your timezone — all timestamps across the platform will display in this zone
@@ -498,12 +498,12 @@ The registration token is auto-generated. Find it on the **Threat Intel → Agen
 
 **Linux / macOS:**
 ```bash
-curl -k https://<pwnbroker-server>:5000/threat/download/script/linux | sudo bash
+curl -k https://<pwnbroker-server>/threat/download/script/linux | sudo bash
 ```
 
 **Windows (PowerShell as Administrator):**
 ```powershell
-iwr https://<pwnbroker-server>:5000/threat/download/script/windows -UseBasicParsing | iex
+iwr https://<pwnbroker-server>/threat/download/script/windows -UseBasicParsing | iex
 ```
 
 #### Step 4 — Verify registration
@@ -826,7 +826,7 @@ New database columns (added by migrations) are applied automatically on startup 
 journalctl -u pwnbroker -n 50
 
 # Common causes:
-# - Port already in use:     ss -tlnp | grep 5000
+# - Port already in use:     ss -tlnp | grep 443
 # - Missing .env file:       ls /opt/PWNBroker/.env
 # - Bad TLS cert:            openssl x509 -in /opt/PWNBroker/data/ssl/cert.pem -noout -text
 # - Python import error:     /opt/PWNBroker/venv/bin/python -c "from app import create_app; create_app()"
