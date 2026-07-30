@@ -54,7 +54,7 @@
         {% else %}
         <span class="badge bg-warning text-dark">Suspicious</span>
         {% endif %}
-        <span class="fw-semibold font-monospace" style="color:var(--accent-orange)">{{ case.ioc }}</span>
+        <span class="fw-semibold font-monospace" style="color:var(--accent-red)">{{ case.ioc }}</span>
         <span class="badge bg-secondary" style="font-size:0.65rem">{{ case.ioc_type | upper }}</span>
         <span class="text-muted small">Score: <strong>{{ case.threat_score }}/100</strong></span>
         <span class="text-muted small ms-auto">{{ case.created_at | localdt('%Y-%m-%d %H:%M') }}</span>
@@ -169,7 +169,7 @@
     <tbody>
       {% for case in alerted %}
       <tr>
-        <td class="font-monospace small" style="color:var(--accent-orange)">{{ case.ioc }}</td>
+        <td class="font-monospace small" style="color:var(--accent-red)">{{ case.ioc }}</td>
         <td>
           {% if case.verdict == 'malicious' %}
           <span class="badge bg-danger">Malicious</span>

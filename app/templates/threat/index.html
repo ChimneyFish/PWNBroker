@@ -235,7 +235,7 @@
           <a href="{{ url_for('threat.paloalto_detail', fw_id=log.firewall_id) }}" class="text-decoration-none">{{ log.firewall.name }}</a>
           {% else %}—{% endif %}
         </td>
-        <td class="small fw-semibold" style="color:var(--accent-orange)">{{ log.threat_name or '—' }}</td>
+        <td class="small fw-semibold" style="color:var(--accent-red)">{{ log.threat_name or '—' }}</td>
         <td class="font-monospace small">{{ log.src_ip or '—' }} → {{ log.dst_ip or '—' }}</td>
         <td class="text-muted small">{{ log.category or '—' }}</td>
         <td class="small">{{ log.action or '—' }}</td>
@@ -275,7 +275,7 @@
         <td><span class="badge-severity sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
         <td class="small">{{ alert.agent.hostname if alert.agent else '?' }}</td>
         <td class="small">{{ alert.title }}</td>
-        <td class="font-monospace small" style="color:var(--accent-orange)">{{ alert.ioc or '—' }}</td>
+        <td class="font-monospace small" style="color:var(--accent-red)">{{ alert.ioc or '—' }}</td>
         <td class="text-muted small">{{ alert.created_at | localdt('%m/%d %H:%M') if alert.created_at else '—' }}</td>
         <td>
           {% if alert.acknowledged %}<span class="badge bg-secondary">Acked</span>

@@ -108,7 +108,7 @@
       <tr id="alert-row-{{ alert.id }}" {% if alert.acknowledged %}class="opacity-50"{% endif %}>
         <td><span class="badge-severity sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
         <td class="small fw-semibold">{{ alert.title }}</td>
-        <td class="font-monospace small" style="color:var(--accent-orange)">{{ alert.ioc or '—' }}</td>
+        <td class="font-monospace small" style="color:var(--accent-red)">{{ alert.ioc or '—' }}</td>
         <td class="small text-muted" style="max-width:300px">{{ alert.detail or '—' }}</td>
         <td class="text-muted small">{{ alert.created_at | localdt('%Y-%m-%d %H:%M') if alert.created_at else '—' }}</td>
         <td>

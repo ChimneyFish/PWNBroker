@@ -163,7 +163,7 @@
         <td class="font-monospace small">{{ log.src_ip or '—' }}{% if log.src_port %}:{{ log.src_port }}{% endif %}</td>
         <td class="font-monospace small">{{ log.dst_ip or '—' }}{% if log.dst_port %}:{{ log.dst_port }}{% endif %}</td>
         <td class="small">{{ log.application or '—' }}</td>
-        <td class="small" style="color:var(--accent-orange)">{{ log.threat_name or '—' }}</td>
+        <td class="small" style="color:var(--accent-red)">{{ log.threat_name or '—' }}</td>
         <td class="small text-muted">{{ log.category or '—' }}</td>
         <td class="small">{{ log.action or '—' }}</td>
         <td class="small font-monospace">{{ log.inbound_if or '—' }}</td>
