@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,30 +8,27 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet">
-    <link
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
       rel="stylesheet">
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/style.css') }}"
+    <link href="{{ url_for('static', filename='css/app.css') }}"
       rel="stylesheet">
   </head>
   <body>
 
 {% if current_user.is_authenticated %}
-<div class="d-flex" id="app-wrapper">
+<div class="flex" id="app-wrapper">
 
   <!-- Sidebar -->
-  <nav id="sidebar" class="d-flex flex-column p-3">
-    <a href="{{ url_for("dashboard.index") }}" class="sidebar-brand d-flex align-items-center gap-2 mb-4">
+  <nav id="sidebar" class="flex flex-col p-6">
+    <a href="{{ url_for("dashboard.index") }}" class="sidebar-brand flex items-center gap-2 mb-6">
       <div class="brand-mark">{% include "partials/brand_mark.html" %}</div>
       <div class="sidebar-wordmark">Pwn<span>Broker</span></div>
     </a>
 
-    <ul class="nav flex-column gap-1">
+    <ul class="nav flex-col gap-1">
       <li class="nav-item">
         <a href="{{ url_for("dashboard.index") }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
           <i class="bi bi-speedometer2 me-2"></i>Dashboard
@@ -44,15 +41,15 @@
       </li>
       <li class="nav-item">
         <a href="#assets-group"
-           class="nav-link nav-group-toggle d-flex align-items-center justify-content-between {% if 'assets' in (request.endpoint or '') %}active{% endif %}"
-           data-bs-toggle="collapse"
+           class="nav-link nav-group-toggle flex items-center justify-between {% if 'assets' in (request.endpoint or '') %}active{% endif %}"
+           data-toggle="collapse"
            aria-expanded="{{ 'true' if 'assets' in (request.endpoint or '') else 'false' }}"
            aria-controls="assets-group">
           <span><i class="bi bi-hdd-network me-2"></i>Assets</span>
           <i class="bi bi-chevron-down nav-chevron"></i>
         </a>
         <div class="collapse {% if 'assets' in (request.endpoint or '') %}show{% endif %}" id="assets-group">
-          <ul class="nav flex-column gap-1 mt-1">
+          <ul class="nav flex-col gap-1 mt-1">
             <li class="nav-item">
               <a href="{{ url_for("assets.index") }}" class="nav-link nav-sub {% if request.endpoint == 'assets.index' %}active{% endif %}">
                 <i class="bi bi-list-ul me-2"></i>Inventory
@@ -93,15 +90,15 @@
       </li>
       <li class="nav-item">
         <a href="#grc-group"
-           class="nav-link nav-group-toggle d-flex align-items-center justify-content-between {% if 'grc' in (request.endpoint or '') %}active{% endif %}"
-           data-bs-toggle="collapse"
+           class="nav-link nav-group-toggle flex items-center justify-between {% if 'grc' in (request.endpoint or '') %}active{% endif %}"
+           data-toggle="collapse"
            aria-expanded="{{ 'true' if 'grc' in (request.endpoint or '') else 'false' }}"
            aria-controls="grc-group">
           <span><i class="bi bi-shield-check me-2"></i>GRC</span>
           <i class="bi bi-chevron-down nav-chevron"></i>
         </a>
         <div class="collapse {% if 'grc' in (request.endpoint or '') %}show{% endif %}" id="grc-group">
-          <ul class="nav flex-column gap-1 mt-1">
+          <ul class="nav flex-col gap-1 mt-1">
             <li class="nav-item">
               <a href="{{ url_for("grc.index") }}" class="nav-link nav-sub {% if request.endpoint == 'grc.index' %}active{% endif %}">
                 <i class="bi bi-speedometer me-2"></i>Overview
@@ -127,15 +124,15 @@
       </li>
       <li class="nav-item">
         <a href="#threat-group"
-           class="nav-link nav-group-toggle d-flex align-items-center justify-content-between {% if 'threat' in (request.endpoint or '') %}active{% endif %}"
-           data-bs-toggle="collapse"
+           class="nav-link nav-group-toggle flex items-center justify-between {% if 'threat' in (request.endpoint or '') %}active{% endif %}"
+           data-toggle="collapse"
            aria-expanded="{{ 'true' if 'threat' in (request.endpoint or '') else 'false' }}"
            aria-controls="threat-group">
           <span><i class="bi bi-shield-exclamation me-2"></i>Threat Intel</span>
           <i class="bi bi-chevron-down nav-chevron"></i>
         </a>
         <div class="collapse {% if 'threat' in (request.endpoint or '') %}show{% endif %}" id="threat-group">
-          <ul class="nav flex-column gap-1 mt-1">
+          <ul class="nav flex-col gap-1 mt-1">
             <li class="nav-item">
               <a href="{{ url_for("threat.index") }}" class="nav-link nav-sub {% if request.endpoint == 'threat.index' %}active{% endif %}">
                 <i class="bi bi-grid me-2"></i>Overview
@@ -170,7 +167,7 @@
         </div>
       </li>
       {% if current_user.is_admin %}
-      <li class="mt-3 sidebar-section-label">ADMIN</li>
+      <li class="mt-4 sidebar-section-label">ADMIN</li>
       <li class="nav-item">
         <a href="{{ url_for("activity.index") }}" class="nav-link {% if 'activity' in (request.endpoint or '') %}active{% endif %}">
           <i class="bi bi-journal-text me-2"></i>Activity Log
@@ -184,11 +181,11 @@
       {% endif %}
     </ul>
 
-    <div class="mt-auto pt-3 border-top border-secondary">
-      <div class="d-flex align-items-center gap-2 mb-2">
+    <div class="mt-auto pt-4 border-t border-line">
+      <div class="flex items-center gap-2 mb-2">
         <div class="user-avatar">{{ current_user.username[0].upper() }}</div>
         <div>
-          <div class="fw-semibold small">{{ current_user.username }}</div>
+          <div class="font-semibold small">{{ current_user.username }}</div>
           <div class="text-muted" style="font-size:0.7rem">{{ current_user.role }}</div>
         </div>
       </div>
@@ -198,10 +195,10 @@
   </nav>
 
   <!-- Main Content -->
-  <div id="main-content" class="flex-grow-1">
-    <header class="top-bar d-flex align-items-center justify-content-between px-4">
+  <div id="main-content" class="grow">
+    <header class="top-bar flex items-center justify-between px-6">
       <h1 class="page-title mb-0">{% block page_title %}{% endblock %}</h1>
-      <div class="d-flex align-items-center gap-3">
+      <div class="flex items-center gap-4">
         {% block header_actions %}{% endblock %}
         <span class="live-badge">
           <i class="bi bi-circle-fill pulse" style="font-size:0.45rem"></i>Live
@@ -209,11 +206,11 @@
       </div>
     </header>
 
-    <div class="content-area px-4 py-4">
+    <div class="content-area px-6 py-6">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
-          <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
-            {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <div class="alert alert-{{ cat }}" role="alert">
+            <span>{{ msg }}</span><button type="button" class="btn-close" data-dismiss="alert"></button>
           </div>
         {% endfor %}
       {% endwith %}
@@ -228,7 +225,6 @@
 {% endif %}
 
 <script>window.APP_TZ = "{{ app_timezone() }}";</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="{{ url_for("static", filename = "js/main.js") }}"></script>
 {% block scripts %}{% endblock %}

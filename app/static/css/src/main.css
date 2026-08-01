@@ -1,3 +1,278 @@
+@import "tailwindcss";
+
+/* Tailwind's scanner needs an explicit pointer at the templates tree since
+   this source file lives outside it. */
+@source "../../../templates";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --color-base:    #1a1f2e;
+  --color-card:    #232a3b;
+  --color-sidebar: #141924;
+  --color-input:   #2a3347;
+  --color-line:    #2e3a52;
+  --color-ink:     #e2e8f0;
+  --color-muted:   #7a8faa;
+
+  --color-accent:     #0bbcd4;
+  --color-accent-dim: #0994a8;
+  --color-red:        #e11d48;
+  --color-red-dim:    #a4132f;
+
+  --color-critical: #dc2626;
+  --color-high:     #ea580c;
+  --color-medium:   #d97706;
+  --color-low:      #2563eb;
+  --color-info:     #475569;
+  --color-success:  #16a34a;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-base);
+    background-image:
+      linear-gradient(rgba(11,188,212,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(11,188,212,0.04) 1px, transparent 1px);
+    background-size: 52px 52px;
+    background-position: -1px -1px;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+  }
+  .small, small { font-size: 0.8125rem; }
+  code { color: #93c5fd; }
+  hr { border-color: var(--color-line); opacity: 1; }
+  a { color: var(--color-accent); }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────────────────────────────────────── */
+  .btn, .btn-primary, .btn-secondary, .btn-danger,
+  .btn-outline-secondary, .btn-outline-primary, .btn-outline-danger,
+  .btn-outline-warning, .btn-outline-success, .btn-outline-info {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold
+           border border-transparent transition disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-sm { @apply px-3 py-1.5 text-[0.8125rem] rounded-md; }
+  .btn-lg { @apply px-5 py-2.5 text-base; }
+
+  .btn-primary {
+    @apply text-white;
+    background-image: linear-gradient(135deg, var(--color-red), var(--color-red-dim));
+    border-color: var(--color-red);
+    box-shadow: 0 0 16px rgba(225,29,72,0.25);
+  }
+  .btn-primary:hover { background-image: linear-gradient(135deg, #c81640, #8f1029); border-color: #c81640; box-shadow: 0 0 24px rgba(225,29,72,0.35); }
+
+  .btn-secondary { @apply bg-input text-ink border-line hover:bg-line; }
+  .btn-danger    { @apply bg-critical/15 text-red-400 border-critical/30 hover:bg-critical/25; }
+  .btn-link      { @apply inline-flex items-center gap-1.5 text-accent hover:underline text-sm font-medium; }
+
+  .btn-outline-secondary { @apply bg-transparent text-muted border-line hover:bg-input hover:text-ink; }
+  .btn-outline-primary    { @apply bg-transparent text-accent border-accent/40 hover:bg-accent/10; }
+  .btn-outline-danger     { @apply bg-transparent text-red-400 border-critical/40 hover:bg-critical/10; }
+  .btn-outline-warning    { @apply bg-transparent text-amber-400 border-high/40 hover:bg-high/10; }
+  .btn-outline-success    { @apply bg-transparent text-emerald-400 border-success/40 hover:bg-success/10; }
+  .btn-outline-info       { @apply bg-transparent text-sky-300 border-info/40 hover:bg-info/10; }
+
+  .btn-close {
+    @apply inline-flex items-center justify-center w-6 h-6 rounded-md text-muted/70 hover:text-ink hover:bg-white/5 leading-none text-lg;
+  }
+  .btn-close::before { content: '\00d7'; }
+  .btn-close-white { @apply text-white/70 hover:text-white; }
+
+  /* ── Badges ──────────────────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide;
+    background: rgba(122,143,170,0.15); color: var(--color-muted);
+  }
+
+  /* ── Alerts ──────────────────────────────────────────────────────────── */
+  .alert, .alert-success, .alert-danger, .alert-warning, .alert-info, .alert-primary {
+    @apply flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm mb-3;
+  }
+  .alert-success { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.3); color: #4ade80; }
+  .alert-danger  { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.3); color: #f87171; }
+  .alert-warning { background: rgba(217,119,6,0.1); border-color: rgba(217,119,6,0.3); color: #fcd34d; }
+  .alert-info, .alert-primary { background: rgba(11,188,212,0.1); border-color: rgba(11,188,212,0.3); color: var(--color-accent); }
+
+  /* ── Forms ───────────────────────────────────────────────────────────── */
+  .form-control, .form-select {
+    @apply block w-full rounded-lg px-3 py-2 text-sm text-ink border transition;
+    background: var(--color-input); border-color: var(--color-line);
+  }
+  .form-control:focus, .form-select:focus {
+    @apply outline-none;
+    border-color: var(--color-accent); box-shadow: 0 0 0 3px rgba(11,188,212,0.12);
+  }
+  .form-control-sm, .form-select-sm { @apply px-2.5 py-1.5 text-[0.8125rem]; }
+  .form-control-lg { @apply px-4 py-2.5 text-base; }
+  .form-control-color { @apply p-1 h-10 w-16; }
+  .form-label { @apply block text-[0.78rem] font-bold uppercase tracking-wide text-muted mb-1.5; }
+  .form-text  { @apply block text-xs text-muted mt-1; }
+  .form-check { @apply flex items-center gap-2; }
+  .form-check-input {
+    @apply w-4 h-4 rounded border cursor-pointer;
+    background: var(--color-input); border-color: var(--color-line); accent-color: var(--color-accent);
+  }
+  .form-check-label { @apply text-sm text-ink cursor-pointer; }
+  .form-switch .form-check-input { @apply w-9 h-5 rounded-full; }
+  .form-range { @apply w-full accent-accent; }
+
+  /* ── Tables ──────────────────────────────────────────────────────────── */
+  .table { @apply w-full text-sm border-collapse; }
+  .table thead th {
+    @apply text-left text-[0.72rem] font-bold uppercase tracking-wide text-muted px-4 py-3 border-b;
+    background: rgba(17,30,53,0.8); border-color: var(--color-line);
+  }
+  .table tbody td { @apply px-4 py-2.5 align-middle border-b; border-color: rgba(22,32,53,0.6); }
+  .table tbody tr:last-child td { @apply border-b-0; }
+  .table-hover tbody tr:hover { background: rgba(11,188,212,0.04); }
+  .table-dark { @apply text-ink; }
+  .table-sm td, .table-sm th { @apply py-1.5; }
+
+  /* ── Nav / tabs ──────────────────────────────────────────────────────── */
+  .nav { @apply flex flex-wrap list-none m-0 p-0; }
+  .nav-item { @apply list-none; }
+  .nav-tabs { @apply border-b gap-1; border-color: var(--color-line); }
+  .nav-tabs .nav-link {
+    @apply px-3.5 py-2 text-sm font-medium text-muted rounded-t-lg border border-transparent border-b-0 hover:text-ink;
+  }
+  .nav-tabs .nav-link.active { @apply text-ink; background: var(--color-card); border-color: var(--color-line); }
+  .tab-content { @apply pt-4; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── Dropdown ────────────────────────────────────────────────────────── */
+  .dropdown-menu {
+    @apply absolute z-20 mt-1 min-w-[10rem] rounded-lg border py-1 shadow-xl;
+    background: var(--color-card); border-color: var(--color-line);
+  }
+  .dropdown-menu-dark { @apply bg-sidebar; }
+  .dropdown-item { @apply block w-full text-left px-3 py-2 text-sm text-ink hover:bg-input; }
+
+  /* ── Modal ───────────────────────────────────────────────────────────── */
+  .modal { @apply fixed inset-0 z-50 hidden overflow-y-auto; }
+  .modal.show { @apply block; }
+  .modal-backdrop {
+    @apply fixed inset-0 z-40 bg-black/60;
+  }
+  .modal-dialog { @apply relative mx-auto my-8 w-full max-w-lg px-4; }
+  .modal-dialog.modal-sm { @apply max-w-sm; }
+  .modal-dialog.modal-lg { @apply max-w-3xl; }
+  .modal-dialog.modal-dialog-centered {
+    @apply flex items-center;
+    min-height: calc(100% - 4rem);
+  }
+  .modal-content {
+    @apply rounded-2xl border shadow-2xl;
+    background: var(--color-card); border-color: var(--color-line);
+  }
+  .modal-header { @apply flex items-center justify-between px-5 py-4 border-b; border-color: var(--color-line); }
+  .modal-title { @apply text-base font-bold text-ink; }
+  .modal-body { @apply px-5 py-4; }
+  .modal-footer { @apply flex items-center justify-end gap-2 px-5 py-4 border-t; border-color: var(--color-line); }
+
+  /* ── Progress / spinner ──────────────────────────────────────────────── */
+  .progress { @apply w-full h-1.5 rounded-full overflow-hidden; background: var(--color-input); }
+  .progress-bar { @apply h-full bg-accent; }
+  .spinner-border {
+    @apply inline-block w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin align-[-0.125em];
+  }
+  .spinner-border-sm { @apply w-3 h-3 border-[2px]; }
+
+  /* ── Grid (Bootstrap-shaped 12-col grid, kept as layout infra) ──────── */
+  .container { @apply max-w-[1320px] mx-auto px-4; }
+  .container-fluid { @apply w-full px-4; }
+  .row { @apply flex flex-wrap -mx-2; }
+  .row > * { @apply px-2; }
+  .row.g-2 { @apply -mx-1.5; }
+  .row.g-2 > * { @apply px-1.5 mb-3; }
+  .row.g-3 { @apply -mx-2; }
+  .row.g-3 > * { @apply px-2 mb-4; }
+  .row.g-4 { @apply -mx-3; }
+  .row.g-4 > * { @apply px-3 mb-6; }
+  .col-auto { @apply w-auto flex-none; }
+  .col-1  { width: 8.3333%; }
+  .col-2  { width: 16.6667%; }
+  .col-4  { width: 33.3333%; }
+  .col-5  { width: 41.6667%; }
+  .col-6  { width: 50%; }
+  .col-8  { width: 66.6667%; }
+  .col-12 { width: 100%; }
+  @media (min-width: 576px) {
+    .col-sm-4 { width: 33.3333%; }
+    .col-sm-6 { width: 50%; }
+  }
+  @media (min-width: 768px) {
+    .col-md-3 { width: 25%; }
+    .col-md-4 { width: 33.3333%; }
+    .col-md-6 { width: 50%; }
+    .col-md-8 { width: 66.6667%; }
+  }
+  @media (min-width: 992px) {
+    .col-lg-2 { width: 16.6667%; }
+    .col-lg-3 { width: 25%; }
+    .col-lg-4 { width: 33.3333%; }
+    .col-lg-5 { width: 41.6667%; }
+    .col-lg-6 { width: 50%; }
+    .col-lg-7 { width: 58.3333%; }
+    .col-lg-8 { width: 66.6667%; }
+    .col-lg-9 { width: 75%; }
+  }
+  @media (min-width: 1200px) {
+    .col-xl-3 { width: 25%; }
+    .col-xl-4 { width: 33.3333%; }
+    .col-xl-5 { width: 41.6667%; }
+    .col-xl-7 { width: 58.3333%; }
+  }
+
+  /* ── Pagination ──────────────────────────────────────────────────────── */
+  .page-item { @apply inline-block; }
+  .page-link { @apply block px-3 py-1.5 text-sm rounded-md text-muted hover:text-ink hover:bg-input; }
+  .page-item.active .page-link { @apply text-white; background: var(--color-accent); }
+  .page-item.disabled .page-link { @apply opacity-40 pointer-events-none; }
+}
+
+@layer utilities {
+  .text-muted { color: var(--color-muted); }
+  .text-danger { color: #f87171; }
+  .text-success { color: #4ade80; }
+  .text-warning { color: #fcd34d; }
+  .text-info { color: var(--color-accent); }
+  .text-primary { color: var(--color-accent); }
+  .text-dark { color: #0f172a; }
+  .text-light { color: #cbd5e1; }
+
+  /* Bootstrap-style translucent backgrounds: bg-{color} + bg-opacity-{N}
+     combine on the same element via a shared custom property, same trick
+     Bootstrap's own CSS variables used. */
+  .bg-danger    { background-color: rgba(220,38,38, var(--bg-op, 1)); }
+  .bg-secondary { background-color: rgba(122,143,170, var(--bg-op, 1)); }
+  .bg-warning   { background-color: rgba(217,119,6, var(--bg-op, 1)); }
+  .bg-success   { background-color: rgba(22,163,74, var(--bg-op, 1)); }
+  .bg-info      { background-color: rgba(11,188,212, var(--bg-op, 1)); }
+  .bg-primary   { background-color: rgba(11,188,212, var(--bg-op, 1)); }
+  .bg-opacity-10 { --bg-op: 0.10; }
+  .bg-opacity-15 { --bg-op: 0.15; }
+  .bg-opacity-20 { --bg-op: 0.20; }
+  .bg-opacity-25 { --bg-op: 0.25; }
+  .bg-opacity-30 { --bg-op: 0.30; }
+  .fade { transition: opacity 0.15s linear; }
+  .collapse:not(.show) { display: none; }
+  .collapsing { height: 0; overflow: hidden; transition: height 0.2s ease; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BRAND DESIGN (unlayered — wins cascade over the generic component layer
+   above regardless of selector order; see CSS Cascade Layers semantics)
+   ══════════════════════════════════════════════════════════════════════════ */
 :root {
   --bg-base:       #1a1f2e;
   --bg-card:       #232a3b;

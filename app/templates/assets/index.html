@@ -4,7 +4,7 @@
 
 {% block header_actions %}
 {% if current_user.is_admin %}
-<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#tagModal">
+<button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#tagModal">
   <i class="bi bi-tag me-1"></i>Manage Tags
 </button>
 {% endif %}
@@ -13,10 +13,10 @@
 {% block content %}
 
 <!-- Stat cards -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ assets | length }}</div>
           <div class="stat-label">Total Assets</div>
@@ -29,7 +29,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ tags | length }}</div>
           <div class="stat-label">Tags Defined</div>
@@ -42,7 +42,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           {% set tagged = assets | selectattr('tags') | list %}
           <div class="stat-value">{{ tagged | length }}</div>
@@ -56,7 +56,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           {% set untagged = assets | rejectattr('tags') | list %}
           <div class="stat-value {% if untagged %}text-warning{% else %}text-success{% endif %}">{{ untagged | length }}</div>
@@ -72,9 +72,9 @@
 
 <!-- Tag filter bar -->
 {% if tags %}
-<div class="form-card mb-4 py-2 px-3">
-  <div class="d-flex flex-wrap gap-2 align-items-center">
-    <span class="text-muted small fw-semibold me-1">FILTER</span>
+<div class="form-card mb-6 py-2 px-4">
+  <div class="flex flex-wrap gap-2 items-center">
+    <span class="text-muted small font-semibold me-1">FILTER</span>
     <a href="{{ url_for('assets.index') }}"
        class="btn btn-sm {% if not tag_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       All
@@ -92,8 +92,8 @@
 
 <!-- Asset table -->
 {% if not assets %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-hdd-network fs-1 d-block mb-2 opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-hdd-network text-4xl block mb-2 opacity-50"></i>
   {% if tag_filter %}
   No assets with that tag. <a href="{{ url_for('assets.index') }}">Clear filter</a>
   {% else %}
@@ -120,7 +120,7 @@
       {% for a in assets %}
       {% set vuln_count = counts.get((a.target_id, a.ip_address), 0) %}
       <tr id="asset-row-{{ a.id }}">
-        <td class="font-monospace fw-semibold">{{ a.ip_address }}</td>
+        <td class="font-monospace font-semibold">{{ a.ip_address }}</td>
         <td>
           <span id="hn-display-{{ a.id }}" class="small text-muted">
             {{ a.hostname or '<span class="text-muted opacity-50">—</span>' | safe }}
@@ -139,9 +139,9 @@
         </td>
         <td>
           <!-- Current tags -->
-          <div class="d-flex flex-wrap gap-1 align-items-center" id="tags-{{ a.id }}">
+          <div class="flex flex-wrap gap-1 items-center" id="tags-{{ a.id }}">
             {% for tag in a.tags %}
-            <span class="badge d-inline-flex align-items-center gap-1"
+            <span class="badge inline-flex items-center gap-1"
                   style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}40;font-size:0.65rem">
               {{ tag.label }}
               <button type="button" class="btn-close btn-close-white"
@@ -155,14 +155,14 @@
             <div class="dropdown">
               <button class="btn btn-sm btn-outline-secondary py-0 px-1"
                       style="font-size:0.65rem;line-height:1.4"
-                      data-bs-toggle="dropdown" title="Add tag">
+                      data-toggle="dropdown" title="Add tag">
                 <i class="bi bi-plus"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-dark" style="min-width:140px;font-size:0.8rem">
                 {% for tag in tags %}
                 {% if tag not in a.tags %}
                 <li>
-                  <button class="dropdown-item d-flex align-items-center gap-2"
+                  <button class="dropdown-item flex items-center gap-2"
                           onclick="addTag({{ a.id }}, {{ tag.id }})">
                     <span class="badge" style="background:{{ tag.color }};font-size:0.55rem">&nbsp;</span>
                     {{ tag.label }}
@@ -178,7 +178,7 @@
         <td class="text-center">
           {% if vuln_count and a.target_id %}
           <a href="{{ url_for('vulns.device', target_id=a.target_id, host=a.ip_address) }}"
-             class="badge bg-danger text-white text-decoration-none" title="View this asset's findings">{{ vuln_count }}</a>
+             class="badge bg-danger text-white no-underline" title="View this asset's findings">{{ vuln_count }}</a>
           {% elif vuln_count %}
           <span class="badge bg-danger text-white">{{ vuln_count }}</span>
           {% else %}
@@ -195,7 +195,7 @@
           </div>
         </td>
         <td>
-          <div class="d-flex gap-1">
+          <div class="flex gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2"
                     onclick="editNotes({{ a.id }}, `{{ (a.notes or '') | replace('`','\\`') }}`)"
                     title="Edit notes">
@@ -204,13 +204,13 @@
             {% if current_user.is_admin %}
             <div class="dropdown">
               <button class="btn btn-sm btn-outline-primary py-0 px-2"
-                      id="qs-btn-{{ a.id }}" data-bs-toggle="dropdown"
+                      id="qs-btn-{{ a.id }}" data-toggle="dropdown"
                       title="Quick Scan {{ a.ip_address }}">
                 <i class="bi bi-radar" id="qs-icon-{{ a.id }}"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end"
                   style="min-width:180px;font-size:0.8rem">
-                <li><h6 class="dropdown-header text-truncate" style="max-width:170px">{{ a.ip_address }}</h6></li>
+                <li><h6 class="dropdown-header truncate" style="max-width:170px">{{ a.ip_address }}</h6></li>
                 <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'port')">
                   <i class="bi bi-hdd-network me-2 text-primary"></i>Port &amp; Services</button></li>
                 <li><button class="dropdown-item" onclick="quickScan({{ a.id }}, 'cve')">
@@ -239,14 +239,14 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title"><i class="bi bi-tags me-2"></i>Manage Tags</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <!-- Create tag form -->
-        <form method="POST" action="{{ url_for('assets.create_tag') }}" class="mb-4">
+        <form method="POST" action="{{ url_for('assets.create_tag') }}" class="mb-6">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="fw-semibold small text-muted mb-2">CREATE NEW TAG</div>
-          <div class="d-flex gap-2">
+          <div class="font-semibold small text-muted mb-2">CREATE NEW TAG</div>
+          <div class="flex gap-2">
             <input type="text" name="label" class="form-control form-control-sm"
                    placeholder="Tag label (e.g. Server, DMZ, Critical)"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
@@ -257,7 +257,7 @@
                    title="Pick a color">
             <button type="submit" class="btn btn-primary btn-sm">Add</button>
           </div>
-          <div class="d-flex flex-wrap gap-2 mt-2">
+          <div class="flex flex-wrap gap-2 mt-2">
             {% for c in ['#0bbcd4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
             <button type="button" class="btn btn-sm"
                     style="background:{{ c }};width:24px;height:24px;padding:0;border:none"
@@ -268,13 +268,13 @@
         </form>
 
         <!-- Existing tags -->
-        <div class="fw-semibold small text-muted mb-2">EXISTING TAGS</div>
+        <div class="font-semibold small text-muted mb-2">EXISTING TAGS</div>
         {% if not tags %}
         <div class="text-muted small">No tags yet.</div>
         {% else %}
-        <div class="d-flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2">
           {% for tag in tags %}
-          <span class="badge d-inline-flex align-items-center gap-2 px-2 py-1"
+          <span class="badge inline-flex items-center gap-2 px-2 py-1"
                 style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}50;font-size:0.75rem">
             {{ tag.label }}
             <span class="text-muted" style="font-size:0.65rem">({{ tag.assets | length }})</span>
@@ -297,7 +297,7 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Set Hostname</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="hn-asset-id">
@@ -306,7 +306,7 @@
                style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
         <button class="btn btn-primary btn-sm" onclick="saveHostname()">Save</button>
       </div>
     </div>
@@ -319,7 +319,7 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Asset Notes</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="notes-asset-id">
@@ -328,7 +328,7 @@
                   placeholder="Free-form notes about this asset..."></textarea>
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
         <button class="btn btn-primary btn-sm" onclick="saveNotes()">Save</button>
       </div>
     </div>
@@ -355,7 +355,7 @@ async function addTag(assetId, tagId) {
 
   // Build new tag badge
   const span = document.createElement('span');
-  span.className = 'badge d-inline-flex align-items-center gap-1';
+  span.className = 'badge inline-flex items-center gap-1';
   span.style.cssText = `background:${data.color}20;color:${data.color};border:1px solid ${data.color}40;font-size:0.65rem`;
   span.innerHTML = `${data.label}
     <button type="button" class="btn-close btn-close-white"

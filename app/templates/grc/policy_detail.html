@@ -22,8 +22,8 @@
 {% block content %}
 
 {% if not p.content and not files %}
-<div class="form-card mb-4" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.35)">
-  <div class="d-flex align-items-center gap-2" style="color:#fbbf24">
+<div class="form-card mb-6" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.35)">
+  <div class="flex items-center gap-2" style="color:#fbbf24">
     <i class="bi bi-exclamation-triangle"></i>
     <div class="small">
       This policy has no written content or attached document yet — write it below, upload a document,
@@ -34,8 +34,8 @@
 {% endif %}
 
 {% set sc = {'active':'success','draft':'secondary','under_review':'warning','retired':'secondary'} %}
-<div class="form-card mb-4">
-  <div class="d-flex flex-wrap gap-4 align-items-center">
+<div class="form-card mb-6">
+  <div class="flex flex-wrap gap-6 items-center">
     <div>
       <span class="badge bg-{{ sc.get(p.status,'secondary') }}">{{ p.status | replace('_',' ') | upper }}</span>
     </div>
@@ -51,15 +51,15 @@
     <div class="text-muted small ms-auto"><i class="bi bi-paperclip me-1"></i>{{ files | length }} evidence file{{ 's' if files | length != 1 }}</div>
   </div>
   {% if p.description %}
-  <div class="text-muted small mt-2" style="border-top:1px solid var(--border-color);padding-top:0.5rem">{{ p.description }}</div>
+  <div class="text-muted small mt-2" style="border-t:1px solid var(--border-color);padding-top:0.5rem">{{ p.description }}</div>
   {% endif %}
 </div>
 
 <div class="row g-4">
   <div class="col-lg-8">
     <div class="form-card">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="fw-semibold small text-muted">POLICY DOCUMENT</span>
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-semibold small text-muted">POLICY DOCUMENT</span>
         {% if current_user.is_admin %}
         <span id="content-save-status" class="text-muted" style="font-size:0.7rem"></span>
         {% endif %}
@@ -68,16 +68,16 @@
       <textarea id="policy-content" class="form-control form-control-sm" rows="22"
                 style="background:var(--bg-input);color:var(--text);border-color:var(--border-color);font-family:monospace;font-size:0.8rem"
                 placeholder="No content yet. Type or paste the policy body here (# headings, - bullets, | table | rows)…">{{ p.content or '' }}</textarea>
-      <div class="text-muted mt-2 mb-3" style="font-size:0.7rem">Autosaves a few seconds after you stop typing.</div>
+      <div class="text-muted mt-2 mb-4" style="font-size:0.7rem">Autosaves a few seconds after you stop typing.</div>
 
-      <div style="border-top:1px solid var(--border-color);padding-top:0.75rem">
-        <div class="fw-semibold small text-muted mb-2">OR IMPORT FROM A FILE</div>
+      <div style="border-t:1px solid var(--border-color);padding-top:0.75rem">
+        <div class="font-semibold small text-muted mb-2">OR IMPORT FROM A FILE</div>
         <div class="text-muted mb-2" style="font-size:0.7rem">
           Upload a .docx, .txt, or .md file — its text replaces the content above, and the original file
           is kept attached under Evidence Files as the document of record.
         </div>
         <form method="POST" action="{{ url_for('grc.import_policy_document', policy_id=p.id) }}"
-              enctype="multipart/form-data" class="d-flex gap-2 flex-wrap align-items-center"
+              enctype="multipart/form-data" class="flex gap-2 flex-wrap items-center"
               onsubmit="return confirm('This replaces the current policy content with the text from the uploaded file. Continue?')">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="file" accept=".docx,.txt,.md" required
@@ -95,19 +95,19 @@
 
   <div class="col-lg-4">
     <div class="form-card">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="fw-semibold small text-muted">EVIDENCE FILES</span>
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-semibold small text-muted">EVIDENCE FILES</span>
       </div>
-      <div id="ev-file-list" class="mb-3">Loading…</div>
+      <div id="ev-file-list" class="mb-4">Loading…</div>
 
       {% if current_user.is_admin %}
-      <div style="border-top:1px solid var(--border-color);padding-top:1rem">
-        <div class="fw-semibold small text-muted mb-2">ATTACH NEW FILE</div>
+      <div style="border-t:1px solid var(--border-color);padding-top:1rem">
+        <div class="font-semibold small text-muted mb-2">ATTACH NEW FILE</div>
         <div class="mb-2">
           <input type="file" id="ev-file-input" class="form-control form-control-sm"
                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <input type="text" id="ev-description" class="form-control form-control-sm"
                  placeholder="Brief description…"
                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -115,7 +115,7 @@
         <button class="btn btn-sm btn-primary" onclick="uploadEvidence()" id="ev-upload-btn">
           <i class="bi bi-upload me-1"></i>Upload
         </button>
-        <span id="ev-upload-status" class="ms-3 small text-muted"></span>
+        <span id="ev-upload-status" class="ms-4 small text-muted"></span>
       </div>
       {% endif %}
     </div>
@@ -169,17 +169,17 @@ function _renderFiles(files) {
     return;
   }
   list.innerHTML = files.map(f => `
-    <div class="d-flex align-items-start gap-2 py-2" style="border-bottom:1px solid var(--border-color)" id="ev-row-${f.id}">
-      <i class="bi ${_evIcon(f.mime_type)} mt-1 flex-shrink-0"></i>
-      <div class="flex-grow-1 min-width-0">
-        <div class="fw-semibold small text-truncate">
-          <a href="/grc/evidence/${f.id}/download" class="text-info text-decoration-none">${f.filename}</a>
+    <div class="flex items-start gap-2 py-2" style="border-b:1px solid var(--border-color)" id="ev-row-${f.id}">
+      <i class="bi ${_evIcon(f.mime_type)} mt-1 shrink-0"></i>
+      <div class="grow min-w-0">
+        <div class="font-semibold small truncate">
+          <a href="/grc/evidence/${f.id}/download" class="text-info no-underline">${f.filename}</a>
         </div>
         ${f.description ? `<div class="text-muted" style="font-size:0.7rem">${f.description}</div>` : ''}
         <div class="text-muted" style="font-size:0.65rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at}</div>
       </div>
       {% if current_user.is_admin %}
-      <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+      <button class="btn btn-sm btn-outline-danger py-0 px-2 shrink-0"
               onclick="deleteEvidence(${f.id})" title="Delete">
         <i class="bi bi-trash"></i>
       </button>

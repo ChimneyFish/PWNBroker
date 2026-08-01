@@ -8,7 +8,7 @@
 </a>
 {% if current_user.is_admin %}
 <form method="POST" action="{{ url_for('threat.agent_delete', agent_db_id=agent.id) }}"
-      onsubmit="return confirm('Remove this agent?')" class="d-inline">
+      onsubmit="return confirm('Remove this agent?')" class="inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Remove Agent</button>
 </form>
@@ -17,25 +17,25 @@
 
 {% block content %}
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <!-- Agent info -->
   <div class="col-lg-4">
-    <div class="form-card h-100">
-      <h6 class="fw-bold mb-3"><i class="bi bi-pc-display-horizontal me-2" style="color:var(--accent)"></i>Agent Info</h6>
+    <div class="form-card h-full">
+      <h6 class="font-bold mb-4"><i class="bi bi-pc-display-horizontal me-2" style="color:var(--accent)"></i>Agent Info</h6>
 
-      <div class="mb-2 d-flex align-items-center gap-2">
+      <div class="mb-2 flex items-center gap-2">
         {% if agent.status == "online" %}
           <span class="pulse" style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>
-          <span class="text-success fw-semibold">Online</span>
+          <span class="text-success font-semibold">Online</span>
         {% else %}
           <span style="width:10px;height:10px;border-radius:50%;background:#475569;display:inline-block"></span>
-          <span class="text-muted fw-semibold">{{ agent.status|capitalize }}</span>
+          <span class="text-muted font-semibold">{{ agent.status|capitalize }}</span>
         {% endif %}
       </div>
 
       <table class="table table-sm table-dark mb-0" style="font-size:0.85rem">
         <tbody>
-          <tr><td class="text-muted" style="width:35%">Hostname</td><td class="fw-semibold">{{ agent.hostname or '—' }}</td></tr>
+          <tr><td class="text-muted" style="width:35%">Hostname</td><td class="font-semibold">{{ agent.hostname or '—' }}</td></tr>
           <tr><td class="text-muted">IP Address</td><td class="font-monospace">{{ agent.ip_address or '—' }}</td></tr>
           <tr>
             <td class="text-muted">OS</td>
@@ -63,19 +63,19 @@
       {% set unacked = agent.alerts.filter_by(acknowledged=False).count() %}
       {% set high_sev = agent.alerts.filter_by(severity='high').count() %}
       <div class="col-4">
-        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+        <a href="#alerts-table" class="stat-card no-underline" style="color:inherit;display:block">
           <div class="stat-value">{{ total }}</div>
           <div class="stat-label">Total Alerts</div>
         </a>
       </div>
       <div class="col-4">
-        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+        <a href="#alerts-table" class="stat-card no-underline" style="color:inherit;display:block">
           <div class="stat-value text-warning">{{ unacked }}</div>
           <div class="stat-label">Unacknowledged</div>
         </a>
       </div>
       <div class="col-4">
-        <a href="#alerts-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+        <a href="#alerts-table" class="stat-card no-underline" style="color:inherit;display:block">
           <div class="stat-value text-danger">{{ high_sev }}</div>
           <div class="stat-label">High Severity</div>
         </a>
@@ -86,7 +86,7 @@
 
 <!-- Alerts table -->
 <div class="data-table" id="alerts-table">
-  <div class="section-header px-3 pt-3 pb-2">
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">Alerts ({{ alerts | length }})</span>
     {% if alerts %}
     <button class="btn btn-sm btn-outline-secondary" id="ack-all-btn">Acknowledge All</button>
@@ -107,7 +107,7 @@
       {% for alert in alerts %}
       <tr id="alert-row-{{ alert.id }}" {% if alert.acknowledged %}class="opacity-50"{% endif %}>
         <td><span class="badge-severity sev-{{ alert.severity }}">{{ alert.severity }}</span></td>
-        <td class="small fw-semibold">{{ alert.title }}</td>
+        <td class="small font-semibold">{{ alert.title }}</td>
         <td class="font-monospace small" style="color:var(--accent-red)">{{ alert.ioc or '—' }}</td>
         <td class="small text-muted" style="max-width:300px">{{ alert.detail or '—' }}</td>
         <td class="text-muted small">{{ alert.created_at | localdt('%Y-%m-%d %H:%M') if alert.created_at else '—' }}</td>
@@ -124,8 +124,8 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="text-center text-muted py-5">
-        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success opacity-50"></i>
+      <tr><td colspan="6" class="text-center text-muted py-12">
+        <i class="bi bi-check-circle text-4xl block mb-2 text-success opacity-50"></i>
         No alerts for this agent
       </td></tr>
       {% endfor %}

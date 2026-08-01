@@ -14,7 +14,7 @@
     <tbody>
       {% for u in users %}
       <tr>
-        <td class="fw-semibold">{{ u.username }}</td>
+        <td class="font-semibold">{{ u.username }}</td>
         <td class="text-muted">{{ u.email }}</td>
         <td>
           <span class="badge {% if u.role == 'admin' %}bg-danger bg-opacity-25 text-danger{% else %}bg-secondary bg-opacity-25 text-light{% endif %}">
@@ -33,7 +33,7 @@
         </td>
         <td class="text-muted small">{{ u.created_at | localdt('%Y-%m-%d') }}</td>
         <td>
-          <div class="d-flex gap-1">
+          <div class="flex gap-1">
             {% if u.id != current_user.id %}
             <form method="POST" action="{{ url_for('users.toggle', user_id=u.id) }}" data-confirm="{% if u.active %}Disable{% else %}Enable{% endif %} user '{{ u.username }}'?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

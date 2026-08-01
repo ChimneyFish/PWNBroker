@@ -7,7 +7,7 @@
   <i class="bi bi-list-ul me-1"></i>Inventory
 </a>
 {% if current_user.is_admin %}
-<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+<button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createModal">
   <i class="bi bi-plus me-1"></i>New Group
 </button>
 {% endif %}
@@ -16,10 +16,10 @@
 {% block content %}
 
 <!-- Stat cards -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ groups | length }}</div>
           <div class="stat-label">Total Groups</div>
@@ -32,7 +32,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ groups | selectattr('group_type','equalto','manual') | list | length }}</div>
           <div class="stat-label">Manual</div>
@@ -45,7 +45,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ groups | selectattr('group_type','equalto','tag') | list | length }}</div>
           <div class="stat-label">Tag-based</div>
@@ -58,7 +58,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ groups | selectattr('group_type','equalto','network') | list | length }}</div>
           <div class="stat-label">Network-based</div>
@@ -72,12 +72,12 @@
 </div>
 
 {% if not groups %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-collection fs-1 d-block mb-2 opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-collection text-4xl block mb-2 opacity-50"></i>
   No asset groups yet.
   {% if current_user.is_admin %}
   <div class="mt-2">
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createModal">
       Create your first group
     </button>
   </div>
@@ -87,11 +87,11 @@
 <div class="row g-3">
   {% for g in groups %}
   <div class="col-md-6 col-xl-4">
-    <div class="form-card h-100" style="border-left:3px solid {{ g.color }}">
-      <div class="d-flex justify-content-between align-items-start mb-2">
+    <div class="form-card h-full" style="border-left:3px solid {{ g.color }}">
+      <div class="flex justify-between items-start mb-2">
         <div>
-          <div class="fw-semibold">
-            <a href="{{ url_for('assets.group_detail', group_id=g.id) }}" class="text-decoration-none">
+          <div class="font-semibold">
+            <a href="{{ url_for('assets.group_detail', group_id=g.id) }}" class="no-underline">
               {{ g.name }}
             </a>
           </div>
@@ -99,7 +99,7 @@
           <div class="text-muted small mt-1">{{ g.description }}</div>
           {% endif %}
         </div>
-        <div class="d-flex gap-2 align-items-center">
+        <div class="flex gap-2 items-center">
           {% if g.group_type == 'tag' %}
           <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.65rem">
             <i class="bi bi-tag me-1"></i>Tag
@@ -126,8 +126,8 @@
       </div>
 
       <!-- Member summary -->
-      <div class="d-flex align-items-center gap-3 mb-3">
-        <div class="fw-semibold" style="font-size:1.4rem;color:{{ g.color }}">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="font-semibold" style="font-size:1.4rem;color:{{ g.color }}">
           {{ g._members | length }}
         </div>
         <div class="text-muted small">
@@ -143,7 +143,7 @@
 
       <!-- Member IP chips -->
       {% if g._members %}
-      <div class="d-flex flex-wrap gap-1 mb-3">
+      <div class="flex flex-wrap gap-1 mb-4">
         {% for a in g._members[:8] %}
         <span class="badge bg-secondary bg-opacity-10 text-muted font-monospace" style="font-size:0.65rem">
           {{ a.ip_address }}
@@ -158,7 +158,7 @@
       {% endif %}
 
       <a href="{{ url_for('assets.group_detail', group_id=g.id) }}"
-         class="btn btn-sm btn-outline-secondary w-100">
+         class="btn btn-sm btn-outline-secondary w-full">
         View Group <i class="bi bi-arrow-right ms-1"></i>
       </a>
     </div>
@@ -176,28 +176,28 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border-color)">
           <h6 class="modal-title"><i class="bi bi-collection me-2"></i>New Asset Group</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="form-label small text-muted">Group Name <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control form-control-sm" required maxlength="120"
                    placeholder="e.g. Web Servers, DMZ, Critical Infrastructure"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
           </div>
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="form-label small text-muted">Description</label>
             <input type="text" name="description" class="form-control form-control-sm"
                    placeholder="Optional description"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
           </div>
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="form-label small text-muted">Color</label>
-            <div class="d-flex gap-2 align-items-center">
+            <div class="flex gap-2 items-center">
               <input type="color" name="color" value="#0bbcd4"
                      class="form-control form-control-sm form-control-color"
                      style="width:40px;padding:2px;background:var(--bg-input);border-color:var(--border-color)">
-              <div class="d-flex gap-1">
+              <div class="flex gap-1">
                 {% for c in ['#0bbcd4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
                 <button type="button" class="btn btn-sm p-0"
                         style="background:{{ c }};width:20px;height:20px;border:none;border-radius:4px"
@@ -206,7 +206,7 @@
               </div>
             </div>
           </div>
-          <div class="mb-3">
+          <div class="mb-4">
             <label class="form-label small text-muted">Group Type</label>
             <select name="group_type" id="gtypeSelect" class="form-select form-select-sm"
                     onchange="toggleGroupType(this.value)"
@@ -216,7 +216,7 @@
               <option value="network">Network-based — all assets on a network</option>
             </select>
           </div>
-          <div id="tag-picker" class="mb-3" style="display:none">
+          <div id="tag-picker" class="mb-4" style="display:none">
             <label class="form-label small text-muted">Tag</label>
             <select name="tag_id" class="form-select form-select-sm"
                     style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -226,7 +226,7 @@
               {% endfor %}
             </select>
           </div>
-          <div id="network-picker" class="mb-3" style="display:none">
+          <div id="network-picker" class="mb-4" style="display:none">
             <label class="form-label small text-muted">Network / Target</label>
             <select name="target_id" class="form-select form-select-sm"
                     style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -241,7 +241,7 @@
           </div>
         </div>
         <div class="modal-footer" style="border-color:var(--border-color)">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary btn-sm">Create Group</button>
         </div>
       </form>

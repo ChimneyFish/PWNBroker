@@ -14,7 +14,7 @@
 
     <hr class="login-divider">
 
-    <p class="text-center text-muted small mb-4">Enter the 6-digit code from your authenticator app, or one of your backup codes</p>
+    <p class="text-center text-muted small mb-6">Enter the 6-digit code from your authenticator app, or one of your backup codes</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
@@ -24,16 +24,16 @@
 
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-4">
+      <div class="mb-6">
         <label class="form-label">Authentication Code</label>
         <input type="text" name="code" class="form-control text-center font-monospace"
                style="font-size:1.4rem;letter-spacing:0.3em" placeholder="000000"
                inputmode="numeric" autocomplete="one-time-code" autofocus required maxlength="10">
       </div>
-      <button type="submit" class="btn btn-primary w-100 py-2">Verify</button>
+      <button type="submit" class="btn btn-primary w-full py-2">Verify</button>
     </form>
 
-    <p class="text-center mt-4 mb-0">
+    <p class="text-center mt-6 mb-0">
       <a href="{{ url_for('auth.login') }}" class="small text-muted">&larr; Back to login</a>
     </p>
   </div>

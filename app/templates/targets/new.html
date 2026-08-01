@@ -3,18 +3,18 @@
 {% block page_title %}New Target{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-center">
   <div class="col-lg-6">
     <div class="form-card">
-      <h5 class="fw-bold mb-4">Add Scan Target</h5>
+      <h5 class="font-bold mb-6">Add Scan Target</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Name</label>
           <input type="text" name="name" class="form-control" placeholder="Production Web Server" required>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Target Type</label>
           <select name="target_type" id="target_type" class="form-select">
             <option value="host">Host / IP</option>
@@ -23,26 +23,26 @@
           </select>
           <div class="form-text text-muted" id="type_hint">Hostname or IP address for scanning.</div>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Host / IP / Domain</label>
           <input type="text" name="host" class="form-control"
                  placeholder="192.168.1.1 or example.com" required>
         </div>
-        <div class="mb-4">
-          <label class="form-label">Description <span class="text-muted fw-normal">(optional)</span></label>
+        <div class="mb-6">
+          <label class="form-label">Description <span class="text-muted font-normal">(optional)</span></label>
           <textarea name="description" class="form-control" rows="2" placeholder="Brief description"></textarea>
         </div>
 
         <!-- SSH Credentials (collapsible) -->
-        <div class="border-top border-secondary pt-4 mb-4">
-          <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="ssh_toggle">
+        <div class="border-t border-line pt-6 mb-6">
+          <button type="button" class="btn btn-sm btn-outline-secondary mb-4" id="ssh_toggle">
             <i class="bi bi-terminal me-1"></i>SSH Credentials
             <span class="text-muted ms-1" style="font-size:0.75rem">(for Dependency Scanner)</span>
             <i class="bi bi-chevron-down ms-1" id="ssh_chevron"></i>
           </button>
 
           <div id="ssh_fields" style="display:none">
-            <div class="p-3 rounded mb-3" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+            <div class="p-4 rounded mb-4" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
               <div class="row g-3">
                 <div class="col-8">
                   <label class="form-label">SSH Username</label>
@@ -68,13 +68,13 @@
 
                 <!-- Key auth -->
                 <div class="col-12" id="ssh_key_field" style="display:none">
-                  <label class="form-label">Private Key <span class="text-muted fw-normal">(PEM format)</span></label>
+                  <label class="form-label">Private Key <span class="text-muted font-normal">(PEM format)</span></label>
                   <textarea name="ssh_private_key" class="form-control font-monospace" rows="5"
                             placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
                             style="font-size:0.75rem"></textarea>
                 </div>
                 <div class="col-12" id="ssh_passphrase_field" style="display:none">
-                  <label class="form-label">Key Passphrase <span class="text-muted fw-normal">(if encrypted)</span></label>
+                  <label class="form-label">Key Passphrase <span class="text-muted font-normal">(if encrypted)</span></label>
                   <input type="password" name="ssh_key_passphrase" class="form-control" autocomplete="new-password">
                 </div>
               </div>
@@ -82,7 +82,7 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
           <button type="submit" class="btn btn-primary">Add Target</button>
           <a href="{{ url_for('targets.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>

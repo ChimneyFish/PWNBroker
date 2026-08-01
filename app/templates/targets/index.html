@@ -16,9 +16,9 @@
     <tbody>
       {% for t in targets %}
       <tr>
-        <td class="fw-semibold">
+        <td class="font-semibold">
           {% if t.target_type == 'domain' %}
-          <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="text-decoration-none">{{ t.name }}</a>
+          <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="no-underline">{{ t.name }}</a>
           {% else %}
           {{ t.name }}
           {% endif %}
@@ -41,7 +41,7 @@
           {{ t.scans.count() }}
         </td>
         <td class="text-muted small">{{ t.created_at | localdt('%Y-%m-%d') }}</td>
-        <td class="d-flex gap-1">
+        <td class="flex gap-1">
           {% if t.target_type == 'domain' %}
           <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="DNS Records">
             <i class="bi bi-diagram-3"></i>
@@ -56,7 +56,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="text-center text-muted py-4">No targets yet.{% if current_user.is_admin %} <a href="{{ url_for('targets.new') }}">Add your first target.</a>{% endif %}</td></tr>
+      <tr><td colspan="7" class="text-center text-muted py-6">No targets yet.{% if current_user.is_admin %} <a href="{{ url_for('targets.new') }}">Add your first target.</a>{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

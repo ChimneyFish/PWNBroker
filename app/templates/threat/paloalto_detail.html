@@ -7,11 +7,11 @@
   <i class="bi bi-arrow-left me-1"></i>All Firewalls
 </a>
 {% if current_user.is_admin %}
-<form method="POST" action="{{ url_for('threat.paloalto_test', fw_id=fw.id) }}" class="d-inline">
+<form method="POST" action="{{ url_for('threat.paloalto_test', fw_id=fw.id) }}" class="inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-outline-info"><i class="bi bi-plug me-1"></i>Test Connection</button>
 </form>
-<form method="POST" action="{{ url_for('threat.paloalto_poll', fw_id=fw.id) }}" class="d-inline">
+<form method="POST" action="{{ url_for('threat.paloalto_poll', fw_id=fw.id) }}" class="inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-repeat me-1"></i>Poll Now</button>
 </form>
@@ -20,30 +20,30 @@
 
 {% block content %}
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <!-- Firewall info -->
   <div class="col-lg-4">
-    <div class="form-card h-100">
-      <h6 class="fw-bold mb-3"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Firewall Info</h6>
+    <div class="form-card h-full">
+      <h6 class="font-bold mb-4"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Firewall Info</h6>
 
-      <div class="mb-2 d-flex align-items-center gap-2">
+      <div class="mb-2 flex items-center gap-2">
         {% if fw.status == "ok" %}
           <span class="pulse" style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>
-          <span class="text-success fw-semibold">OK</span>
+          <span class="text-success font-semibold">OK</span>
         {% elif fw.status == "error" %}
           <span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block"></span>
-          <span class="text-danger fw-semibold">Error</span>
+          <span class="text-danger font-semibold">Error</span>
         {% else %}
           <span style="width:10px;height:10px;border-radius:50%;background:#475569;display:inline-block"></span>
-          <span class="text-muted fw-semibold">Unknown</span>
+          <span class="text-muted font-semibold">Unknown</span>
         {% endif %}
       </div>
 
       {% if fw.last_error %}
-      <div class="alert alert-danger py-2 px-3 small">{{ fw.last_error }}</div>
+      <div class="alert alert-danger py-2 px-4 small">{{ fw.last_error }}</div>
       {% endif %}
 
-      <table class="table table-sm table-dark mb-3" style="font-size:0.85rem">
+      <table class="table table-sm table-dark mb-4" style="font-size:0.85rem">
         <tbody>
           <tr><td class="text-muted" style="width:40%">Hostname</td><td class="font-monospace">{{ fw.hostname }}</td></tr>
           <tr><td class="text-muted">Verify TLS</td><td>{{ 'Yes' if fw.verify_ssl else 'No — self-signed cert accepted' }}</td></tr>
@@ -65,7 +65,7 @@
           <label class="form-label small">Hostname / IP</label>
           <input type="text" name="hostname" class="form-control form-control-sm font-monospace" value="{{ fw.hostname }}">
         </div>
-        <div class="mb-2 d-flex gap-3">
+        <div class="mb-2 flex gap-4">
           <div class="form-check">
             <input type="checkbox" name="verify_ssl" value="1" class="form-check-input" id="edit_verify_ssl" {% if fw.verify_ssl %}checked{% endif %}>
             <label class="form-check-label small" for="edit_verify_ssl">Verify TLS</label>
@@ -99,14 +99,14 @@
   <div class="col-lg-8">
     <div class="row g-3">
       <div class="col-4">
-        <a href="#log-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+        <a href="#log-table" class="stat-card no-underline" style="color:inherit;display:block">
           <div class="stat-value">{{ total }}</div>
           <div class="stat-label">Total Logs (filtered)</div>
         </a>
       </div>
       <div class="col-8">
-        <div class="form-card h-100">
-          <form method="GET" class="row g-2 align-items-end">
+        <div class="form-card h-full">
+          <form method="GET" class="row g-2 items-end">
             <div class="col-5">
               <label class="form-label small mb-1">Severity</label>
               <select name="severity" class="form-select form-select-sm">
@@ -126,7 +126,7 @@
               </select>
             </div>
             <div class="col-2">
-              <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Filter</button>
+              <button type="submit" class="btn btn-sm btn-outline-secondary w-full">Filter</button>
             </div>
           </form>
         </div>
@@ -137,7 +137,7 @@
 
 <!-- Threat logs table -->
 <div class="data-table" id="log-table">
-  <div class="section-header px-3 pt-3 pb-2">
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">Threat Logs</span>
   </div>
   <div class="table-responsive">
@@ -170,8 +170,8 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="9" class="text-center text-muted py-5">
-          <i class="bi bi-shield-check fs-1 d-block mb-3 opacity-25"></i>
+        <td colspan="9" class="text-center text-muted py-12">
+          <i class="bi bi-shield-check text-4xl block mb-4 opacity-25"></i>
           No threat logs ingested yet for this firewall.
         </td>
       </tr>
@@ -181,7 +181,7 @@
   </div>
 
   {% if total_pages > 1 %}
-  <nav class="d-flex justify-content-center py-3">
+  <nav class="flex justify-center py-4">
     <ul class="pagination pagination-sm mb-0">
       <li class="page-item {% if page <= 1 %}disabled{% endif %}">
         <a class="page-link" href="{{ url_for('threat.paloalto_detail', fw_id=fw.id, page=page-1, severity=severity, category=category) }}">Prev</a>

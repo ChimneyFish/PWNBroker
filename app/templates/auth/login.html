@@ -15,7 +15,7 @@
 
     <hr class="login-divider">
 
-    <p class="text-center text-muted small mb-4">Sign in to continue</p>
+    <p class="text-center text-muted small mb-6">Sign in to continue</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
@@ -25,28 +25,28 @@
 
     <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label">Username</label>
         <input type="text" name="username" class="form-control" placeholder="admin" autofocus required>
       </div>
-      <div class="mb-4">
+      <div class="mb-6">
         <label class="form-label">Password</label>
         <input type="password" name="password" class="form-control" placeholder="••••••••" required>
       </div>
-      <div class="form-check mb-4">
+      <div class="form-check mb-6">
         <input class="form-check-input" type="checkbox" name="remember" id="remember">
         <label class="form-check-label small text-muted" for="remember">Remember me</label>
       </div>
-      <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+      <button type="submit" class="btn btn-primary w-full py-2">Sign In</button>
     </form>
 
     {% if sso_cfg and (sso_cfg.google_enabled or sso_cfg.microsoft_enabled or sso_cfg.saml_enabled) %}
-    <div class="d-flex align-items-center gap-2 my-3">
-      <hr class="flex-grow-1 border-secondary">
+    <div class="flex items-center gap-2 my-4">
+      <hr class="grow border-line">
       <span class="text-muted small">or</span>
-      <hr class="flex-grow-1 border-secondary">
+      <hr class="grow border-line">
     </div>
-    <div class="d-grid gap-2">
+    <div class="grid gap-2">
       {% if sso_cfg.google_enabled %}
       <a href="{{ url_for('auth.sso_login', provider='google') }}" class="btn btn-outline-secondary py-2">
         <i class="bi bi-google me-2"></i>Sign in with Google
@@ -65,7 +65,7 @@
     </div>
     {% endif %}
 
-    <p class="text-center mt-4 mb-0" style="font-size:0.65rem;color:var(--text-muted)">
+    <p class="text-center mt-6 mb-0" style="font-size:0.65rem;color:var(--text-muted)">
       PwnBroker &mdash; Unauthorized access is prohibited
     </p>
   </div>

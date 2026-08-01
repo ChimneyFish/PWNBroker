@@ -19,19 +19,19 @@
 {% set compliant   = assessed | selectattr('assessment.status','equalto','compliant') | list %}
 
 <!-- Progress strip -->
-<div class="form-card mb-4">
-  <div class="d-flex gap-4 align-items-center flex-wrap">
+<div class="form-card mb-6">
+  <div class="flex gap-6 items-center flex-wrap">
     <div>
-      <div class="fw-semibold">{{ compliant | length }} / {{ all_controls | length }}</div>
+      <div class="font-semibold">{{ compliant | length }} / {{ all_controls | length }}</div>
       <div class="text-muted small">Controls Compliant</div>
     </div>
-    <div class="flex-grow-1">
+    <div class="grow">
       <div class="progress" style="height:8px;background:rgba(255,255,255,0.08)">
         <div class="progress-bar bg-success"
              style="width:{{ (compliant | length / all_controls | length * 100) | round | int if all_controls else 0 }}%"></div>
       </div>
     </div>
-    <div class="d-flex gap-3 small">
+    <div class="flex gap-4 small">
       <span class="text-success">✓ {{ compliant | length }} compliant</span>
       <span class="text-warning">~ {{ assessed | selectattr('assessment.status','equalto','partial') | list | length }} partial</span>
       <span class="text-danger">✗ {{ assessed | selectattr('assessment.status','equalto','non_compliant') | list | length }} gap</span>
@@ -48,12 +48,12 @@
 
 <!-- Controls by category -->
 {% for category, controls in by_cat.items() %}
-<div class="section-header mb-2 mt-4">
+<div class="section-header mb-2 mt-6">
   <span class="section-title">{{ category }}</span>
   <span class="text-muted small ms-2">({{ controls | length }})</span>
 </div>
 
-<div class="data-table mb-3">
+<div class="data-table mb-4">
   <table class="table table-dark table-hover mb-0" style="font-size:0.85rem">
     <thead>
       <tr>
@@ -73,7 +73,7 @@
       <tr id="ctrl-row-{{ ctrl.id }}">
         <td class="font-monospace text-muted small">{{ ctrl.control_id }}</td>
         <td>
-          <div class="fw-semibold small">{{ ctrl.title }}</div>
+          <div class="font-semibold small">{{ ctrl.title }}</div>
           {% if ctrl.description %}
           <div class="text-muted mt-1" style="font-size:0.7rem">{{ ctrl.description | truncate(120) }}</div>
           {% endif %}
@@ -129,17 +129,17 @@
           <h6 class="modal-title mb-0"><i class="bi bi-paperclip me-2"></i>Evidence Files</h6>
           <div class="text-muted small" id="ev-modal-subtitle"></div>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
 
         <!-- Existing files list -->
-        <div id="ev-file-list" class="mb-4"></div>
+        <div id="ev-file-list" class="mb-6"></div>
 
         <!-- Upload form -->
         {% if current_user.is_admin %}
-        <div style="border-top:1px solid var(--border-color);padding-top:1rem">
-          <div class="fw-semibold small text-muted mb-2">ATTACH NEW FILE</div>
+        <div style="border-t:1px solid var(--border-color);padding-top:1rem">
+          <div class="font-semibold small text-muted mb-2">ATTACH NEW FILE</div>
           <div class="mb-2">
             <input type="file" id="ev-file-input" class="form-control form-control-sm"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -147,7 +147,7 @@
               Accepted: PDF, images, Word, Excel, CSV, ZIP, TXT — max {{ 32 }} MB
             </div>
           </div>
-          <div class="mb-3">
+          <div class="mb-4">
             <input type="text" id="ev-description" class="form-control form-control-sm"
                    placeholder="Brief description of what this file demonstrates…"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -155,13 +155,13 @@
           <button class="btn btn-sm btn-primary" onclick="uploadEvidence()" id="ev-upload-btn">
             <i class="bi bi-upload me-1"></i>Upload
           </button>
-          <span id="ev-upload-status" class="ms-3 small text-muted"></span>
+          <span id="ev-upload-status" class="ms-4 small text-muted"></span>
         </div>
         {% endif %}
 
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -232,11 +232,11 @@ function _renderFiles(files) {
     return;
   }
   list.innerHTML = files.map(f => `
-    <div class="d-flex align-items-start gap-3 py-2" style="border-bottom:1px solid var(--border-color)" id="ev-row-${f.id}">
-      <i class="bi ${_evIcon(f.mime_type)} fs-5 mt-1 flex-shrink-0"></i>
-      <div class="flex-grow-1 min-width-0">
-        <div class="fw-semibold small text-truncate">
-          <a href="/grc/evidence/${f.id}/download" class="text-info text-decoration-none">
+    <div class="flex items-start gap-4 py-2" style="border-b:1px solid var(--border-color)" id="ev-row-${f.id}">
+      <i class="bi ${_evIcon(f.mime_type)} text-lg mt-1 shrink-0"></i>
+      <div class="grow min-w-0">
+        <div class="font-semibold small truncate">
+          <a href="/grc/evidence/${f.id}/download" class="text-info no-underline">
             ${f.filename}
           </a>
         </div>
@@ -244,7 +244,7 @@ function _renderFiles(files) {
         <div class="text-muted" style="font-size:0.7rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at} &nbsp;·&nbsp; ${f.uploader}</div>
       </div>
       {% if current_user.is_admin %}
-      <button class="btn btn-sm btn-outline-danger py-0 px-2 flex-shrink-0"
+      <button class="btn btn-sm btn-outline-danger py-0 px-2 shrink-0"
               onclick="deleteEvidence(${f.id})" title="Delete">
         <i class="bi bi-trash"></i>
       </button>

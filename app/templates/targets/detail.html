@@ -4,7 +4,7 @@
 
 {% block header_actions %}
 {% if current_user.is_admin %}
-<form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="d-inline">
+<form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-sm btn-primary">
     <i class="bi bi-arrow-repeat me-1"></i>Re-enumerate
@@ -19,10 +19,10 @@
 {% block content %}
 
 <!-- Target meta -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
-    <a href="#dns-records" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="#dns-records" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ record_count }}</div>
           <div class="stat-label">DNS Records</div>
@@ -35,7 +35,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value text-warning">{{ record_count }}</div>
           <div class="stat-label">
@@ -55,7 +55,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value text-muted" style="font-size:0.9rem">
             {{ target.last_enum_at | localdt('%Y-%m-%d %H:%M') if target.last_enum_at else 'Never' }}
@@ -69,8 +69,8 @@
     </div>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('scans.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('scans.index') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ target.scans.count() }}</div>
           <div class="stat-label">Scans</div>
@@ -84,11 +84,11 @@
 </div>
 
 {% if not by_type %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-diagram-3 d-block mb-3" style="font-size:2rem"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-diagram-3 block mb-4" style="font-size:2rem"></i>
   No DNS records yet.
   {% if current_user.is_admin %}
-  <form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="mt-3">
+  <form method="POST" action="{{ url_for('targets.re_enum', target_id=target.id) }}" class="mt-4">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-primary btn-sm"><i class="bi bi-arrow-repeat me-1"></i>Start Enumeration</button>
   </form>
@@ -101,8 +101,8 @@
 
 {% for rtype in type_order %}
 {% if rtype in by_type %}
-<div class="data-table mb-4" {% if loop.first %}id="dns-records"{% endif %}>
-  <div class="section-header px-3 pt-3 pb-2">
+<div class="data-table mb-6" {% if loop.first %}id="dns-records"{% endif %}>
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">
       <span class="badge bg-secondary me-2" style="font-size:0.7rem">{{ rtype }}</span>
       {{ by_type[rtype] | length }} record{{ 's' if by_type[rtype] | length != 1 }}
@@ -153,8 +153,8 @@
 
 {% for rtype, recs in by_type.items() %}
 {% if rtype not in type_order %}
-<div class="data-table mb-4">
-  <div class="section-header px-3 pt-3 pb-2">
+<div class="data-table mb-6">
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">
       <span class="badge bg-secondary me-2" style="font-size:0.7rem">{{ rtype }}</span>
       {{ recs | length }} record{{ 's' if recs | length != 1 }}

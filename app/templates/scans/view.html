@@ -13,7 +13,7 @@
     <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV
   </a>
   {% if current_user.is_admin and jira_enabled and scan.status == 'done' %}
-  <form method="POST" action="{{ url_for('atlassian.jira_create', scan_id=scan.id) }}" class="d-inline"
+  <form method="POST" action="{{ url_for('atlassian.jira_create', scan_id=scan.id) }}" class="inline"
         data-confirm="Create Jira tickets for all untracked vulnerabilities above threshold?">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="btn btn-outline-warning btn-sm">
@@ -25,17 +25,17 @@
 
 {% block content %}
 <!-- Scan meta -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-auto">
-    <a href="{{ url_for('targets.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="{{ url_for('targets.index') }}" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">{% if scan.scan_type == 'osv' %}Path{% else %}Target{% endif %}</div>
-      <div class="fw-semibold">{{ scan.scan_path or scan.target.host }}</div>
+      <div class="font-semibold">{{ scan.scan_path or scan.target.host }}</div>
     </a>
   </div>
   <div class="col-auto">
     <div class="stat-card">
       <div class="stat-label">Type</div>
-      <div class="fw-semibold text-primary text-uppercase" style="font-size:0.8rem">{{ scan.scan_type }}</div>
+      <div class="font-semibold text-primary uppercase" style="font-size:0.8rem">{{ scan.scan_type }}</div>
     </div>
   </div>
   <div class="col-auto">
@@ -45,22 +45,22 @@
     </div>
   </div>
   <div class="col-auto" id="scan-stats">
-    <a href="#results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#results" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Vulnerabilities</div>
-      <div class="fw-semibold" data-stat="vulns">{{ scan.vuln_count }}</div>
+      <div class="font-semibold" data-stat="vulns">{{ scan.vuln_count }}</div>
     </a>
   </div>
   <div class="col-auto">
-    <a href="#results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#results" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Critical</div>
-      <div class="fw-semibold text-danger" data-stat="critical">{{ scan.critical_count }}</div>
+      <div class="font-semibold text-danger" data-stat="critical">{{ scan.critical_count }}</div>
     </a>
   </div>
   {% if scan.scan_type == 'osv' and scan.status == 'done' %}
   <div class="col-auto">
-    <a href="#results" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#results" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Remediated</div>
-      <div class="fw-semibold text-success" id="remediated-count">
+      <div class="font-semibold text-success" id="remediated-count">
         {{ results | selectattr('is_remediated') | list | length }}
         / {{ results | selectattr('result_type', 'equalto', 'vulnerability') | list | length }}
       </div>
@@ -71,14 +71,14 @@
   <div class="col-auto">
     <div class="stat-card">
       <div class="stat-label">Duration</div>
-      <div class="fw-semibold">{{ scan.duration }}s</div>
+      <div class="font-semibold">{{ scan.duration }}s</div>
     </div>
   </div>
   {% endif %}
 </div>
 
 {% if scan.status in ('pending', 'running') %}
-<div class="alert alert-primary d-flex align-items-center gap-2">
+<div class="alert alert-primary flex items-center gap-2">
   <span class="pulse text-primary"><i class="bi bi-circle-fill" style="font-size:0.6rem"></i></span>
   Scan is <strong>{{ scan.status }}</strong> — results will appear automatically when complete.
 </div>
@@ -91,7 +91,7 @@
 {% set osv_info  = results | selectattr('result_type', 'equalto', 'info') | list %}
 
 {% if osv_info %}
-<div class="alert alert-secondary py-2 mb-3 small">
+<div class="alert alert-secondary py-2 mb-4 small">
   <i class="bi bi-info-circle me-1"></i>
   {% for r in osv_info %}<span>{{ r.description | replace('\n', ' · ') }}</span>{% endfor %}
 </div>
@@ -107,7 +107,7 @@
 {% for sev in sevs %}
 {% set sev_items = osv_vulns | selectattr('severity', 'equalto', sev) | list %}
 {% if sev_items %}
-<div class="mb-1 mt-3 text-uppercase fw-bold small
+<div class="mb-1 mt-4 uppercase font-bold small
   {% if sev == 'critical' %}text-danger
   {% elif sev == 'high' %}text-warning
   {% elif sev == 'medium' %}text-warning-emphasis
@@ -117,17 +117,17 @@
 </div>
 
 {% for r in sev_items %}
-<div class="mb-3 p-3 rounded osv-finding {% if r.is_remediated %}osv-remediated{% endif %}"
+<div class="mb-4 p-4 rounded osv-finding {% if r.is_remediated %}osv-remediated{% endif %}"
      id="finding-{{ r.id }}"
      style="background:var(--bg-card);border:1px solid {% if r.is_remediated %}var(--success){% elif sev == 'critical' %}var(--critical){% elif sev == 'high' %}rgba(255,171,0,0.4){% elif sev == 'medium' %}rgba(255,171,0,0.2){% else %}var(--border-color){% endif %}">
-  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-    <div class="flex-grow-1">
-      <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="grow">
+      <div class="flex items-center gap-2 mb-1 flex-wrap">
         <span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span>
         {% if r.ecosystem %}
         <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.7rem">{{ r.ecosystem }}</span>
         {% endif %}
-        <span class="fw-semibold">{{ r.package_name or r.title }}</span>
+        <span class="font-semibold">{{ r.package_name or r.title }}</span>
         {% if r.package_version %}
         <span class="text-muted small font-monospace">v{{ r.package_version }}</span>
         {% endif %}
@@ -136,7 +136,7 @@
         {% endif %}
         {% if r.cve_id %}
         <a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank"
-           class="badge bg-danger bg-opacity-20 text-danger text-decoration-none" style="font-size:0.7rem">
+           class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.7rem">
           {{ r.cve_id }}
         </a>
         {% endif %}
@@ -145,7 +145,7 @@
         {% endif %}
         {% if existing_tickets.get(r.id) %}
         <a href="{{ existing_tickets[r.id].ticket_url }}" target="_blank"
-           class="badge bg-warning bg-opacity-20 text-warning text-decoration-none" style="font-size:0.65rem">
+           class="badge bg-warning bg-opacity-20 text-warning no-underline" style="font-size:0.65rem">
           <i class="bi bi-ticket-detailed me-1"></i>{{ existing_tickets[r.id].ticket_key }}
         </a>
         {% endif %}
@@ -162,12 +162,12 @@
 
       {% if r.remediation %}
       <div class="mt-2">
-        <div class="small fw-semibold text-success mb-1"><i class="bi bi-terminal me-1"></i>Remediation</div>
-        <div class="d-flex align-items-center gap-2">
-          <code class="px-3 py-2 rounded text-success flex-grow-1"
+        <div class="small font-semibold text-success mb-1"><i class="bi bi-terminal me-1"></i>Remediation</div>
+        <div class="flex items-center gap-2">
+          <code class="px-4 py-2 rounded text-success grow"
                 style="background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.2);font-size:0.85rem;word-break:break-all"
                 id="cmd-{{ r.id }}">{{ r.remediation }}</code>
-          <button class="btn btn-sm btn-outline-secondary py-0 px-2 flex-shrink-0"
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2 shrink-0"
                   onclick="navigator.clipboard.writeText(document.getElementById('cmd-{{ r.id }}').textContent)"
                   title="Copy to clipboard">
             <i class="bi bi-clipboard"></i>
@@ -178,7 +178,7 @@
     </div>
 
     {% if current_user.is_admin %}
-    <div class="flex-shrink-0 text-center" style="min-width:60px">
+    <div class="shrink-0 text-center" style="min-width:60px">
       <button class="btn btn-sm {% if r.is_remediated %}btn-success{% else %}btn-outline-secondary{% endif %} remediate-btn"
               data-scan="{{ scan.id }}" data-result="{{ r.id }}"
               title="{% if r.is_remediated %}Mark as open{% else %}Mark as remediated{% endif %}">
@@ -196,8 +196,8 @@
 {% endfor %}
 
 {% else %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-shield-check fs-1 d-block mb-2 text-success"></i>
+<div class="text-center text-muted py-12">
+  <i class="bi bi-shield-check text-4xl block mb-2 text-success"></i>
   No vulnerable dependencies found.
 </div>
 {% endif %}
@@ -207,22 +207,22 @@
 
 {% set triage_results = results | selectattr('result_type', 'equalto', 'triage') | list %}
 {% if triage_results %}
-<div class="section-header mt-4"><span class="section-title">SOC Triage</span></div>
+<div class="section-header mt-6"><span class="section-title">SOC Triage</span></div>
 {% for r in triage_results %}
 {% set td = triage_data.get(r.host, {}) %}
 {% set v  = td.get('verdict', {}) %}
 {% set pd  = td.get('pd') %}
 {% set idb = td.get('idb', {}) %}
 {% set vt  = td.get('vt') %}
-<div class="mb-4 p-3 rounded-3"
+<div class="mb-6 p-4 rounded-lg"
      style="background:{% if v.level == 'success' %}rgba(22,163,74,0.07);border:1px solid rgba(22,163,74,0.3)
             {% elif v.level == 'danger' %}rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.3)
             {% elif v.level == 'info' %}rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2)
             {% else %}rgba(217,119,6,0.07);border:1px solid rgba(217,119,6,0.3){% endif %}">
 
   <!-- Verdict row -->
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <div class="d-flex align-items-center gap-3">
+  <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
+    <div class="flex items-center gap-4">
       <div style="font-size:1.8rem">
         {% if v.level == 'success' %}<i class="bi bi-shield-check text-success"></i>
         {% elif v.level == 'danger' %}<i class="bi bi-shield-x text-danger"></i>
@@ -230,7 +230,7 @@
         {% else %}<i class="bi bi-shield-exclamation text-warning"></i>{% endif %}
       </div>
       <div>
-        <span class="fw-bold
+        <span class="font-bold
           {% if v.level == 'success' %}text-success
           {% elif v.level == 'danger' %}text-danger
           {% elif v.level == 'info' %}text-info
@@ -257,10 +257,10 @@
     {% set crim = pd.criminalip if pd else None %}
     {% set urlh = pd.urlhaus if pd else None %}
     <div class="col-md-4">
-      <div class="p-2 rounded h-100" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge fw-bold" style="background:#7c3aed;font-size:0.65rem">PD</span>
-          <span class="small fw-semibold">pulseDrive</span>
+      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge font-bold" style="background:#7c3aed;font-size:0.65rem">PD</span>
+          <span class="small font-semibold">pulseDrive</span>
           {% if not pd %}
             <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">No Data</span>
           {% elif crim and crim.risk_score in ('critical', 'dangerous') %}
@@ -277,7 +277,7 @@
           <p class="text-muted small mb-0" style="font-size:0.72rem">No pulseDrive data returned.</p>
         {% else %}
           {% if crim and not crim.error %}
-          <div class="d-flex gap-2 mb-1">
+          <div class="flex gap-2 mb-1">
             <span class="small {% if crim.is_scanner %}text-danger{% else %}text-success{% endif %}">
               Scanner: <strong>{{ 'Yes' if crim.is_scanner else 'No' }}</strong>
             </span>
@@ -296,10 +296,10 @@
 
     <!-- InternetDB -->
     <div class="col-md-4">
-      <div class="p-2 rounded h-100" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge fw-bold" style="background:#a01f24;font-size:0.65rem">IDB</span>
-          <span class="small fw-semibold">InternetDB</span>
+      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge font-bold" style="background:#a01f24;font-size:0.65rem">IDB</span>
+          <span class="small font-semibold">InternetDB</span>
           {% if idb.error is defined %}
             <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Error</span>
           {% elif idb.no_data %}
@@ -316,7 +316,7 @@
           <p class="text-muted small mb-0" style="font-size:0.72rem">No Shodan data for this IP.</p>
         {% else %}
           {% if idb.ports %}
-          <div class="d-flex flex-wrap gap-1 mb-1">
+          <div class="flex flex-wrap gap-1 mb-1">
             {% for p in idb.ports[:8] %}
             <span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.6rem">{{ p }}</span>
             {% endfor %}
@@ -324,16 +324,16 @@
           </div>
           {% endif %}
           {% if idb.vulns %}
-          <div class="d-flex flex-wrap gap-1 mt-1">
+          <div class="flex flex-wrap gap-1 mt-1">
             {% for cve in idb.vulns[:4] %}
             <a href="https://nvd.nist.gov/vuln/detail/{{ cve }}" target="_blank"
-               class="badge bg-danger bg-opacity-20 text-danger text-decoration-none" style="font-size:0.6rem">{{ cve }}</a>
+               class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.6rem">{{ cve }}</a>
             {% endfor %}
             {% if idb.vulns | length > 4 %}<span class="badge bg-secondary" style="font-size:0.6rem">+{{ idb.vulns | length - 4 }}</span>{% endif %}
           </div>
           {% endif %}
           {% if idb.tags %}
-          <div class="d-flex flex-wrap gap-1 mt-1">
+          <div class="flex flex-wrap gap-1 mt-1">
             {% for tag in idb.tags %}
             <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.6rem">{{ tag }}</span>
             {% endfor %}
@@ -345,10 +345,10 @@
 
     <!-- VirusTotal -->
     <div class="col-md-4">
-      <div class="p-2 rounded h-100" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge fw-bold" style="background:#3950de;font-size:0.65rem">VT</span>
-          <span class="small fw-semibold">VirusTotal</span>
+      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge font-bold" style="background:#3950de;font-size:0.65rem">VT</span>
+          <span class="small font-semibold">VirusTotal</span>
           {% if not vt %}
             <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">No Key</span>
           {% elif vt.error is defined %}
@@ -370,8 +370,8 @@
         {% elif vt.not_found %}
           <p class="text-muted small mb-0" style="font-size:0.72rem">Not found in VirusTotal.</p>
         {% else %}
-          <div class="d-flex align-items-baseline gap-1 mb-1">
-            <span class="fw-bold" style="font-size:1.3rem;
+          <div class="flex items-baseline gap-1 mb-1">
+            <span class="font-bold" style="font-size:1.3rem;
               color:{% if vt.malicious >= 5 %}#f87171{% elif vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
               {{ vt.malicious }}
             </span>
@@ -397,9 +397,9 @@
 
 {% set subdomain_results = results | selectattr('result_type', 'equalto', 'subdomain') | list %}
 {% if subdomain_results %}
-<div class="section-header mt-4 d-flex align-items-center justify-content-between">
+<div class="section-header mt-6 flex items-center justify-between">
   <span class="section-title">Subdomains ({{ subdomain_results | length }})</span>
-  <div class="d-flex align-items-center gap-2">
+  <div class="flex items-center gap-2">
     <input type="text" id="subdomain-filter" class="form-control form-control-sm"
            placeholder="Filter…" style="width:180px">
     <span class="text-muted small">{{ subdomain_results | selectattr('service') | list | length }} resolved</span>
@@ -408,7 +408,7 @@
     </button>
   </div>
 </div>
-<div class="data-table mb-4">
+<div class="data-table mb-6">
   <table class="table table-dark table-hover mb-0" id="subdomain-table">
     <thead>
       <tr>
@@ -458,8 +458,8 @@
 {% for rtype, rlist in [('vulnerability', 'Vulnerabilities'), ('web_check', 'Web Checks'), ('port', 'Open Ports'), ('info', 'Info')] %}
 {% set items = results | selectattr('result_type', 'equalto', rtype) | list %}
 {% if items %}
-<div class="section-header mt-4" {% if loop.first %}id="results"{% endif %}><span class="section-title">{{ rlist }} ({{ items|length }})</span></div>
-<div class="data-table mb-4">
+<div class="section-header mt-6" {% if loop.first %}id="results"{% endif %}><span class="section-title">{{ rlist }} ({{ items|length }})</span></div>
+<div class="data-table mb-6">
   <table class="table table-dark table-hover">
     <thead>
       <tr>
@@ -473,7 +473,7 @@
       {% for r in items %}
       <tr class="result-row-{{ r.severity }}">
         <td><span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span></td>
-        <td class="fw-semibold small">{{ r.title }}</td>
+        <td class="font-semibold small">{{ r.title }}</td>
         <td class="text-muted small">{{ r.host or '—' }}</td>
         {% if rtype == 'port' %}
           <td>{{ r.port }}/{{ r.protocol }}</td>
@@ -485,14 +485,14 @@
             {{ (r.description or '')[:140] }}{% if r.description and r.description|length > 140 %}…{% endif %}
             {% if existing_tickets.get(r.id) %}
               <a href="{{ existing_tickets[r.id].ticket_url }}" target="_blank"
-                 class="badge bg-warning bg-opacity-20 text-warning ms-1 text-decoration-none" style="font-size:0.65rem">
+                 class="badge bg-warning bg-opacity-20 text-warning ms-1 no-underline" style="font-size:0.65rem">
                 <i class="bi bi-ticket-detailed me-1"></i>{{ existing_tickets[r.id].ticket_key }}
               </a>
             {% endif %}
             {% set art = accepted_risk.get((r.host or '', r.cve_id or r.title or '')) %}
             {% if art %}
               <a href="{{ url_for('vulns.device', target_id=scan.target_id, host=r.host) }}#row-{{ art.id }}"
-                 class="badge bg-success bg-opacity-20 text-success ms-1 text-decoration-none" style="font-size:0.65rem"
+                 class="badge bg-success bg-opacity-20 text-success ms-1 no-underline" style="font-size:0.65rem"
                  title="{{ art.risk_justification or 'Accepted risk' }}">
                 <i class="bi bi-shield-check me-1"></i>Accepted Risk
               </a>
@@ -511,8 +511,8 @@
 {% endfor %}
 
 {% if not results %}
-<div class="text-center text-muted py-5">
-  <i class="bi bi-hourglass-split fs-1 d-block mb-2"></i>
+<div class="text-center text-muted py-12">
+  <i class="bi bi-hourglass-split text-4xl block mb-2"></i>
   No results yet.
 </div>
 {% endif %}

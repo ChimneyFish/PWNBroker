@@ -3,17 +3,17 @@
 {% block page_title %}New Scan{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-center">
   <div class="col-lg-6">
     <div class="form-card">
-      <h5 class="fw-bold mb-4">Configure Scan</h5>
+      <h5 class="font-bold mb-6">Configure Scan</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Scan Name</label>
           <input type="text" name="name" class="form-control" placeholder="e.g. Weekly Internal Scan" required>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Target</label>
           <select name="target_id" class="form-select" required>
             <option value="">— Select a target or group —</option>
@@ -38,7 +38,7 @@
             <a href="{{ url_for('targets.new') }}">+ Add new target</a>
           </div>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Scan Type</label>
           <select name="scan_type" class="form-select" id="scan_type_select">
             {% for val, label in scan_types %}
@@ -48,14 +48,14 @@
         </div>
 
         <!-- Port range (hidden for OSV) -->
-        <div class="mb-4" id="port_range_field">
+        <div class="mb-6" id="port_range_field">
           <label class="form-label">Port Range</label>
           <input type="text" name="port_range" class="form-control" value="1-1024" placeholder="e.g. 1-65535 or 22,80,443">
           <div class="form-text text-muted">Used for port and full scans.</div>
         </div>
 
         <!-- OSV path (shown only for OSV scan type) -->
-        <div class="mb-4" id="osv_path_field" style="display:none">
+        <div class="mb-6" id="osv_path_field" style="display:none">
           <label class="form-label">Project Directory Path</label>
           <input type="text" name="scan_path" class="form-control font-monospace"
                  placeholder="/home/user/myproject">
@@ -65,9 +65,9 @@
             Uses the <strong>osv-scanner</strong> binary if installed, otherwise queries the
             <strong>OSV API</strong> directly.
           </div>
-          <div class="mt-2 p-3 rounded" style="background:rgba(var(--bs-info-rgb),0.08);border:1px solid rgba(var(--bs-info-rgb),0.2)">
-            <div class="small fw-semibold mb-1 text-info"><i class="bi bi-info-circle me-1"></i>Dependency Scan Info</div>
-            <ul class="small text-muted mb-0 ps-3">
+          <div class="mt-2 p-4 rounded" style="background:rgba(var(--bs-info-rgb),0.08);border:1px solid rgba(var(--bs-info-rgb),0.2)">
+            <div class="small font-semibold mb-1 text-info"><i class="bi bi-info-circle me-1"></i>Dependency Scan Info</div>
+            <ul class="small text-muted mb-0 ps-4">
               <li>Scans all lockfiles found recursively in the directory</li>
               <li>Checks every package version against the <a href="https://osv.dev" target="_blank" class="text-info">OSV vulnerability database</a></li>
               <li>Provides guided remediation commands per finding</li>
@@ -76,7 +76,7 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
           <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill me-1"></i>Start Scan</button>
           <a href="{{ url_for('scans.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>

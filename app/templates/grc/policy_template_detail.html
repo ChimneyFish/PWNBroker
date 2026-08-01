@@ -14,7 +14,7 @@
 <div class="row g-4">
   <div class="col-lg-7">
     <div class="form-card">
-      <div class="fw-semibold small text-muted mb-2">PREVIEW</div>
+      <div class="font-semibold small text-muted mb-2">PREVIEW</div>
       <pre class="small text-muted" style="white-space:pre-wrap;font-family:inherit;max-height:70vh;overflow-y:auto">{{ preview }}</pre>
     </div>
   </div>
@@ -22,7 +22,7 @@
   <div class="col-lg-5">
     {% if current_user.is_admin %}
     <div class="form-card">
-      <div class="fw-semibold small text-muted mb-3">
+      <div class="font-semibold small text-muted mb-4">
         {% if target_policy %}
         APPLY TEMPLATE TO "{{ target_policy.title or 'this policy' }}"
         {% else %}
@@ -30,20 +30,20 @@
         {% endif %}
       </div>
       {% if target_policy %}
-      <div class="text-muted mb-3" style="font-size:0.75rem">
+      <div class="text-muted mb-4" style="font-size:0.75rem">
         This replaces the policy's content with the filled-in template below. Its title, category, and status stay as you set them.
       </div>
       {% endif %}
       <form method="POST" action="{{ url_for('grc.generate_policy_from_template', key=tpl.key) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if policy_id %}<input type="hidden" name="policy_id" value="{{ policy_id }}">{% endif %}
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Company Name</label>
           <input type="text" name="company_name" class="form-control form-control-sm"
                  placeholder="e.g. Acme Corp"
                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Policy Owner</label>
           <select name="owner_id" class="form-select form-select-sm"
                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -67,7 +67,7 @@
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
           </div>
         </div>
-        <div class="mb-3 mt-2">
+        <div class="mb-4 mt-2">
           <label class="form-label small text-muted">Review Cycle</label>
           <select name="review_cycle" class="form-select form-select-sm"
                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -76,7 +76,7 @@
             <option value="Quarterly">Quarterly</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm w-100">
+        <button type="submit" class="btn btn-primary btn-sm w-full">
           <i class="bi bi-magic me-1"></i>{% if target_policy %}Apply to Policy{% else %}Generate Policy{% endif %}
         </button>
       </form>

@@ -16,7 +16,7 @@
 
 {% block content %}
 
-<div class="form-card mb-4">
+<div class="form-card mb-6">
   <div class="text-muted small">
     {% if policy_id %}
     Pick a template below to fill in and apply to this policy. Its rendered text will replace the policy's content.
@@ -28,17 +28,17 @@
 </div>
 
 {% for cat in cat_order %}
-<div class="section-header mb-2 mt-4">
+<div class="section-header mb-2 mt-6">
   <span class="section-title">{{ cat | replace('_',' ') | title }}</span>
   <span class="text-muted small ms-2">({{ by_cat[cat] | length }})</span>
 </div>
 
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-4">
   {% for t in by_cat[cat] %}
   <div class="col-md-6 col-lg-4">
     <a href="{{ url_for('grc.policy_template_detail', key=t.key, **({'policy_id': policy_id} if policy_id else {})) }}"
-       class="form-card d-block h-100 text-decoration-none" style="color:inherit">
-      <div class="fw-semibold small mb-1"><i class="bi bi-file-earmark-text me-1 text-info"></i>{{ t.title }}</div>
+       class="form-card block h-full no-underline" style="color:inherit">
+      <div class="font-semibold small mb-1"><i class="bi bi-file-earmark-text me-1 text-info"></i>{{ t.title }}</div>
       <div class="text-muted" style="font-size:0.75rem">{{ t.summary | truncate(140) }}</div>
     </a>
   </div>

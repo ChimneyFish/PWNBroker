@@ -14,10 +14,10 @@
 {% block content %}
 
 <!-- Stats -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('threat.lookup') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.lookup') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ total_lookups }}</div>
           <div class="stat-label">IOCs Checked</div>
@@ -29,8 +29,8 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('threat.lookup') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.lookup') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value text-danger">{{ malicious_count }}</div>
           <div class="stat-label">Malicious / <span class="text-warning">{{ suspicious_count }} Suspicious</span></div>
@@ -42,11 +42,11 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('threat.agents_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.agents_list') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if agents_online > 0 %}text-success{% else %}text-muted{% endif %}">
-            {{ agents_online }}<span class="fs-6 fw-normal text-muted"> / {{ agents_total }}</span>
+            {{ agents_online }}<span class="text-base font-normal text-muted"> / {{ agents_total }}</span>
           </div>
           <div class="stat-label">Agents Online</div>
         </div>
@@ -57,8 +57,8 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('threat.agents_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.agents_list') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if unacked > 0 %}text-warning{% endif %}">{{ unacked }}</div>
           <div class="stat-label">Unread Alerts</div>
@@ -71,24 +71,24 @@
   </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <!-- Quick lookup -->
   <div class="col-lg-4">
-    <div class="form-card h-100">
-      <h6 class="fw-bold mb-3"><i class="bi bi-search me-2" style="color:var(--accent)"></i>Quick Lookup</h6>
+    <div class="form-card h-full">
+      <h6 class="font-bold mb-4"><i class="bi bi-search me-2" style="color:var(--accent)"></i>Quick Lookup</h6>
       <form action="{{ url_for('threat.lookup') }}" method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
+        <div class="mb-4">
           <input type="text" name="indicator" class="form-control"
                  placeholder="IP, domain, URL, or file hash…" required autofocus>
           <div class="form-text">Type auto-detected</div>
         </div>
-        <button type="submit" class="btn btn-primary w-100 mb-3">
+        <button type="submit" class="btn btn-primary w-full mb-4">
           <i class="bi bi-send me-1"></i>Check Indicator
         </button>
       </form>
-      <hr class="border-secondary">
-      <div class="d-grid gap-2">
+      <hr class="border-line">
+      <div class="grid gap-2">
         <a href="{{ url_for('threat.feed') }}" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-rss me-1"></i>OTX Threat Feed
         </a>
@@ -108,7 +108,7 @@
   <!-- Recent IOC lookups -->
   <div class="col-lg-8">
     <div class="data-table">
-      <div class="section-header px-3 pt-3 pb-2">
+      <div class="section-header px-4 pt-4 pb-2">
         <span class="section-title">Recent IOC Lookups</span>
         <a href="{{ url_for('threat.lookup') }}" class="btn btn-sm btn-outline-secondary">All History</a>
       </div>
@@ -126,7 +126,7 @@
           {% for rec in recent_lookups %}
           <tr style="cursor:pointer" onclick="document.getElementById('lookup-form').querySelector('input').value='{{ rec.indicator }}'; document.getElementById('lookup-form').submit()">
             <td class="font-monospace small">{{ rec.indicator[:45] }}{% if rec.indicator|length > 45 %}…{% endif %}</td>
-            <td><span class="badge bg-secondary text-uppercase" style="font-size:0.65rem">{{ rec.ioc_type }}</span></td>
+            <td><span class="badge bg-secondary uppercase" style="font-size:0.65rem">{{ rec.ioc_type }}</span></td>
             <td>
               {% if rec.verdict == "malicious" %}<span class="badge bg-danger">Malicious</span>
               {% elif rec.verdict == "suspicious" %}<span class="badge bg-warning text-dark">Suspicious</span>
@@ -134,8 +134,8 @@
               {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
             </td>
             <td>
-              <div class="d-flex align-items-center gap-2">
-                <div class="progress flex-grow-1" style="height:4px;max-width:60px">
+              <div class="flex items-center gap-2">
+                <div class="progress grow" style="height:4px;max-width:60px">
                   <div class="progress-bar {% if rec.threat_score >= 60 %}bg-danger{% elif rec.threat_score >= 30 %}bg-warning{% else %}bg-success{% endif %}"
                        style="width:{{ rec.threat_score }}%"></div>
                 </div>
@@ -145,7 +145,7 @@
             <td class="text-muted small">{{ rec.created_at | localdt('%m/%d %H:%M') if rec.created_at else '—' }}</td>
           </tr>
           {% else %}
-          <tr><td colspan="5" class="text-center text-muted py-4">No lookups yet — use the form to check an IOC</td></tr>
+          <tr><td colspan="5" class="text-center text-muted py-6">No lookups yet — use the form to check an IOC</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -160,18 +160,18 @@
 </form>
 
 <!-- Palo Alto -->
-<div class="section-header mb-3 mt-1">
+<div class="section-header mb-4 mt-1">
   <span class="section-title"><i class="bi bi-hdd-network me-2"></i>Palo Alto Firewalls</span>
   <a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-sm btn-outline-secondary">Manage Firewalls</a>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-4">
-    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if paloalto_ok > 0 %}text-success{% else %}text-muted{% endif %}">
-            {{ paloalto_ok }}<span class="fs-6 fw-normal text-muted"> / {{ paloalto_total }}</span>
+            {{ paloalto_ok }}<span class="text-base font-normal text-muted"> / {{ paloalto_total }}</span>
           </div>
           <div class="stat-label">Firewalls Reporting OK{% if paloalto_error %} · <span class="text-danger">{{ paloalto_error }} error</span>{% endif %}</div>
         </div>
@@ -182,8 +182,8 @@
     </a>
   </div>
   <div class="col-sm-4">
-    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ paloalto_logs_today }}</div>
           <div class="stat-label">Threat Logs Today</div>
@@ -195,8 +195,8 @@
     </a>
   </div>
   <div class="col-sm-4">
-    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('threat.paloalto_list') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if paloalto_critical > 0 %}text-danger{% endif %}">{{ paloalto_critical }}</div>
           <div class="stat-label">Critical / High Today</div>
@@ -209,8 +209,8 @@
   </div>
 </div>
 
-<div class="data-table mb-4">
-  <div class="section-header px-3 pt-3 pb-2">
+<div class="data-table mb-6">
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">Recent Threat Logs</span>
     <a href="{{ url_for('threat.paloalto_list') }}" class="btn btn-sm btn-outline-secondary">All Firewalls</a>
   </div>
@@ -232,10 +232,10 @@
         <td><span class="badge-severity sev-{{ 'info' if log.severity == 'informational' else log.severity }}">{{ log.severity or '—' }}</span></td>
         <td class="small">
           {% if log.firewall %}
-          <a href="{{ url_for('threat.paloalto_detail', fw_id=log.firewall_id) }}" class="text-decoration-none">{{ log.firewall.name }}</a>
+          <a href="{{ url_for('threat.paloalto_detail', fw_id=log.firewall_id) }}" class="no-underline">{{ log.firewall.name }}</a>
           {% else %}—{% endif %}
         </td>
-        <td class="small fw-semibold" style="color:var(--accent-red)">{{ log.threat_name or '—' }}</td>
+        <td class="small font-semibold" style="color:var(--accent-red)">{{ log.threat_name or '—' }}</td>
         <td class="font-monospace small">{{ log.src_ip or '—' }} → {{ log.dst_ip or '—' }}</td>
         <td class="text-muted small">{{ log.category or '—' }}</td>
         <td class="small">{{ log.action or '—' }}</td>
@@ -243,7 +243,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="7" class="text-center text-muted py-4">
+        <td colspan="7" class="text-center text-muted py-6">
           No threat logs ingested yet — <a href="{{ url_for('threat.paloalto_list') }}">add a Palo Alto firewall</a>
         </td>
       </tr>
@@ -254,7 +254,7 @@
 
 <!-- Recent Alerts -->
 <div class="data-table">
-  <div class="section-header px-3 pt-3 pb-2">
+  <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">Recent Agent Alerts</span>
     <a href="{{ url_for('threat.agents_list') }}" class="btn btn-sm btn-outline-secondary">View Agents</a>
   </div>
@@ -283,7 +283,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="text-center text-muted py-4">No agent alerts yet</td></tr>
+      <tr><td colspan="6" class="text-center text-muted py-6">No agent alerts yet</td></tr>
       {% endfor %}
     </tbody>
   </table>

@@ -8,23 +8,23 @@
   <!-- ── Time & NTP ── -->
   <div class="col-12">
     <div class="form-card" id="time">
-      <h5 class="fw-bold mb-1"><i class="bi bi-clock me-2" style="color:var(--accent)"></i>Time &amp; NTP</h5>
-      <p class="text-muted small mb-4">Set the timezone for all timestamps displayed in PwnBroker, and configure the NTP server used to keep the system clock accurate.</p>
+      <h5 class="font-bold mb-1"><i class="bi bi-clock me-2" style="color:var(--accent)"></i>Time &amp; NTP</h5>
+      <p class="text-muted small mb-6">Set the timezone for all timestamps displayed in PwnBroker, and configure the NTP server used to keep the system clock accurate.</p>
 
       <!-- NTP sync status bar -->
-      <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
-        <div class="d-flex align-items-center gap-2">
+      <div class="flex items-center gap-4 mb-6 p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="flex items-center gap-2">
           {% if ntp_status.ntp_synced is none %}
             <span class="badge bg-secondary bg-opacity-25 text-muted">timedatectl unavailable</span>
           {% elif ntp_status.ntp_synced %}
             <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 6px #4ade80"></span>
-            <span class="small text-success fw-semibold">NTP Synced</span>
+            <span class="small text-success font-semibold">NTP Synced</span>
           {% elif ntp_status.ntp_active %}
             <span style="width:8px;height:8px;border-radius:50%;background:#facc15;display:inline-block;box-shadow:0 0 6px #facc15"></span>
-            <span class="small text-warning fw-semibold">NTP Active, syncing…</span>
+            <span class="small text-warning font-semibold">NTP Active, syncing…</span>
           {% else %}
             <span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>
-            <span class="small text-danger fw-semibold">NTP Not Active</span>
+            <span class="small text-danger font-semibold">NTP Not Active</span>
           {% endif %}
         </div>
         {% if ntp_status.sys_timezone %}
@@ -72,9 +72,9 @@
 
           <!-- Quick TZ preview -->
           <div class="col-12">
-            <div class="p-3 rounded small" style="background:rgba(11,188,212,0.05);border:1px solid rgba(11,188,212,0.15)">
+            <div class="p-4 rounded small" style="background:rgba(11,188,212,0.05);border:1px solid rgba(11,188,212,0.15)">
               <span class="text-muted me-2">Preview — current time in selected zone:</span>
-              <span id="tz-preview" class="fw-semibold text-primary font-monospace">—</span>
+              <span id="tz-preview" class="font-semibold text-primary font-monospace">—</span>
             </div>
           </div>
 
@@ -91,12 +91,12 @@
 
   <!-- Left column: Email config -->
   <div class="col-lg-5">
-    <div class="form-card mb-4">
-      <h5 class="fw-bold mb-4"><i class="bi bi-envelope-gear me-2 text-primary"></i>Email / SMTP</h5>
+    <div class="form-card mb-6">
+      <h5 class="font-bold mb-6"><i class="bi bi-envelope-gear me-2 text-primary"></i>Email / SMTP</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="email">
-        <div class="row g-3 mb-3">
+        <div class="row g-3 mb-4">
           <div class="col-8">
             <label class="form-label">SMTP Server</label>
             <input type="text" name="smtp_server" class="form-control" value="{{ cfg.smtp_server or '' }}" placeholder="smtp.gmail.com">
@@ -106,21 +106,21 @@
             <input type="number" name="smtp_port" class="form-control" value="{{ cfg.smtp_port or 587 }}">
           </div>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="use_tls" id="use_tls" {% if cfg.use_tls %}checked{% endif %}>
             <label class="form-check-label small" for="use_tls">Use STARTTLS</label>
           </div>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Username</label>
           <input type="text" name="username" class="form-control" value="{{ cfg.username or '' }}" placeholder="your@email.com">
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Password</label>
           <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
         </div>
-        <div class="mb-4">
+        <div class="mb-6">
           <label class="form-label">From Address</label>
           <input type="email" name="sender" class="form-control" value="{{ cfg.sender or '' }}" placeholder="pwnbroker@company.com">
         </div>
@@ -129,12 +129,12 @@
     </div>
 
     <div class="form-card">
-      <h5 class="fw-bold mb-3"><i class="bi bi-send-check me-2 text-primary"></i>Test Email</h5>
+      <h5 class="font-bold mb-4"><i class="bi bi-send-check me-2 text-primary"></i>Test Email</h5>
       <form method="POST" action="{{ url_for('settings.test_email') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
           <input type="email" name="test_recipient" class="form-control" placeholder="test@example.com" required>
-          <button type="submit" class="btn btn-outline-secondary flex-shrink-0">Send Test</button>
+          <button type="submit" class="btn btn-outline-secondary shrink-0">Send Test</button>
         </div>
       </form>
     </div>
@@ -143,8 +143,8 @@
   <!-- Threat Intelligence API keys -->
   <div class="col-12">
     <div class="form-card" id="threat">
-      <div class="d-flex align-items-center justify-content-between mb-4">
-        <h5 class="fw-bold mb-0"><i class="bi bi-shield-exclamation me-2" style="color:var(--accent)"></i>Threat Intelligence APIs</h5>
+      <div class="flex items-center justify-between mb-6">
+        <h5 class="font-bold mb-0"><i class="bi bi-shield-exclamation me-2" style="color:var(--accent)"></i>Threat Intelligence APIs</h5>
         <button type="button" class="btn btn-sm btn-outline-info" id="btn-test-keys" onclick="testAllKeys()">
           <i class="bi bi-plug me-1"></i>Test All Keys
         </button>
@@ -156,7 +156,7 @@
 
           <!-- OTX -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               OTX API Key
               <span class="key-pill" id="pill-otx" data-svc="otx">
                 {% if threat_cfg.otx_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
@@ -171,7 +171,7 @@
 
           <!-- VirusTotal -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               VirusTotal API Key
               <span class="key-pill" id="pill-virustotal" data-svc="virustotal">
                 {% if threat_cfg.virustotal_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
@@ -186,7 +186,7 @@
 
           <!-- AbuseIPDB -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               AbuseIPDB API Key
               <span class="key-pill" id="pill-abuseipdb" data-svc="abuseipdb">
                 {% if threat_cfg.abuseipdb_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
@@ -201,7 +201,7 @@
 
           <!-- URLhaus (pulseDrive) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               URLhaus API Key
               <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
               <span class="key-pill" id="pill-urlhaus" data-svc="urlhaus">
@@ -217,7 +217,7 @@
 
           <!-- Criminal IP (pulseDrive) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               Criminal IP API Key
               <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
               <span class="key-pill" id="pill-criminalip" data-svc="criminalip">
@@ -233,7 +233,7 @@
 
           <!-- Vulners (pulseDrive) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               Vulners API Key
               <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
               <span class="key-pill" id="pill-vulners" data-svc="vulners">
@@ -249,7 +249,7 @@
 
           <!-- Hybrid Analysis (pulseDrive) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               Hybrid Analysis API Key
               <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
               <span class="key-pill" id="pill-hybridanalysis" data-svc="hybridanalysis">
@@ -265,7 +265,7 @@
 
           <!-- PhishTank (pulseDrive) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               PhishTank API Key <span class="text-muted small">(optional)</span>
               <span class="badge bg-primary bg-opacity-20 text-primary" style="font-size:0.6rem">PULSEDRIVE</span>
               <span class="key-pill" id="pill-phishtank" data-svc="phishtank">
@@ -281,7 +281,7 @@
 
           <!-- SOCRadar (pulseDrive — not yet wired up) -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               SOCRadar API Key
               <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.6rem">NOT WIRED UP</span>
               <span class="key-pill" id="pill-socradar" data-svc="socradar">
@@ -298,7 +298,7 @@
 
           <!-- DNSDumpster -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               DNSDumpster API Key
               <span class="key-pill" id="pill-dnsdumpster" data-svc="dnsdumpster">
                 {% if threat_cfg.dnsdumpster_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
@@ -313,7 +313,7 @@
 
           <!-- NVD -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               NVD API Key
               <span class="badge bg-info bg-opacity-20 text-info" style="font-size:0.6rem">GRC</span>
               <span class="key-pill" id="pill-nvd" data-svc="nvd">
@@ -329,7 +329,7 @@
 
           <!-- GitHub Advisory -->
           <div class="col-md-4">
-            <label class="form-label d-flex align-items-center gap-2">
+            <label class="form-label flex items-center gap-2">
               GitHub Advisory Token
               <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.6rem">DEP SCAN</span>
               <span class="key-pill" id="pill-github" data-svc="github">
@@ -345,7 +345,7 @@
             </div>
           </div>
 
-          <div class="col-12 mt-2 d-flex align-items-center gap-3 flex-wrap">
+          <div class="col-12 mt-2 flex items-center gap-4 flex-wrap">
             <button type="submit" class="btn btn-primary">Save Threat Intel Settings</button>
             <span id="test-keys-status" class="small text-muted"></span>
           </div>
@@ -358,18 +358,18 @@
   <!-- Atlassian (Confluence + Jira) config -->
   <div class="col-12">
     <div class="form-card" id="atlassian">
-      <h5 class="fw-bold mb-4"><i class="bi bi-diagram-3 me-2 text-primary"></i>Atlassian Integration</h5>
+      <h5 class="font-bold mb-6"><i class="bi bi-diagram-3 me-2 text-primary"></i>Atlassian Integration</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="atlassian">
 
         <!-- Shared credentials -->
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-6">
           <div class="col-12">
             <div class="form-check form-switch mb-1">
               <input class="form-check-input" type="checkbox" name="atlassian_enabled" id="atlassian_enabled"
                      {% if atlassian_cfg and atlassian_cfg.enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="atlassian_enabled">Enable Atlassian Integration</label>
+              <label class="form-check-label font-semibold" for="atlassian_enabled">Enable Atlassian Integration</label>
             </div>
             <div class="form-text text-muted">Required for both Confluence and Jira.</div>
           </div>
@@ -396,12 +396,12 @@
         </div>
 
         <!-- Confluence sub-panel -->
-        <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
-          <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="p-4 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="flex items-center gap-2 mb-4">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="confluence_enabled" id="confluence_enabled"
                      {% if atlassian_cfg and atlassian_cfg.confluence_enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="confluence_enabled">Confluence — Publish Reports</label>
+              <label class="form-check-label font-semibold" for="confluence_enabled">Confluence — Publish Reports</label>
             </div>
           </div>
           <div class="row g-3">
@@ -422,12 +422,12 @@
         </div>
 
         <!-- Jira sub-panel -->
-        <div class="p-3 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
-          <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="p-4 mb-6 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="flex items-center gap-2 mb-4">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="jira_enabled" id="jira_enabled"
                      {% if atlassian_cfg and atlassian_cfg.jira_enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="jira_enabled">Jira — Create Vulnerability Tickets</label>
+              <label class="form-check-label font-semibold" for="jira_enabled">Jira — Create Vulnerability Tickets</label>
             </div>
           </div>
           <div class="row g-3">
@@ -466,7 +466,7 @@
   <!-- Cloud API config -->
   <div class="col-12">
     <div class="form-card" id="cloud">
-      <h5 class="fw-bold mb-4"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Cloud API Integration</h5>
+      <h5 class="font-bold mb-6"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i>Cloud API Integration</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="cloud">
@@ -475,7 +475,7 @@
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" name="cloud_enabled" id="cloud_enabled"
                      {% if cloud_cfg and cloud_cfg.enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="cloud_enabled">Enable Cloud API</label>
+              <label class="form-check-label font-semibold" for="cloud_enabled">Enable Cloud API</label>
             </div>
           </div>
           <div class="col-12">
@@ -537,8 +537,8 @@
   <!-- Single Sign-On -->
   <div class="col-12">
     <div class="form-card" id="sso">
-      <h5 class="fw-bold mb-1"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Single Sign-On</h5>
-      <p class="text-muted small mb-4">Let users sign in with an existing Google or Microsoft account instead of a local password. Changes here require a restart to take effect.</p>
+      <h5 class="font-bold mb-1"><i class="bi bi-box-arrow-in-right me-2 text-primary"></i>Single Sign-On</h5>
+      <p class="text-muted small mb-6">Let users sign in with an existing Google or Microsoft account instead of a local password. Changes here require a restart to take effect.</p>
       <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="sso">
@@ -547,7 +547,7 @@
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" name="google_enabled" id="google_enabled"
                      {% if sso_cfg and sso_cfg.google_enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="google_enabled">Enable Google sign-in</label>
+              <label class="form-check-label font-semibold" for="google_enabled">Enable Google sign-in</label>
             </div>
           </div>
           <div class="col-6">
@@ -561,13 +561,13 @@
                    placeholder="Leave blank to keep current" autocomplete="new-password">
           </div>
 
-          <div class="col-12"><hr class="border-secondary my-2"></div>
+          <div class="col-12"><hr class="border-line my-2"></div>
 
           <div class="col-12">
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" name="microsoft_enabled" id="microsoft_enabled"
                      {% if sso_cfg and sso_cfg.microsoft_enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="microsoft_enabled">Enable Microsoft sign-in</label>
+              <label class="form-check-label font-semibold" for="microsoft_enabled">Enable Microsoft sign-in</label>
             </div>
           </div>
           <div class="col-4">
@@ -588,7 +588,7 @@
             <div class="form-text text-muted">Your Entra tenant ID to restrict sign-in to one org, or <code>common</code> for any Microsoft account.</div>
           </div>
 
-          <div class="col-12"><hr class="border-secondary my-2"></div>
+          <div class="col-12"><hr class="border-line my-2"></div>
 
           <div class="col-8">
             <label class="form-label">Allowed Email Domains</label>
@@ -619,20 +619,20 @@
   <!-- SAML 2.0 -->
   <div class="col-12">
     <div class="form-card" id="saml">
-      <h5 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>SAML 2.0 Single Sign-On</h5>
-      <p class="text-muted small mb-4">
+      <h5 class="font-bold mb-1"><i class="bi bi-shield-check me-2 text-primary"></i>SAML 2.0 Single Sign-On</h5>
+      <p class="text-muted small mb-6">
         For identity providers configured as a SAML Enterprise App (e.g. Microsoft Entra) rather than
         an OAuth app registration. Upload the IdP's Federation Metadata XML — or paste its metadata URL —
         to auto-fill everything below instead of entering it by hand.
       </p>
 
-      <div class="row g-3 mb-3">
+      <div class="row g-3 mb-4">
         <div class="col-6">
           <label class="form-label">Your Reply URL / ACS URL</label>
-          <div class="d-flex align-items-center gap-2">
-            <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input);word-break:break-all"
+          <div class="flex items-center gap-2">
+            <code class="px-4 py-2 rounded grow" style="background:var(--bg-input);word-break:break-all"
                   id="saml-acs-url">{{ saml_acs_url }}</code>
-            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+            <button type="button" class="btn btn-sm btn-outline-secondary shrink-0"
                     onclick="navigator.clipboard.writeText(document.getElementById('saml-acs-url').textContent);this.innerHTML='<i class=\'bi bi-check2\'></i>'">
               <i class="bi bi-clipboard"></i>
             </button>
@@ -640,10 +640,10 @@
         </div>
         <div class="col-6">
           <label class="form-label">Your Entity ID / Identifier</label>
-          <div class="d-flex align-items-center gap-2">
-            <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input);word-break:break-all"
+          <div class="flex items-center gap-2">
+            <code class="px-4 py-2 rounded grow" style="background:var(--bg-input);word-break:break-all"
                   id="saml-entity-id">{{ sso_cfg.saml_sp_entity_id if sso_cfg and sso_cfg.saml_sp_entity_id else saml_default_entity_id }}</code>
-            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0"
+            <button type="button" class="btn btn-sm btn-outline-secondary shrink-0"
                     onclick="navigator.clipboard.writeText(document.getElementById('saml-entity-id').textContent);this.innerHTML='<i class=\'bi bi-check2\'></i>'">
               <i class="bi bi-clipboard"></i>
             </button>
@@ -656,11 +656,11 @@
       </div>
 
       <form method="POST" action="{{ url_for('settings.upload_saml_metadata') }}"
-            enctype="multipart/form-data" class="mb-4">
+            enctype="multipart/form-data" class="mb-6">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="row g-3 align-items-end">
+        <div class="row g-3 items-end">
           <div class="col-5">
-            <label class="form-label">Federation Metadata File <span class="text-muted fw-normal">(XML)</span></label>
+            <label class="form-label">Federation Metadata File <span class="text-muted font-normal">(XML)</span></label>
             <input type="file" name="metadata_file" class="form-control" accept=".xml">
           </div>
           <div class="col-1 text-center text-muted small">or</div>
@@ -669,7 +669,7 @@
             <input type="url" name="metadata_url" class="form-control" placeholder="https://...">
           </div>
           <div class="col-2">
-            <button type="submit" class="btn btn-primary w-100">
+            <button type="submit" class="btn btn-primary w-full">
               <i class="bi bi-upload me-1"></i>Import
             </button>
           </div>
@@ -684,7 +684,7 @@
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" name="saml_enabled" id="saml_enabled"
                      {% if sso_cfg and sso_cfg.saml_enabled %}checked{% endif %}>
-              <label class="form-check-label fw-semibold" for="saml_enabled">Enable SAML sign-in</label>
+              <label class="form-check-label font-semibold" for="saml_enabled">Enable SAML sign-in</label>
             </div>
           </div>
           <div class="col-6">
@@ -700,7 +700,7 @@
                    placeholder="Populated by importing metadata above">
           </div>
           <div class="col-8">
-            <label class="form-label">SP Entity ID <span class="text-muted fw-normal">(optional override)</span></label>
+            <label class="form-label">SP Entity ID <span class="text-muted font-normal">(optional override)</span></label>
             <input type="text" name="saml_sp_entity_id" class="form-control"
                    value="{{ sso_cfg.saml_sp_entity_id or '' if sso_cfg else '' }}"
                    placeholder="{{ saml_default_entity_id }}">
@@ -722,8 +722,8 @@
   <!-- TLS / HTTPS Certificate -->
   <div class="col-12">
     <div class="form-card" id="tls">
-      <h5 class="fw-bold mb-1"><i class="bi bi-shield-lock me-2 text-primary"></i>HTTPS / TLS Certificate</h5>
-      <p class="text-muted small mb-4">
+      <h5 class="font-bold mb-1"><i class="bi bi-shield-lock me-2 text-primary"></i>HTTPS / TLS Certificate</h5>
+      <p class="text-muted small mb-6">
         PwnBroker is running over HTTPS with a self-signed certificate.
         Upload a CA-signed certificate and private key to replace it.
         The server must be restarted after uploading for the new cert to take effect.
@@ -732,12 +732,12 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="row g-3">
           <div class="col-6">
-            <label class="form-label">Certificate File <span class="text-muted fw-normal">(PEM)</span></label>
+            <label class="form-label">Certificate File <span class="text-muted font-normal">(PEM)</span></label>
             <input type="file" name="cert_file" class="form-control" accept=".pem,.crt,.cer">
             <div class="form-text text-muted">Your signed <code>cert.pem</code> or <code>fullchain.pem</code></div>
           </div>
           <div class="col-6">
-            <label class="form-label">Private Key File <span class="text-muted fw-normal">(PEM)</span></label>
+            <label class="form-label">Private Key File <span class="text-muted font-normal">(PEM)</span></label>
             <input type="file" name="key_file" class="form-control" accept=".pem,.key">
             <div class="form-text text-muted">Matching <code>key.pem</code> or <code>privkey.pem</code></div>
           </div>
@@ -745,15 +745,15 @@
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-upload me-1"></i>Upload Certificate
             </button>
-            <span class="text-muted small ms-3">
+            <span class="text-muted small ms-4">
               <i class="bi bi-info-circle me-1"></i>Restart PwnBroker after upload to activate the new certificate.
             </span>
           </div>
         </div>
       </form>
-      <div class="mt-3 p-3 rounded small" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+      <div class="mt-4 p-4 rounded small" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
         <div class="row g-2">
-          <div class="col-12 fw-semibold text-muted text-uppercase mb-1" style="font-size:0.7rem;letter-spacing:0.08em">Current Certificate</div>
+          <div class="col-12 font-semibold text-muted uppercase mb-1" style="font-size:0.7rem;letter-spacing:0.08em">Current Certificate</div>
           {% if cert_info %}
           <div class="col-6"><span class="text-muted">Subject:</span> {{ cert_info.subject }}</div>
           <div class="col-6"><span class="text-muted">Issuer:</span> {{ cert_info.issuer }}</div>
@@ -782,10 +782,10 @@
   <!-- Right column: User management -->
   <div class="col-lg-7">
     <div class="form-card">
-      <h5 class="fw-bold mb-4"><i class="bi bi-people me-2 text-primary"></i>User Management</h5>
+      <h5 class="font-bold mb-6"><i class="bi bi-people me-2 text-primary"></i>User Management</h5>
 
       <!-- User table -->
-      <div class="data-table mb-4">
+      <div class="data-table mb-6">
         <table class="table table-dark table-hover mb-0">
           <thead>
             <tr>
@@ -799,7 +799,7 @@
           <tbody>
             {% for u in users %}
             <tr>
-              <td class="fw-semibold">
+              <td class="font-semibold">
                 {{ u.username }}
                 {% if u.id == current_user.id %}
                   <span class="badge bg-primary bg-opacity-25 text-primary ms-1" style="font-size:0.65rem">you</span>
@@ -808,9 +808,9 @@
               <td class="text-muted small">{{ u.email }}</td>
               <td>
                 {% if u.id != current_user.id %}
-                <form method="POST" action="{{ url_for('settings.user_role', user_id=u.id) }}" class="d-inline">
+                <form method="POST" action="{{ url_for('settings.user_role', user_id=u.id) }}" class="inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <select name="role" class="form-select form-select-sm d-inline-block w-auto"
+                  <select name="role" class="form-select form-select-sm inline-block w-auto"
                           onchange="this.form.submit()" style="font-size:0.75rem;padding:2px 24px 2px 8px">
                     <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
                     <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
@@ -827,7 +827,7 @@
               </td>
               <td>
                 {% if u.id != current_user.id %}
-                <div class="d-flex gap-1">
+                <div class="flex gap-1">
                   <form method="POST" action="{{ url_for('settings.user_toggle', user_id=u.id) }}"
                         data-confirm="{% if u.active %}Disable{% else %}Enable{% endif %} '{{ u.username }}'?">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -855,8 +855,8 @@
       </div>
 
       <!-- Add user form -->
-      <div class="border-top border-secondary pt-4">
-        <h6 class="fw-semibold mb-3 text-muted text-uppercase" style="font-size:0.75rem;letter-spacing:0.08em">
+      <div class="border-t border-line pt-6">
+        <h6 class="font-semibold mb-4 text-muted uppercase" style="font-size:0.75rem;letter-spacing:0.08em">
           Add New User
         </h6>
         <form method="POST" action="{{ url_for('settings.user_add') }}">
@@ -871,7 +871,7 @@
               <input type="email" name="email" class="form-control form-control-sm" placeholder="j@company.com" required>
             </div>
           </div>
-          <div class="row g-2 mb-3">
+          <div class="row g-2 mb-4">
             <div class="col-6">
               <label class="form-label">Password</label>
               <input type="password" name="password" class="form-control form-control-sm" placeholder="Temporary password" required>
@@ -891,14 +891,14 @@
       </div>
 
       <!-- Role legend -->
-      <div class="mt-4 p-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+      <div class="mt-6 p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
         <div class="row g-3">
           <div class="col-6">
-            <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-2">
               <span class="badge bg-danger bg-opacity-20 text-danger">Admin</span>
-              <span class="fw-semibold small">Full Access</span>
+              <span class="font-semibold small">Full Access</span>
             </div>
-            <ul class="small text-muted mb-0 ps-3">
+            <ul class="small text-muted mb-0 ps-4">
               <li>Create &amp; delete targets</li>
               <li>Run &amp; schedule scans</li>
               <li>Schedule email reports</li>
@@ -907,11 +907,11 @@
             </ul>
           </div>
           <div class="col-6">
-            <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-2">
               <span class="badge bg-secondary bg-opacity-25 text-light">User</span>
-              <span class="fw-semibold small">Read-Only</span>
+              <span class="font-semibold small">Read-Only</span>
             </div>
-            <ul class="small text-muted mb-0 ps-3">
+            <ul class="small text-muted mb-0 ps-4">
               <li>View dashboard &amp; scans</li>
               <li>View targets</li>
               <li>Download reports</li>

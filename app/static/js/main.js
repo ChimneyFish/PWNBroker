@@ -89,3 +89,103 @@ document.addEventListener('submit', (e) => {
   }
 });
 
+// ── UI behaviors (collapse / modal / dropdown / alert dismiss) ──────────
+// Replaces what Bootstrap's JS bundle used to drive via data-bs-* attributes.
+// Same shape, no "bs" prefix: data-toggle / data-target / data-dismiss.
+(function () {
+  function targetOf(el) {
+    const sel = el.getAttribute('data-target') || el.getAttribute('href');
+    return sel ? document.querySelector(sel) : null;
+  }
+
+  document.addEventListener('click', (e) => {
+    // Collapse (sidebar nav groups)
+    const collapseToggle = e.target.closest('[data-toggle="collapse"]');
+    if (collapseToggle) {
+      e.preventDefault();
+      const panel = targetOf(collapseToggle);
+      if (panel) {
+        const opening = !panel.classList.contains('show');
+        panel.classList.toggle('show', opening);
+        collapseToggle.classList.toggle('collapsed', !opening);
+        collapseToggle.setAttribute('aria-expanded', String(opening));
+      }
+      return;
+    }
+
+    // Tabs
+    const tabToggle = e.target.closest('[data-toggle="tab"]');
+    if (tabToggle) {
+      e.preventDefault();
+      const pane = targetOf(tabToggle);
+      const tabGroup = tabToggle.closest('.nav-tabs') || tabToggle.parentElement;
+      const paneGroup = pane?.parentElement;
+      tabGroup?.querySelectorAll('.nav-link').forEach((el) => el.classList.remove('active'));
+      paneGroup?.querySelectorAll('.tab-pane').forEach((el) => el.classList.remove('active', 'show'));
+      tabToggle.classList.add('active');
+      pane?.classList.add('active', 'show');
+      return;
+    }
+
+    // Modal open
+    const modalToggle = e.target.closest('[data-toggle="modal"]');
+    if (modalToggle) {
+      e.preventDefault();
+      const modal = targetOf(modalToggle);
+      if (modal) openModal(modal);
+      return;
+    }
+
+    // Modal dismiss (close button or backdrop click)
+    const modalDismiss = e.target.closest('[data-dismiss="modal"]');
+    if (modalDismiss) {
+      e.preventDefault();
+      closeModal(modalDismiss.closest('.modal'));
+      return;
+    }
+    if (e.target.classList.contains('modal') && e.target.classList.contains('show')) {
+      closeModal(e.target);
+      return;
+    }
+
+    // Alert dismiss
+    const alertDismiss = e.target.closest('[data-dismiss="alert"]');
+    if (alertDismiss) {
+      const alertEl = alertDismiss.closest('.alert');
+      if (alertEl) alertEl.remove();
+      return;
+    }
+
+    // Dropdown toggle
+    const dropdownToggle = e.target.closest('[data-toggle="dropdown"]');
+    if (dropdownToggle) {
+      e.preventDefault();
+      const menu = dropdownToggle.nextElementSibling?.classList.contains('dropdown-menu')
+        ? dropdownToggle.nextElementSibling
+        : dropdownToggle.parentElement.querySelector('.dropdown-menu');
+      document.querySelectorAll('.dropdown-menu.show').forEach((m) => { if (m !== menu) m.classList.remove('show'); });
+      menu?.classList.toggle('show');
+      return;
+    }
+    if (!e.target.closest('.dropdown-menu')) {
+      document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal.show').forEach(closeModal);
+    }
+  });
+
+  function openModal(modal) {
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+})();
+

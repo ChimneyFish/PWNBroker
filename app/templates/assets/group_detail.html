@@ -7,7 +7,7 @@
   <i class="bi bi-arrow-left me-1"></i>All Groups
 </a>
 {% if current_user.is_admin and group.group_type == 'manual' %}
-<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+<button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addModal">
   <i class="bi bi-plus me-1"></i>Add Assets
 </button>
 {% endif %}
@@ -16,8 +16,8 @@
 {% block content %}
 
 <!-- Group meta strip -->
-<div class="form-card mb-4 py-2">
-  <div class="d-flex flex-wrap gap-4 align-items-center small">
+<div class="form-card mb-6 py-2">
+  <div class="flex flex-wrap gap-6 items-center small">
     <div>
       <span class="text-muted">Type:</span>
       {% if group.group_type == 'tag' %}
@@ -42,10 +42,10 @@
 </div>
 
 <!-- Stat cards -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ members | length }}</div>
           <div class="stat-label">Assets</div>
@@ -58,7 +58,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           {% set total_vulns = namespace(n=0) %}
           {% for a in members %}{% set total_vulns.n = total_vulns.n + counts.get((a.target_id, a.ip_address), 0) %}{% endfor %}
@@ -73,7 +73,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           {% set with_hostname = members | selectattr('hostname') | list %}
           <div class="stat-value">{{ with_hostname | length }}</div>
@@ -87,7 +87,7 @@
   </div>
   <div class="col-sm-6 col-xl-3">
     <div class="stat-card">
-      <div class="d-flex align-items-center justify-content-between">
+      <div class="flex items-center justify-between">
         <div>
           {% set with_os = members | selectattr('os_name') | list %}
           <div class="stat-value">{{ with_os | length }}</div>
@@ -103,12 +103,12 @@
 
 <!-- Members table -->
 {% if not members %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-hdd-network fs-1 d-block mb-2 opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-hdd-network text-4xl block mb-2 opacity-50"></i>
   No assets in this group yet.
   {% if group.group_type == 'manual' and current_user.is_admin %}
   <div class="mt-2">
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">Add Assets</button>
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addModal">Add Assets</button>
   </div>
   {% elif group.group_type == 'tag' %}
   <div class="small mt-1">Assign the <strong>{{ group.tag.label if group.tag else '' }}</strong> tag to assets on the Inventory page.</div>
@@ -132,12 +132,12 @@
     <tbody id="members-tbody">
       {% for a in members %}
       <tr id="member-row-{{ a.id }}">
-        <td class="font-monospace fw-semibold">{{ a.ip_address }}</td>
+        <td class="font-monospace font-semibold">{{ a.ip_address }}</td>
         <td class="small text-muted">{{ a.hostname or '—' }}</td>
         <td class="small text-muted">{{ a.os_name or '—' }}</td>
         <td class="small text-muted">{{ a.target.name if a.target else '—' }}</td>
         <td>
-          <div class="d-flex flex-wrap gap-1">
+          <div class="flex flex-wrap gap-1">
             {% for tag in a.tags %}
             <span class="badge" style="background:{{ tag.color }}20;color:{{ tag.color }};border:1px solid {{ tag.color }}40;font-size:0.6rem">
               {{ tag.label }}
@@ -176,13 +176,13 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Add Assets to {{ group.name }}</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         {% if not available %}
-        <div class="text-muted small text-center py-3">All discovered assets are already in this group.</div>
+        <div class="text-muted small text-center py-4">All discovered assets are already in this group.</div>
         {% else %}
-        <input type="text" id="asset-search" class="form-control form-control-sm mb-3"
+        <input type="text" id="asset-search" class="form-control form-control-sm mb-4"
                placeholder="Filter by IP or hostname…"
                style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
                oninput="filterAvailable(this.value)">
@@ -239,7 +239,7 @@ async function addMember(assetId) {
     const tr = document.createElement('tr');
     tr.id = `member-row-${assetId}`;
     tr.innerHTML = `
-      <td class="font-monospace fw-semibold">${data.ip}</td>
+      <td class="font-monospace font-semibold">${data.ip}</td>
       <td class="small text-muted">${data.hostname || '—'}</td>
       <td class="small text-muted">${data.os || '—'}</td>
       <td class="small text-muted">—</td>

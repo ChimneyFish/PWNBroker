@@ -11,16 +11,16 @@
 {% block content %}
 
 <!-- Filter bar -->
-<div class="form-card mb-4">
-  <div class="d-flex flex-wrap gap-3 align-items-center">
-    <span class="text-muted small fw-semibold">STATUS</span>
+<div class="form-card mb-6">
+  <div class="flex flex-wrap gap-4 items-center">
+    <span class="text-muted small font-semibold">STATUS</span>
     {% for s, label in [('open','Open'),('patched','Patched'),('accepted_risk','Accepted Risk'),('false_positive','False Positive'),('all','All')] %}
     <a href="{{ url_for('vulns.tickets') }}?status={{ s }}{% if sev_filter %}&severity={{ sev_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == s %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       {{ label }}
     </a>
     {% endfor %}
-    <span class="text-muted small fw-semibold ms-3">SEVERITY</span>
+    <span class="text-muted small font-semibold ms-4">SEVERITY</span>
     {% for sev in ['critical','high','medium','low'] %}
     <a href="{{ url_for('vulns.tickets') }}?status={{ status_filter }}&severity={% if sev_filter == sev %}{% else %}{{ sev }}{% endif %}"
        class="btn btn-sm {% if sev_filter == sev %}btn-primary{% else %}btn-outline-secondary{% endif %}">
@@ -36,8 +36,8 @@
 </div>
 
 {% if not tickets %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-check-circle fs-1 d-block mb-2 text-success opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-check-circle text-4xl block mb-2 text-success opacity-50"></i>
   No tickets match these filters.
 </div>
 {% else %}
@@ -61,8 +61,8 @@
       {% for t in tickets %}
       <tr id="row-{{ t.id }}" {% if t.sla_status == 'overdue' %}style="border-left:3px solid var(--critical)"{% elif t.sla_status == 'due_soon' %}style="border-left:3px solid #fcd34d"{% endif %}>
         <td>
-          <div class="fw-semibold small">{{ (t.vuln_name or t.title) | truncate(80) }}</div>
-          <div class="d-flex gap-2 mt-1 flex-wrap">
+          <div class="font-semibold small">{{ (t.vuln_name or t.title) | truncate(80) }}</div>
+          <div class="flex gap-2 mt-1 flex-wrap">
             {% if t.cvss_score %}
             <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">CVSS {{ t.cvss_score }}</span>
             {% endif %}
@@ -74,11 +74,11 @@
         <td>
           {% if t.cve_id %}
           <a href="https://nvd.nist.gov/vuln/detail/{{ t.cve_id }}" target="_blank"
-             class="badge bg-danger text-white text-decoration-none" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
+             class="badge bg-danger text-white no-underline" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
           {% else %}<span class="text-muted small">—</span>{% endif %}
         </td>
         <td class="small">
-          <a href="{{ url_for('vulns.device', target_id=t.target_id, host=t.host_ip) }}" class="text-decoration-none">
+          <a href="{{ url_for('vulns.device', target_id=t.target_id, host=t.host_ip) }}" class="no-underline">
             {{ t.target.name }}
           </a>
           <div class="font-monospace text-info" style="font-size:0.7rem">{{ t.host_ip or t.target.host }}</div>
@@ -90,7 +90,7 @@
           </span>
           {% if t.risk_entry %}
           <a href="{{ url_for('grc.risks') }}?status=accepted#risk-row-{{ t.risk_entry.id }}"
-             class="badge bg-info bg-opacity-20 text-info text-decoration-none d-block mt-1" style="font-size:0.6rem">
+             class="badge bg-info bg-opacity-20 text-info no-underline block mt-1" style="font-size:0.6rem">
             <i class="bi bi-journal-check me-1"></i>GRC Risk #{{ t.risk_entry.id }}
           </a>
           {% endif %}
@@ -143,10 +143,10 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Update Ticket</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Status</label>
           <select id="edit-status" class="form-select form-select-sm" onchange="toggleJustification()" style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
             <option value="open">Open</option>
@@ -156,7 +156,7 @@
             <option value="false_positive">False Positive</option>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Assign To</label>
           <select id="edit-assignee" class="form-select form-select-sm" style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
             <option value="">Unassigned</option>
@@ -165,7 +165,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted" id="edit-notes-label">Add Note</label>
           <div class="text-muted mb-1" id="edit-notes-hint" style="font-size:0.7rem;display:none">
             Required to accept this risk — saved to GRC Acceptable Risk as the justification.
@@ -177,7 +177,7 @@
         <div id="edit-error" class="text-danger small" style="display:none"></div>
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit()">Save</button>
       </div>
     </div>

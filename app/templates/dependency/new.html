@@ -3,11 +3,11 @@
 {% block page_title %}New Dependency Scan{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-center">
   <div class="col-lg-7">
     <div class="form-card">
-      <h5 class="fw-bold mb-1" id="form_title">Scan Remote Dependencies via SSH</h5>
-      <p class="text-muted small mb-4" id="form_desc">
+      <h5 class="font-bold mb-1" id="form_title">Scan Remote Dependencies via SSH</h5>
+      <p class="text-muted small mb-6" id="form_desc">
         PwnBroker will SSH into the target, locate all dependency lockfiles under the
         specified path, and check them against the
         <a href="https://osv.dev" target="_blank" class="text-primary">OSV vulnerability database</a>.
@@ -15,14 +15,14 @@
 
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Scan Name</label>
           <input type="text" name="name" class="form-control" placeholder="e.g. API Server — Dependencies" required>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Target</label>
-          <div class="d-flex gap-2">
+          <div class="flex gap-2">
             <select name="target_id" class="form-select" id="target_select" required>
               <option value="">— Select a target —</option>
               {% for t in targets %}
@@ -36,7 +36,7 @@
               </option>
               {% endfor %}
             </select>
-            <button type="button" class="btn btn-outline-secondary flex-shrink-0" id="ssh_test_btn"
+            <button type="button" class="btn btn-outline-secondary shrink-0" id="ssh_test_btn"
                     style="display:none" title="Test SSH connection">
               <i class="bi bi-plug me-1"></i>Test SSH
             </button>
@@ -49,7 +49,7 @@
           <div id="ssh_test_result" class="mt-1 small" style="display:none"></div>
         </div>
 
-        <div class="mb-4" id="scan_path_group">
+        <div class="mb-6" id="scan_path_group">
           <label class="form-label" id="scan_path_label">Remote Path to Scan</label>
           <input type="text" name="scan_path" id="scan_path" class="form-control font-monospace"
                  placeholder="/home/appuser/myproject">
@@ -60,11 +60,11 @@
         </div>
 
         <!-- Auto-remediation (GitHub repo targets only) -->
-        <div class="mb-4" id="auto_remediate_group" style="display:none">
-          <div class="p-3 rounded" style="background:rgba(var(--bs-warning-rgb),0.06);border:1px solid rgba(var(--bs-warning-rgb),0.25)">
+        <div class="mb-6" id="auto_remediate_group" style="display:none">
+          <div class="p-4 rounded" style="background:rgba(var(--bs-warning-rgb),0.06);border:1px solid rgba(var(--bs-warning-rgb),0.25)">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="auto_remediate" id="auto_remediate" value="1">
-              <label class="form-check-label fw-semibold" for="auto_remediate">
+              <label class="form-check-label font-semibold" for="auto_remediate">
                 <i class="bi bi-git me-1 text-warning"></i>Open fix PRs after scan
               </label>
             </div>
@@ -77,8 +77,8 @@
           </div>
         </div>
 
-        <div class="p-3 rounded mb-3" style="background:rgba(var(--bs-info-rgb),0.06);border:1px solid rgba(var(--bs-info-rgb),0.18)">
-          <div class="small fw-semibold text-info mb-2"><i class="bi bi-file-earmark-text me-1"></i>Supported Lockfiles</div>
+        <div class="p-4 rounded mb-4" style="background:rgba(var(--bs-info-rgb),0.06);border:1px solid rgba(var(--bs-info-rgb),0.18)">
+          <div class="small font-semibold text-info mb-2"><i class="bi bi-file-earmark-text me-1"></i>Supported Lockfiles</div>
           <div class="row g-1 small text-muted">
             <div class="col-6"><code>requirements.txt</code> → PyPI</div>
             <div class="col-6"><code>Pipfile.lock</code> → PyPI</div>
@@ -92,9 +92,9 @@
           </div>
         </div>
 
-        <div class="p-3 rounded mb-4 small" style="background:rgba(var(--bs-warning-rgb),0.05);border:1px solid rgba(var(--bs-warning-rgb),0.2)">
+        <div class="p-4 rounded mb-6 small" style="background:rgba(var(--bs-warning-rgb),0.05);border:1px solid rgba(var(--bs-warning-rgb),0.2)">
           <i class="bi bi-github me-1 text-warning"></i>
-          <span class="fw-semibold text-warning">GitHub Advisory Database</span>
+          <span class="font-semibold text-warning">GitHub Advisory Database</span>
           <span class="text-muted ms-1">
             — automatically enriches results with GHSA advisories (including PHP/Composer packages)
             when a GitHub token is configured in
@@ -102,7 +102,7 @@
           </span>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-play-fill me-1"></i>Start Scan
           </button>

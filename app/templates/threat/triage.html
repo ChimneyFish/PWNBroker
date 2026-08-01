@@ -7,29 +7,29 @@
 {% block content %}
 
 <!-- Stat bar -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-auto">
-    <a href="#pending-queue" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#pending-queue" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Pending Review</div>
-      <div class="fw-semibold {% if pending %}text-warning{% endif %}">{{ pending | length }}</div>
+      <div class="font-semibold {% if pending %}text-warning{% endif %}">{{ pending | length }}</div>
     </a>
   </div>
   <div class="col-auto">
-    <a href="#active-alerts" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#active-alerts" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Active Alerts</div>
-      <div class="fw-semibold {% if alerted %}text-danger{% endif %}">{{ alerted | length }}</div>
+      <div class="font-semibold {% if alerted %}text-danger{% endif %}">{{ alerted | length }}</div>
     </a>
   </div>
   <div class="col-auto">
     <div class="stat-card">
       <div class="stat-label">Dismissed</div>
-      <div class="fw-semibold text-muted">{{ dismissed | length }}</div>
+      <div class="font-semibold text-muted">{{ dismissed | length }}</div>
     </div>
   </div>
 </div>
 
 <!-- ── Pending queue ──────────────────────────────────────────────────────── -->
-<div class="section-header mb-3" id="pending-queue">
+<div class="section-header mb-4" id="pending-queue">
   <span class="section-title">
     Pending Review
     {% if pending %}<span class="badge bg-warning text-dark ms-2">{{ pending | length }}</span>{% endif %}
@@ -38,23 +38,23 @@
 </div>
 
 {% if not pending %}
-<div class="form-card text-center py-5 text-muted mb-4">
-  <i class="bi bi-shield-check fs-1 d-block mb-2 text-success opacity-50"></i>
+<div class="form-card text-center py-12 text-muted mb-6">
+  <i class="bi bi-shield-check text-4xl block mb-2 text-success opacity-50"></i>
   No cases pending review. IOCs confirmed suspicious by ≥2 sources, or flagged by a Palo Alto threat log, will appear here automatically.
 </div>
 {% else %}
 {% for case in pending %}
-<div class="form-card mb-3" style="border-left:3px solid {% if case.verdict == 'malicious' %}var(--critical){% else %}rgba(217,119,6,0.6){% endif %}">
-  <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-    <div class="flex-grow-1">
+<div class="form-card mb-4" style="border-left:3px solid {% if case.verdict == 'malicious' %}var(--critical){% else %}rgba(217,119,6,0.6){% endif %}">
+  <div class="flex items-start justify-between gap-4 flex-wrap">
+    <div class="grow">
       <!-- Header row -->
-      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+      <div class="flex items-center gap-2 mb-2 flex-wrap">
         {% if case.verdict == 'malicious' %}
         <span class="badge bg-danger">Malicious</span>
         {% else %}
         <span class="badge bg-warning text-dark">Suspicious</span>
         {% endif %}
-        <span class="fw-semibold font-monospace" style="color:var(--accent-red)">{{ case.ioc }}</span>
+        <span class="font-semibold font-monospace" style="color:var(--accent-red)">{{ case.ioc }}</span>
         <span class="badge bg-secondary" style="font-size:0.65rem">{{ case.ioc_type | upper }}</span>
         <span class="text-muted small">Score: <strong>{{ case.threat_score }}/100</strong></span>
         <span class="text-muted small ms-auto">{{ case.created_at | localdt('%Y-%m-%d %H:%M') }}</span>
@@ -112,34 +112,34 @@
     </div>
 
     <!-- Action buttons -->
-    <div class="d-flex flex-column gap-2 flex-shrink-0" style="min-width:160px">
+    <div class="flex flex-col gap-2 shrink-0" style="min-width:160px">
       <form method="POST" action="{{ url_for('threat.triage_alert', case_id=case.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="notes" value="">
-        <button class="btn btn-danger btn-sm w-100">
+        <button class="btn btn-danger btn-sm w-full">
           <i class="bi bi-exclamation-triangle me-1"></i>Raise Alert
         </button>
       </form>
       <a href="{{ url_for('threat.lookup') }}"
          onclick="event.preventDefault();(function(){var f=document.createElement('form');f.method='POST';f.action='{{ url_for('threat.lookup') }}';var i=document.createElement('input');i.name='indicator';i.value='{{ case.ioc }}';f.appendChild(i);var c=document.createElement('input');c.name='csrf_token';c.value=document.querySelector('meta[name=\'csrf-token\']').content;f.appendChild(c);document.body.appendChild(f);f.submit();}())"
-         class="btn btn-outline-secondary btn-sm w-100">
+         class="btn btn-outline-secondary btn-sm w-full">
         <i class="bi bi-search me-1"></i>Full IOC Lookup
       </a>
-      <button class="btn btn-outline-secondary btn-sm w-100" type="button"
-              data-bs-toggle="collapse" data-bs-target="#dismiss-{{ case.id }}">
+      <button class="btn btn-outline-secondary btn-sm w-full" type="button"
+              data-toggle="collapse" data-target="#dismiss-{{ case.id }}">
         <i class="bi bi-x-circle me-1"></i>Dismiss
       </button>
     </div>
   </div>
 
   <!-- Dismiss form (collapsed) -->
-  <div class="collapse mt-3" id="dismiss-{{ case.id }}">
+  <div class="collapse mt-4" id="dismiss-{{ case.id }}">
     <form method="POST" action="{{ url_for('threat.triage_dismiss', case_id=case.id) }}"
-          class="d-flex gap-2">
+          class="flex gap-2">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="text" name="notes" class="form-control form-control-sm"
              placeholder="Reason for dismissal (optional)">
-      <button type="submit" class="btn btn-sm btn-warning flex-shrink-0">Confirm Dismiss</button>
+      <button type="submit" class="btn btn-sm btn-warning shrink-0">Confirm Dismiss</button>
     </form>
   </div>
 </div>
@@ -148,13 +148,13 @@
 
 <!-- ── Active Alerts ──────────────────────────────────────────────────────── -->
 {% if alerted %}
-<div class="section-header mb-3 mt-4" id="active-alerts">
+<div class="section-header mb-4 mt-6" id="active-alerts">
   <span class="section-title">
     Active Alerts
     <span class="badge bg-danger ms-2">{{ alerted | length }}</span>
   </span>
 </div>
-<div class="data-table mb-4">
+<div class="data-table mb-6">
   <table class="table table-dark table-hover mb-0">
     <thead>
       <tr>
@@ -198,15 +198,15 @@
 {% endif %}
 
 <!-- ── Manual Triage Lookup ───────────────────────────────────────────────── -->
-<div class="section-header mb-3 mt-4">
+<div class="section-header mb-4 mt-6">
   <span class="section-title">Manual IP Triage</span>
   <span class="text-muted small">pulseDrive · Shodan InternetDB · VirusTotal</span>
 </div>
 
-<div class="form-card mb-4">
+<div class="form-card mb-6">
   <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="row g-3 align-items-end">
+    <div class="row g-3 items-end">
       <div class="col-lg-9">
         <label class="form-label">IP Address</label>
         <input type="text" name="ip" class="form-control form-control-lg font-monospace"
@@ -216,7 +216,7 @@
         </div>
       </div>
       <div class="col-lg-3">
-        <button type="submit" class="btn btn-primary w-100 py-2">
+        <button type="submit" class="btn btn-primary w-full py-2">
           <i class="bi bi-shield-check me-1"></i>Triage IP
         </button>
       </div>
@@ -235,12 +235,12 @@
 {% set vt  = result.vt %}
 
 <!-- Verdict banner -->
-<div class="mb-4 p-4 rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-3"
+<div class="mb-6 p-6 rounded-lg flex items-center justify-between flex-wrap gap-4"
      style="background:{% if v.level == 'success' %}rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.35)
             {% elif v.level == 'danger' %}rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.35)
             {% elif v.level == 'info' %}rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25)
             {% else %}rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.35){% endif %}">
-  <div class="d-flex align-items-center gap-3">
+  <div class="flex items-center gap-4">
     <div style="font-size:2.5rem">
       {% if v.level == 'success' %}<i class="bi bi-shield-check text-success"></i>
       {% elif v.level == 'danger' %}<i class="bi bi-shield-x text-danger"></i>
@@ -248,7 +248,7 @@
       {% else %}<i class="bi bi-shield-exclamation text-warning"></i>{% endif %}
     </div>
     <div>
-      <div class="fw-bold fs-4
+      <div class="font-bold text-xl
         {% if v.level == 'success' %}text-success
         {% elif v.level == 'danger' %}text-danger
         {% elif v.level == 'info' %}text-info
@@ -271,17 +271,17 @@
 </div>
 
 <!-- Three source panels -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
 
   <!-- pulseDrive -->
   {% set crim = pd.criminalip if pd else None %}
   {% set urlh = pd.urlhaus if pd else None %}
   {% set tm   = pd.threatminer if pd else None %}
   <div class="col-md-4">
-    <div class="form-card h-100">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="badge fw-bold" style="background:#7c3aed;font-size:0.75rem">PD</span>
-        <span class="fw-semibold">pulseDrive</span>
+    <div class="form-card h-full">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge font-bold" style="background:#7c3aed;font-size:0.75rem">PD</span>
+        <span class="font-semibold">pulseDrive</span>
         {% if not pd %}
           <span class="badge bg-secondary ms-auto">No Data</span>
         {% elif crim and crim.risk_score in ('critical', 'dangerous') %}
@@ -298,15 +298,15 @@
         <p class="text-muted small">No pulseDrive data returned for this IP.</p>
       {% else %}
         {% if crim and not crim.error %}
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-          <div class="px-3 py-2 rounded text-center flex-grow-1"
+        <div class="flex gap-2 mb-4 flex-wrap">
+          <div class="px-4 py-2 rounded text-center grow"
                style="background:{% if crim.is_scanner %}rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.3){% else %}rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.25){% endif %}">
-            <div class="fw-bold {% if crim.is_scanner %}text-danger{% else %}text-success{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_scanner else 'NO' }}</div>
+            <div class="font-bold {% if crim.is_scanner %}text-danger{% else %}text-success{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_scanner else 'NO' }}</div>
             <div class="text-muted" style="font-size:0.7rem">SCANNER</div>
           </div>
-          <div class="px-3 py-2 rounded text-center flex-grow-1"
+          <div class="px-4 py-2 rounded text-center grow"
                style="background:{% if crim.is_vpn %}rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.3){% else %}rgba(255,255,255,0.04);border:1px solid var(--border-color){% endif %}">
-            <div class="fw-bold {% if crim.is_vpn %}text-warning{% else %}text-muted{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_vpn else 'NO' }}</div>
+            <div class="font-bold {% if crim.is_vpn %}text-warning{% else %}text-muted{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_vpn else 'NO' }}</div>
             <div class="text-muted" style="font-size:0.7rem">VPN</div>
           </div>
         </div>
@@ -324,7 +324,7 @@
         {% if tm and not tm.error and tm.tags %}
         <div class="small mt-2">
           <span class="text-muted">ThreatMiner tags:</span>
-          <div class="d-flex flex-wrap gap-1 mt-1">
+          <div class="flex flex-wrap gap-1 mt-1">
             {% for tag in tm.tags[:6] %}
             <span class="badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;font-size:0.65rem">{{ tag }}</span>
             {% endfor %}
@@ -337,10 +337,10 @@
 
   <!-- InternetDB -->
   <div class="col-md-4">
-    <div class="form-card h-100">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="badge fw-bold" style="background:#a01f24;font-size:0.75rem">IDB</span>
-        <span class="fw-semibold">InternetDB</span>
+    <div class="form-card h-full">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge font-bold" style="background:#a01f24;font-size:0.75rem">IDB</span>
+        <span class="font-semibold">InternetDB</span>
         {% if idb.error is defined %}<span class="badge bg-secondary ms-auto">Error</span>
         {% elif idb.no_data %}<span class="badge bg-secondary ms-auto">No Data</span>
         {% elif idb.vulns %}<span class="badge bg-danger ms-auto">{{ idb.vulns | length }} CVE(s)</span>
@@ -351,10 +351,10 @@
       {% elif idb.no_data %}
         <p class="text-muted small">No data for this IP.</p>
       {% else %}
-        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="d-flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
+        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
         {% if idb.hostnames %}<div class="mb-2"><div class="text-muted small mb-1">Hostnames</div>{% for h in idb.hostnames[:4] %}<div class="small font-monospace" style="color:var(--accent)">{{ h }}</div>{% endfor %}{% if idb.hostnames | length > 4 %}<div class="text-muted small">+{{ idb.hostnames | length - 4 }} more</div>{% endif %}</div>{% endif %}
-        {% if idb.vulns %}<div class="mb-2"><div class="text-muted small mb-1">Known CVEs</div><div class="d-flex flex-wrap gap-1">{% for cve in idb.vulns %}<a href="https://nvd.nist.gov/vuln/detail/{{ cve }}" target="_blank" class="badge bg-danger bg-opacity-20 text-danger text-decoration-none" style="font-size:0.65rem">{{ cve }}</a>{% endfor %}</div></div>{% endif %}
-        {% if idb.tags %}<div class="mb-1"><div class="text-muted small mb-1">Tags</div><div class="d-flex flex-wrap gap-1">{% for tag in idb.tags %}<span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem">{{ tag }}</span>{% endfor %}</div></div>{% endif %}
+        {% if idb.vulns %}<div class="mb-2"><div class="text-muted small mb-1">Known CVEs</div><div class="flex flex-wrap gap-1">{% for cve in idb.vulns %}<a href="https://nvd.nist.gov/vuln/detail/{{ cve }}" target="_blank" class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.65rem">{{ cve }}</a>{% endfor %}</div></div>{% endif %}
+        {% if idb.tags %}<div class="mb-1"><div class="text-muted small mb-1">Tags</div><div class="flex flex-wrap gap-1">{% for tag in idb.tags %}<span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem">{{ tag }}</span>{% endfor %}</div></div>{% endif %}
         {% if idb.cpes %}<div class="mt-2"><div class="text-muted small mb-1">Software (CPE)</div>{% for cpe in idb.cpes[:5] %}<div class="small text-muted font-monospace" style="font-size:0.7rem;word-break:break-all">{{ cpe }}</div>{% endfor %}</div>{% endif %}
       {% endif %}
     </div>
@@ -362,10 +362,10 @@
 
   <!-- VirusTotal -->
   <div class="col-md-4">
-    <div class="form-card h-100">
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="badge fw-bold" style="background:#3950de;font-size:0.75rem">VT</span>
-        <span class="fw-semibold">VirusTotal</span>
+    <div class="form-card h-full">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge font-bold" style="background:#3950de;font-size:0.75rem">VT</span>
+        <span class="font-semibold">VirusTotal</span>
         {% if not vt %}<span class="badge bg-secondary ms-auto">No Key</span>
         {% elif vt.error is defined %}<span class="badge bg-secondary ms-auto">Error</span>
         {% elif vt.not_found %}<span class="badge bg-secondary ms-auto">Not Found</span>
@@ -380,14 +380,14 @@
       {% elif vt.not_found %}
         <p class="text-muted small">IP not found in VirusTotal database.</p>
       {% else %}
-        <div class="mb-3 text-center">
+        <div class="mb-4 text-center">
           <div style="font-size:2.2rem;font-weight:700;color:{% if vt.malicious >= 5 %}#f87171{% elif vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
-            {{ vt.malicious }}<span class="text-muted fs-5 fw-normal"> / {{ vt.total_engines }}</span>
+            {{ vt.malicious }}<span class="text-muted text-lg font-normal"> / {{ vt.total_engines }}</span>
           </div>
           <div class="text-muted small">Engines Detected</div>
         </div>
         {% if vt.suspicious > 0 %}<div class="small text-warning mb-1">{{ vt.suspicious }} suspicious</div>{% endif %}
-        {% if vt.reputation is defined %}<div class="small mb-2"><span class="text-muted">Community Score:</span> <span class="{% if vt.reputation < 0 %}text-danger{% elif vt.reputation > 0 %}text-success{% else %}text-muted{% endif %} fw-semibold">{{ vt.reputation }}</span></div>{% endif %}
+        {% if vt.reputation is defined %}<div class="small mb-2"><span class="text-muted">Community Score:</span> <span class="{% if vt.reputation < 0 %}text-danger{% elif vt.reputation > 0 %}text-success{% else %}text-muted{% endif %} font-semibold">{{ vt.reputation }}</span></div>{% endif %}
         {% if vt.country %}<div class="small mb-1"><span class="text-muted">Country:</span> {{ vt.country }}</div>{% endif %}
         {% if vt.detections %}<div class="mt-2"><div class="text-muted small mb-1">Detections</div>{% for d in vt.detections[:5] %}<div class="small font-monospace" style="color:#f87171;font-size:0.72rem">{{ d.engine }}: {{ d.result or d.category }}</div>{% endfor %}</div>{% endif %}
       {% endif %}
@@ -400,7 +400,7 @@
 {% if dismissed %}
 <div class="mt-2">
   <button class="btn btn-sm btn-outline-secondary" type="button"
-          data-bs-toggle="collapse" data-bs-target="#dismissed-list">
+          data-toggle="collapse" data-target="#dismissed-list">
     <i class="bi bi-chevron-down me-1"></i>Recently Dismissed ({{ dismissed | length }})
   </button>
   <div class="collapse mt-2" id="dismissed-list">

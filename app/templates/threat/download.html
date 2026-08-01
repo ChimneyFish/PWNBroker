@@ -11,15 +11,15 @@
 {% block content %}
 
 <!-- Registration key -->
-<div class="form-card mb-4" style="border-color:rgba(11,188,212,0.3)">
-  <div class="d-flex align-items-center gap-3 mb-1">
-    <i class="bi bi-key fs-4" style="color:var(--accent)"></i>
+<div class="form-card mb-6" style="border-color:rgba(11,188,212,0.3)">
+  <div class="flex items-center gap-4 mb-1">
+    <i class="bi bi-key text-xl" style="color:var(--accent)"></i>
     <div>
-      <div class="fw-bold">Registration Key</div>
+      <div class="font-bold">Registration Key</div>
       <div class="text-muted small">Agents must include this key when registering. Keep it secret.</div>
     </div>
-    <div class="ms-auto d-flex align-items-center gap-2">
-      <code class="px-3 py-2 rounded" style="background:var(--bg-input);font-size:0.9rem;letter-spacing:0.05em" id="reg-token">
+    <div class="ms-auto flex items-center gap-2">
+      <code class="px-4 py-2 rounded" style="background:var(--bg-input);font-size:0.9rem;letter-spacing:0.05em" id="reg-token">
         {{ cfg.registration_token }}
       </code>
       <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ cfg.registration_token }}');this.innerHTML='<i class=\'bi bi-check2\'></i>'">
@@ -30,10 +30,10 @@
 </div>
 
 <!-- Server URL info -->
-<div class="form-card mb-4">
-  <div class="fw-bold mb-2"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Server URL</div>
-  <div class="d-flex align-items-center gap-2">
-    <code class="px-3 py-2 rounded flex-grow-1" style="background:var(--bg-input)">{{ server_url }}</code>
+<div class="form-card mb-6">
+  <div class="font-bold mb-2"><i class="bi bi-hdd-network me-2" style="color:var(--accent)"></i>Server URL</div>
+  <div class="flex items-center gap-2">
+    <code class="px-4 py-2 rounded grow" style="background:var(--bg-input)">{{ server_url }}</code>
     <button class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ server_url }}');this.innerHTML='<i class=\'bi bi-check2\'></i>'">
       <i class="bi bi-clipboard"></i>
     </button>
@@ -44,32 +44,32 @@
 <!-- Platform tabs -->
 <ul class="nav nav-tabs mb-0" id="platform-tabs">
   <li class="nav-item">
-    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-linux">
+    <button class="nav-link active" data-toggle="tab" data-target="#tab-linux">
       <i class="bi bi-ubuntu me-1"></i>Linux
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-mac">
+    <button class="nav-link" data-toggle="tab" data-target="#tab-mac">
       <i class="bi bi-apple me-1"></i>macOS
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-windows">
+    <button class="nav-link" data-toggle="tab" data-target="#tab-windows">
       <i class="bi bi-windows me-1"></i>Windows
     </button>
   </li>
 </ul>
 
-<div class="tab-content form-card" style="border-top-left-radius:0">
+<div class="tab-content form-card" style="border-t-left-radius:0">
 
   <!-- Linux -->
   <div class="tab-pane fade show active" id="tab-linux">
-    <h6 class="fw-bold mb-3">Linux — systemd Service</h6>
+    <h6 class="font-bold mb-4">Linux — systemd Service</h6>
     <p class="text-muted small">Requires Python 3.7+ and systemd. Run as root for full network visibility.</p>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
-      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+      <div class="p-4 rounded font-monospace small" style="background:var(--bg-input)">
         <span class="text-muted"># Download and run the installer as root</span><br>
         curl -o install_linux.sh "<a href="{{ url_for('threat.download_script', platform='linux', token=cfg.registration_token) }}" class="text-info">{{ server_url }}{{ url_for('threat.download_script', platform='linux', token=cfg.registration_token) }}</a>"<br>
         chmod +x install_linux.sh<br>
@@ -80,7 +80,7 @@
       </a>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option B — Manual</div>
       <ol class="small text-muted">
         <li class="mb-1">Download the agent: <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="text-info">pwnbroker_agent.py</a></li>
@@ -91,7 +91,7 @@
       </ol>
     </div>
 
-    <div class="d-flex gap-2 mt-3">
+    <div class="flex gap-2 mt-4">
       <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
       </a>
@@ -100,12 +100,12 @@
 
   <!-- macOS -->
   <div class="tab-pane fade" id="tab-mac">
-    <h6 class="fw-bold mb-3">macOS — LaunchAgent</h6>
+    <h6 class="font-bold mb-4">macOS — LaunchAgent</h6>
     <p class="text-muted small">Requires Python 3 (Homebrew or system). Installs as a per-user LaunchAgent.</p>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
-      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+      <div class="p-4 rounded font-monospace small" style="background:var(--bg-input)">
         curl -o install_mac.sh "<a href="{{ url_for('threat.download_script', platform='mac', token=cfg.registration_token) }}" class="text-info">{{ server_url }}{{ url_for('threat.download_script', platform='mac', token=cfg.registration_token) }}</a>"<br>
         chmod +x install_mac.sh<br>
         ./install_mac.sh
@@ -115,7 +115,7 @@
       </a>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option B — Manual</div>
       <ol class="small text-muted">
         <li class="mb-1">Download: <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="text-info">pwnbroker_agent.py</a></li>
@@ -126,7 +126,7 @@
       </ol>
     </div>
 
-    <div class="d-flex gap-2 mt-3">
+    <div class="flex gap-2 mt-4">
       <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
       </a>
@@ -135,12 +135,12 @@
 
   <!-- Windows -->
   <div class="tab-pane fade" id="tab-windows">
-    <h6 class="fw-bold mb-3">Windows — Task Scheduler</h6>
+    <h6 class="font-bold mb-4">Windows — Task Scheduler</h6>
     <p class="text-muted small">Requires Python 3.7+ from <a href="https://python.org" target="_blank" rel="noopener">python.org</a>. Run PowerShell as Administrator.</p>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option A — Auto Install (Recommended)</div>
-      <div class="p-3 rounded font-monospace small" style="background:var(--bg-input)">
+      <div class="p-4 rounded font-monospace small" style="background:var(--bg-input)">
         <span class="text-muted"># In PowerShell (as Administrator)</span><br>
         Invoke-WebRequest <span class="text-info">"{{ server_url }}{{ url_for('threat.download_script', platform='windows', token=cfg.registration_token) }}"</span> -OutFile install_windows.ps1<br>
         .\install_windows.ps1
@@ -150,7 +150,7 @@
       </a>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-4">
       <div class="section-title mb-2">Option B — Manual</div>
       <ol class="small text-muted">
         <li class="mb-1">Download: <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="text-info">pwnbroker_agent.py</a></li>
@@ -167,7 +167,7 @@
       Remove this flag after uploading a CA-signed cert in Settings → TLS/HTTPS.
     </div>
 
-    <div class="d-flex gap-2 mt-3">
+    <div class="flex gap-2 mt-4">
       <a href="{{ url_for('threat.download_agent', token=cfg.registration_token) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-file-earmark-code me-1"></i>pwnbroker_agent.py
       </a>
@@ -177,12 +177,12 @@
 </div>
 
 <!-- Requirements -->
-<div class="form-card mt-4">
-  <h6 class="fw-bold mb-3"><i class="bi bi-list-check me-2" style="color:var(--accent)"></i>Agent Capabilities</h6>
+<div class="form-card mt-6">
+  <h6 class="font-bold mb-4"><i class="bi bi-list-check me-2" style="color:var(--accent)"></i>Agent Capabilities</h6>
   <div class="row g-3">
     <div class="col-md-4">
-      <div class="small fw-semibold mb-1">Sends every 60 seconds:</div>
-      <ul class="small text-muted ps-3">
+      <div class="small font-semibold mb-1">Sends every 60 seconds:</div>
+      <ul class="small text-muted ps-4">
         <li>Hostname &amp; IP address</li>
         <li>CPU &amp; memory utilisation</li>
         <li>Running process list (names)</li>
@@ -190,8 +190,8 @@
       </ul>
     </div>
     <div class="col-md-4">
-      <div class="small fw-semibold mb-1">Server checks:</div>
-      <ul class="small text-muted ps-3">
+      <div class="small font-semibold mb-1">Server checks:</div>
+      <ul class="small text-muted ps-4">
         <li>New remote IPs vs AbuseIPDB</li>
         <li>Results cached 24 hours</li>
         <li>Alerts created for suspicious IPs</li>
@@ -199,8 +199,8 @@
       </ul>
     </div>
     <div class="col-md-4">
-      <div class="small fw-semibold mb-1">Python requirements:</div>
-      <ul class="small text-muted ps-3">
+      <div class="small font-semibold mb-1">Python requirements:</div>
+      <ul class="small text-muted ps-4">
         <li>Python 3.7+</li>
         <li><code>requests</code></li>
         <li><code>psutil</code></li>

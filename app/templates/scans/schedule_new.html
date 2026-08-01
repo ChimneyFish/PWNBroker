@@ -3,19 +3,19 @@
 {% block page_title %}Schedule Scan{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-center">
   <div class="col-lg-6">
     <div class="form-card">
-      <h5 class="fw-bold mb-1">Schedule a Recurring Scan</h5>
-      <p class="text-muted small mb-4">Choose a frequency below — no cron knowledge required.</p>
+      <h5 class="font-bold mb-1">Schedule a Recurring Scan</h5>
+      <p class="text-muted small mb-6">Choose a frequency below — no cron knowledge required.</p>
 
       <form method="POST" id="schedForm">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Schedule Name</label>
           <input type="text" name="name" class="form-control" placeholder="Weekly Internal Scan" required>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Target</label>
           <select name="target_id" class="form-select" required>
             <option value="">— Select a target or group —</option>
@@ -39,7 +39,7 @@
             devices are found too); manual/tag groups are expanded to their current members.
           </div>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Scan Type</label>
           <select name="scan_type" class="form-select">
             {% for val, label in scan_types %}
@@ -47,15 +47,15 @@
             {% endfor %}
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Port Range</label>
           <input type="text" name="port_range" class="form-control" value="1-1024">
         </div>
 
         <!-- ── Schedule Builder ────────────────────────────────────── -->
-        <div class="mb-4">
+        <div class="mb-6">
           <label class="form-label">Frequency</label>
-          <div class="d-flex flex-wrap gap-2 mb-3" id="freq-pills">
+          <div class="flex flex-wrap gap-2 mb-4" id="freq-pills">
             <button type="button" class="btn btn-sm btn-outline-primary freq-pill" data-freq="hourly">Every Hour</button>
             <button type="button" class="btn btn-sm btn-outline-primary freq-pill active" data-freq="daily">Daily</button>
             <button type="button" class="btn btn-sm btn-outline-primary freq-pill" data-freq="weekly">Weekly</button>
@@ -64,9 +64,9 @@
           </div>
 
           <!-- Time picker — hidden for hourly & custom -->
-          <div id="time-row" class="mb-3">
+          <div id="time-row" class="mb-4">
             <label class="form-label text-muted small">Run at (UTC)</label>
-            <div class="d-flex gap-2 align-items-center">
+            <div class="flex gap-2 items-center">
               <select id="pick-hour" class="form-select w-auto">
                 {% for h in range(24) %}
                 <option value="{{ '%02d' % h }}" {% if h == 2 %}selected{% endif %}>{{ '%02d' % h }}</option>
@@ -83,9 +83,9 @@
           </div>
 
           <!-- Day-of-week picker — weekly only -->
-          <div id="weekday-row" class="mb-3 d-none">
+          <div id="weekday-row" class="mb-4 hidden">
             <label class="form-label text-muted small">On day(s)</label>
-            <div class="d-flex flex-wrap gap-2" id="weekday-pills">
+            <div class="flex flex-wrap gap-2" id="weekday-pills">
               {% for i, d in [(1,'Mon'),(2,'Tue'),(3,'Wed'),(4,'Thu'),(5,'Fri'),(6,'Sat'),(0,'Sun')] %}
               <button type="button" class="btn btn-sm btn-outline-secondary wd-pill {% if i == 1 %}active{% endif %}"
                       data-wd="{{ i }}">{{ d }}</button>
@@ -94,7 +94,7 @@
           </div>
 
           <!-- Day-of-month picker — monthly only -->
-          <div id="monthday-row" class="mb-3 d-none">
+          <div id="monthday-row" class="mb-4 hidden">
             <label class="form-label text-muted small">On day</label>
             <select id="pick-monthday" class="form-select w-auto">
               {% for d in range(1, 29) %}
@@ -104,7 +104,7 @@
           </div>
 
           <!-- Raw cron — custom only -->
-          <div id="custom-row" class="mb-3 d-none">
+          <div id="custom-row" class="mb-4 hidden">
             <label class="form-label text-muted small">Cron expression <span class="text-muted">(minute hour day month weekday)</span></label>
             <input type="text" id="custom-cron" class="form-control font-monospace" placeholder="0 2 * * 1">
             <div class="mt-1 small text-muted">
@@ -115,10 +115,10 @@
           </div>
 
           <!-- Live preview -->
-          <div class="p-3 rounded" style="background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2)">
+          <div class="p-4 rounded" style="background:rgba(var(--bs-primary-rgb),0.08);border:1px solid rgba(var(--bs-primary-rgb),0.2)">
             <i class="bi bi-clock me-2 text-primary"></i>
-            <span id="cron-preview" class="fw-semibold">Daily at 02:00 UTC</span>
-            <code id="cron-raw" class="text-muted ms-3 small">0 2 * * *</code>
+            <span id="cron-preview" class="font-semibold">Daily at 02:00 UTC</span>
+            <code id="cron-raw" class="text-muted ms-4 small">0 2 * * *</code>
           </div>
         </div>
         <!-- ── end Schedule Builder ─────────────────────────────────── -->
@@ -126,7 +126,7 @@
         <!-- Hidden field consumed by the route -->
         <input type="hidden" name="cron_expression" id="cron_expression" value="0 2 * * *" required>
 
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
           <button type="submit" class="btn btn-primary"><i class="bi bi-clock me-1"></i>Create Schedule</button>
           <a href="{{ url_for('scans.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
@@ -227,10 +227,10 @@
     const monthdayRow= document.getElementById('monthday-row');
     const customRow  = document.getElementById('custom-row');
 
-    timeRow.classList.toggle('d-none',    freq === 'hourly' || freq === 'custom');
-    weekdayRow.classList.toggle('d-none', freq !== 'weekly');
-    monthdayRow.classList.toggle('d-none',freq !== 'monthly');
-    customRow.classList.toggle('d-none',  freq !== 'custom');
+    timeRow.classList.toggle('hidden',    freq === 'hourly' || freq === 'custom');
+    weekdayRow.classList.toggle('hidden', freq !== 'weekly');
+    monthdayRow.classList.toggle('hidden',freq !== 'monthly');
+    customRow.classList.toggle('hidden',  freq !== 'custom');
   }
 
   // Frequency pills

@@ -7,7 +7,7 @@
   <i class="bi bi-speedometer me-1"></i>GRC Overview
 </a>
 {% if current_user.is_admin %}
-<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+<button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createModal">
   <i class="bi bi-plus me-1"></i>New Risk
 </button>
 {% endif %}
@@ -16,14 +16,14 @@
 {% block content %}
 
 <!-- Filter bar -->
-<div class="form-card mb-4">
-  <div class="d-flex flex-wrap gap-3 align-items-center">
-    <span class="text-muted small fw-semibold">STATUS</span>
+<div class="form-card mb-6">
+  <div class="flex flex-wrap gap-4 items-center">
+    <span class="text-muted small font-semibold">STATUS</span>
     {% for s, label in [('open','Open'),('mitigated','Mitigated'),('accepted','Accepted'),('closed','Closed'),('all','All')] %}
     <a href="{{ url_for('grc.risks') }}?status={{ s }}{% if category_filter %}&category={{ category_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == s %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
     {% endfor %}
-    <span class="text-muted small fw-semibold ms-3">CATEGORY</span>
+    <span class="text-muted small font-semibold ms-4">CATEGORY</span>
     {% for cat in ['technical','operational','compliance','strategic','financial'] %}
     <a href="{{ url_for('grc.risks') }}?status={{ status_filter }}&category={% if category_filter == cat %}{% else %}{{ cat }}{% endif %}"
        class="btn btn-sm {% if category_filter == cat %}btn-primary{% else %}btn-outline-secondary{% endif %}">
@@ -34,12 +34,12 @@
 </div>
 
 {% if not risks %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-exclamation-triangle fs-1 d-block mb-2 opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-exclamation-triangle text-4xl block mb-2 opacity-50"></i>
   No risks match these filters.
   {% if current_user.is_admin %}
   <div class="mt-2">
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">Log first risk</button>
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createModal">Log first risk</button>
   </div>
   {% endif %}
 </div>
@@ -62,7 +62,7 @@
       {% for r in risks %}
       <tr id="risk-row-{{ r.id }}">
         <td>
-          <div class="fw-semibold small">{{ r.title }}</div>
+          <div class="font-semibold small">{{ r.title }}</div>
           {% if r.description %}
           <div class="text-muted mt-1" style="font-size:0.7rem">{{ r.description | truncate(80) }}</div>
           {% endif %}
@@ -73,7 +73,7 @@
           {% endif %}
           {% if r.vuln_ticket %}
           <a href="{{ url_for('vulns.device', target_id=r.vuln_ticket.target_id, host=r.vuln_ticket.host_ip) }}#row-{{ r.vuln_ticket.id }}"
-             class="badge bg-secondary bg-opacity-20 text-muted text-decoration-none mt-1 d-inline-block" style="font-size:0.6rem">
+             class="badge bg-secondary bg-opacity-20 text-muted no-underline mt-1 inline-block" style="font-size:0.6rem">
             <i class="bi bi-bug me-1"></i>From scan finding
           </a>
           {% endif %}
@@ -108,7 +108,7 @@
         </td>
         {% if current_user.is_admin %}
         <td>
-          <div class="d-flex gap-1">
+          <div class="flex gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2"
                     onclick="openEdit({{ r.id }})"
                     title="Edit">
@@ -138,18 +138,18 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Log Acceptable Risk</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <ul class="nav nav-tabs mb-3">
-          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-vuln" type="button">From Vulnerability Finding</button></li>
-          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-manual" type="button">Manual Entry</button></li>
+        <ul class="nav nav-tabs mb-4">
+          <li class="nav-item"><button class="nav-link active" data-toggle="tab" data-target="#tab-vuln" type="button">From Vulnerability Finding</button></li>
+          <li class="nav-item"><button class="nav-link" data-toggle="tab" data-target="#tab-manual" type="button">Manual Entry</button></li>
         </ul>
         <div class="tab-content">
 
           <!-- Accept an open vulnerability finding as risk -->
           <div class="tab-pane fade show active" id="tab-vuln">
-            <div class="text-muted small mb-3">
+            <div class="text-muted small mb-4">
               A vulnerability that isn't accepted stays in Vulnerability Tickets for remediation. Marking it here
               closes that ticket out of active remediation and records it as an acceptable risk.
             </div>
@@ -204,7 +204,7 @@
                 </div>
               </div>
               <div class="modal-footer px-0 pb-0" style="border-color:var(--border-color)">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary btn-sm">Mark as Acceptable Risk</button>
               </div>
             </form>
@@ -245,7 +245,7 @@
                   <label class="form-label small text-muted">Likelihood (1–5)</label>
                   <input type="range" name="likelihood" min="1" max="5" value="3"
                          class="form-range" oninput="updateScore()">
-                  <div class="d-flex justify-content-between" style="font-size:0.65rem;color:var(--text-muted)">
+                  <div class="flex justify-between" style="font-size:0.65rem;color:var(--text-muted)">
                     <span>Rare</span><span>Unlikely</span><span>Possible</span><span>Likely</span><span>Almost Certain</span>
                   </div>
                 </div>
@@ -253,12 +253,12 @@
                   <label class="form-label small text-muted">Impact (1–5)</label>
                   <input type="range" name="impact" min="1" max="5" value="3"
                          class="form-range" oninput="updateScore()">
-                  <div class="d-flex justify-content-between" style="font-size:0.65rem;color:var(--text-muted)">
+                  <div class="flex justify-between" style="font-size:0.65rem;color:var(--text-muted)">
                     <span>Negligible</span><span>Minor</span><span>Moderate</span><span>Major</span><span>Catastrophic</span>
                   </div>
                 </div>
                 <div class="col-12 text-center">
-                  <span class="badge fs-6" id="score-preview" style="background:rgba(234,179,8,0.3);color:#fbbf24">
+                  <span class="badge text-base" id="score-preview" style="background:rgba(234,179,8,0.3);color:#fbbf24">
                     Score: 9 — MEDIUM
                   </span>
                 </div>
@@ -298,7 +298,7 @@
                 </div>
               </div>
               <div class="modal-footer px-0 pb-0" style="border-color:var(--border-color)">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary btn-sm">Log Risk</button>
               </div>
             </form>

@@ -10,7 +10,7 @@
   <i class="bi bi-magic me-1"></i>Browse Templates
 </a>
 {% if current_user.is_admin %}
-<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+<button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#createModal">
   <i class="bi bi-plus me-1"></i>New Policy
 </button>
 {% endif %}
@@ -19,9 +19,9 @@
 {% block content %}
 
 <!-- Status filter -->
-<div class="form-card mb-4">
-  <div class="d-flex flex-wrap gap-2 align-items-center">
-    <span class="text-muted small fw-semibold">STATUS</span>
+<div class="form-card mb-6">
+  <div class="flex flex-wrap gap-2 items-center">
+    <span class="text-muted small font-semibold">STATUS</span>
     <a href="{{ url_for('grc.policies') }}"
        class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
     {% for s, label, color in [('active','Active','success'),('draft','Draft','secondary'),('under_review','Under Review','warning'),('retired','Retired','secondary')] %}
@@ -32,12 +32,12 @@
 </div>
 
 {% if not policies %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-file-text fs-1 d-block mb-2 opacity-50"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-file-text text-4xl block mb-2 opacity-50"></i>
   No policies found.
   {% if current_user.is_admin %}
   <div class="mt-2">
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">Create first policy</button>
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#createModal">Create first policy</button>
   </div>
   {% endif %}
 </div>
@@ -60,7 +60,7 @@
       {% for p in policies %}
       <tr id="policy-row-{{ p.id }}">
         <td>
-          <a href="{{ url_for('grc.policy_detail', policy_id=p.id) }}" class="fw-semibold small text-decoration-none">{{ p.title }}</a>
+          <a href="{{ url_for('grc.policy_detail', policy_id=p.id) }}" class="font-semibold small no-underline">{{ p.title }}</a>
           {% if not p.content and not p.files %}
           <span class="badge bg-warning bg-opacity-25 text-warning ms-1" style="font-size:0.6rem" title="No written content or attached document yet">
             <i class="bi bi-exclamation-triangle"></i> No document
@@ -90,7 +90,7 @@
         <td class="small text-muted">{{ p.approver.username if p.approver else '—' }}</td>
         {% if current_user.is_admin %}
         <td>
-          <div class="d-flex gap-1">
+          <div class="flex gap-1">
             <button class="btn btn-sm btn-outline-secondary py-0 px-2"
                     onclick='openEdit({{ p.id }}, {{ p.title | tojson }}, {{ p.category | tojson }}, {{ p.status | tojson }}, {{ p.version | tojson }}, {{ p.owner_id | tojson }}, {{ (p.review_date | localdt("%Y-%m-%d") if p.review_date else "") | tojson }})'
                     title="Edit">
@@ -122,10 +122,10 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header" style="border-color:var(--border-color)">
           <h6 class="modal-title"><i class="bi bi-file-text me-2"></i>New Policy</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="text-muted small mb-3">
+          <div class="text-muted small mb-4">
             Set the basic details below. Next, you'll land on the policy's page where you can write it out,
             paste it in, upload a document, or apply a ready-made template.
           </div>
@@ -180,7 +180,7 @@
           </div>
         </div>
         <div class="modal-footer" style="border-color:var(--border-color)">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary btn-sm">Create Policy</button>
         </div>
       </form>
@@ -194,11 +194,11 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Edit Policy</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-policy-id">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Status</label>
           <select id="edit-status" class="form-select form-select-sm"
                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -208,12 +208,12 @@
             <option value="retired">Retired</option>
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Version</label>
           <input type="text" id="edit-version" class="form-control form-control-sm"
                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Owner</label>
           <select id="edit-owner" class="form-select form-select-sm"
                   style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
@@ -221,14 +221,14 @@
             {% for u in users %}<option value="{{ u.id }}">{{ u.username }}</option>{% endfor %}
           </select>
         </div>
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label small text-muted">Review Date</label>
           <input type="date" id="edit-review" class="form-control form-control-sm"
                  style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)">
         </div>
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary btn-sm" onclick="saveEdit()">Save</button>
       </div>
     </div>

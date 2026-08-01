@@ -17,16 +17,16 @@
 
 <div class="customize-panel" id="customizePanel">
   <div class="customize-panel-header">
-    <div class="d-flex align-items-center justify-content-between mb-1">
+    <div class="flex items-center justify-between mb-1">
       <div>
-        <div class="fw-bold" style="font-size:1rem">Customize Dashboard</div>
+        <div class="font-bold" style="font-size:1rem">Customize Dashboard</div>
         <div class="text-muted" style="font-size:0.75rem">Add, remove, or drag to reorder widgets</div>
       </div>
       <button id="closeCustomize" style="background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;padding:4px">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
-    <div class="d-flex gap-2 mt-3">
+    <div class="flex gap-2 mt-4">
       <button class="btn btn-outline-secondary btn-sm" id="resetLayout">
         <i class="bi bi-arrow-counterclockwise me-1"></i>Reset defaults
       </button>
@@ -216,8 +216,8 @@ function widgetShell(id, def, bodyHtml) {
 
 function buildStatWidget(id, def, data) {
   const val = data.stats[def.dataKey] ?? 0;
-  const html = `<a href="${def.link}" class="text-decoration-none d-block">
-    <div class="d-flex align-items-center justify-content-between">
+  const html = `<a href="${def.link}" class="no-underline block">
+    <div class="flex items-center justify-between">
       <div>
         <div class="stat-widget-val" style="color:${def.color}">${val}</div>
         <div class="stat-widget-label">${def.title}</div>
@@ -259,14 +259,14 @@ function buildAgentChart(id, def, data) {
     { label: 'Offline', val: s.offline, color: '#f87171' },
     { label: 'Unknown', val: s.unknown, color: '#94a3b8' },
   ].map(r => `<div class="agent-status-row">
-    <span class="d-flex align-items-center gap-2">
+    <span class="flex items-center gap-2">
       <span style="width:8px;height:8px;border-radius:50%;background:${r.color};display:inline-block"></span>
       <span style="font-size:0.85rem">${r.label}</span>
     </span>
-    <span class="fw-bold" style="color:${r.color}">${r.val}</span>
+    <span class="font-bold" style="color:${r.color}">${r.val}</span>
   </div>`).join('');
   const html = `${rows}
-    <div class="text-center mt-3 text-muted" style="font-size:0.72rem">${total} total agents</div>`;
+    <div class="text-center mt-4 text-muted" style="font-size:0.72rem">${total} total agents</div>`;
   return wrapWidget(id, 'sm', widgetShell(id, def, html));
 }
 
@@ -279,13 +279,13 @@ function buildScansTable(id, def, data) {
     return wrapWidget(id, 'lg', widgetShell(id, def, html));
   }
   const rows = data.recent_scans.map(s => `<tr>
-    <td><a href="/scans/${s.id}" class="text-decoration-none fw-semibold">${escHtml(s.name)}</a></td>
+    <td><a href="/scans/${s.id}" class="no-underline font-semibold">${escHtml(s.name)}</a></td>
     <td class="text-muted small">${escHtml(s.target)}</td>
     <td><span class="badge-status status-${s.status}">${s.status.toUpperCase()}</span></td>
     <td>${s.critical_count > 0 ? `<span class="badge-severity sev-critical me-1">${s.critical_count} crit</span>` : ''}<span class="text-muted">${s.vuln_count}</span></td>
     <td class="text-muted small">${s.created_at}</td>
   </tr>`).join('');
-  const html = `<div class="d-flex justify-content-end mb-3">
+  const html = `<div class="flex justify-end mb-4">
     <a href="/scans/new" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>New Scan</a>
   </div>
   <div class="data-table">
@@ -309,9 +309,9 @@ function buildFindingsTable(id, def, data) {
   }
   const rows = data.recent_vulns.map(r => `<tr class="result-row-${r.severity}">
     <td><span class="badge-severity sev-${r.severity}">${r.severity}</span></td>
-    <td class="fw-semibold small">${escHtml(r.title)}</td>
+    <td class="font-semibold small">${escHtml(r.title)}</td>
     <td class="text-muted small">${escHtml(r.host)}</td>
-    <td>${r.cvss_score != null ? `<span class="fw-semibold">${r.cvss_score}</span>` : '—'}</td>
+    <td>${r.cvss_score != null ? `<span class="font-semibold">${r.cvss_score}</span>` : '—'}</td>
     <td>${r.cve_id ? `<a href="https://nvd.nist.gov/vuln/detail/${escHtml(r.cve_id)}" target="_blank" class="text-primary small">${escHtml(r.cve_id)}</a>` : '—'}</td>
   </tr>`).join('');
   const html = `<div class="data-table">
@@ -336,7 +336,7 @@ function buildPaloAltoTable(id, def, data) {
     const sevClass = l.severity === 'informational' ? 'info' : l.severity;
     return `<tr>
       <td><span class="badge-severity sev-${sevClass}">${escHtml(l.severity)}</span></td>
-      <td class="fw-semibold small">${escHtml(l.threat_name)}</td>
+      <td class="font-semibold small">${escHtml(l.threat_name)}</td>
       <td class="font-monospace small">${escHtml(l.src_ip)}</td>
       <td class="font-monospace small">${escHtml(l.dst_ip)}</td>
       <td class="text-muted small">${escHtml(l.firewall)}</td>

@@ -21,10 +21,10 @@
 {% set active_pol = policies   | selectattr('status','equalto','active')       | list %}
 {% set avg_pct    = (fw_summary | map(attribute='pct') | list | sum / fw_summary | length) | round | int if fw_summary else 0 %}
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('grc.risks') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('grc.risks') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if critical_r %}text-danger{% endif %}">{{ open_risks | length }}</div>
           <div class="stat-label">Open Risks</div>
@@ -36,8 +36,8 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('grc.risks') }}?status=open" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('grc.risks') }}?status=open" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if critical_r %}text-danger{% elif high_r %}text-warning{% else %}text-success{% endif %}">
             {{ critical_r | length }}
@@ -51,8 +51,8 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('grc.compliance') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('grc.compliance') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value {% if avg_pct >= 70 %}text-success{% elif avg_pct >= 40 %}text-warning{% else %}text-danger{% endif %}">
             {{ avg_pct }}%
@@ -66,8 +66,8 @@
     </a>
   </div>
   <div class="col-sm-6 col-xl-3">
-    <a href="{{ url_for('grc.policies') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
-      <div class="d-flex align-items-center justify-content-between">
+    <a href="{{ url_for('grc.policies') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
         <div>
           <div class="stat-value">{{ active_pol | length }}</div>
           <div class="stat-label">Active Policies</div>
@@ -81,16 +81,16 @@
 </div>
 
 <!-- CVE Intel enrichment status bar -->
-<div class="form-card mb-4 py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
-  <div class="small text-muted fw-semibold">CVE INTEL</div>
-  <div class="d-flex align-items-center gap-2">
-    <div class="progress flex-grow-1" style="height:6px;width:140px;background:rgba(255,255,255,0.08)">
+<div class="form-card mb-6 py-2 px-4 flex items-center gap-4 flex-wrap">
+  <div class="small text-muted font-semibold">CVE INTEL</div>
+  <div class="flex items-center gap-2">
+    <div class="progress grow" style="height:6px;width:140px;background:rgba(255,255,255,0.08)">
       <div class="progress-bar bg-info"
            style="width:{{ ((enriched_count / total_cve_count * 100) | round | int) if total_cve_count else 0 }}%"></div>
     </div>
     <span class="small text-info">{{ enriched_count }} / {{ total_cve_count }} CVEs enriched</span>
   </div>
-  <div class="ms-auto d-flex gap-2 small text-muted">
+  <div class="ms-auto flex gap-2 small text-muted">
     <span><i class="bi bi-shield-check text-info me-1"></i>NVD</span>
     <span><i class="bi bi-graph-up text-warning me-1"></i>EPSS</span>
     <span><i class="bi bi-diagram-3 text-danger me-1"></i>ATT&amp;CK</span>
@@ -102,9 +102,9 @@
 
   <!-- Risk Heatmap -->
   <div class="col-xl-5">
-    <div class="section-header mb-3"><span class="section-title">Risk Heatmap</span></div>
+    <div class="section-header mb-4"><span class="section-title">Risk Heatmap</span></div>
     <div class="form-card">
-      <div class="d-flex justify-content-between align-items-start mb-3">
+      <div class="flex justify-between items-start mb-4">
         <div class="text-muted small">Likelihood →</div>
         <a href="{{ url_for('grc.risks') }}" class="btn btn-sm btn-outline-secondary py-0">
           View Register <i class="bi bi-arrow-right ms-1"></i>
@@ -113,10 +113,10 @@
       <div style="display:grid;grid-template-columns:auto repeat(5,1fr);gap:3px;font-size:0.7rem">
         <div></div>
         {% for l in range(1,6) %}
-        <div class="text-center text-muted fw-semibold">{{ l }}</div>
+        <div class="text-center text-muted font-semibold">{{ l }}</div>
         {% endfor %}
         {% for imp in [5,4,3,2,1] %}
-        <div class="d-flex align-items-center text-muted fw-semibold" style="padding-right:4px">{{ imp }}</div>
+        <div class="flex items-center text-muted font-semibold" style="padding-right:4px">{{ imp }}</div>
         {% for lik in range(1,6) %}
         {% set score = lik * imp %}
         {% if score >= 20 %}{% set bg = 'rgba(220,38,38,0.7)' %}
@@ -131,7 +131,7 @@
         {% endfor %}
         {% endfor %}
       </div>
-      <div class="d-flex gap-3 mt-3 small">
+      <div class="flex gap-4 mt-4 small">
         <span style="color:rgba(22,163,74,0.9)">■ Low (1–5)</span>
         <span style="color:rgba(234,179,8,0.9)">■ Medium (6–11)</span>
         <span style="color:rgba(234,88,12,0.9)">■ High (12–19)</span>
@@ -142,13 +142,13 @@
 
   <!-- Compliance Summary -->
   <div class="col-xl-4">
-    <div class="section-header mb-3"><span class="section-title">Compliance</span></div>
+    <div class="section-header mb-4"><span class="section-title">Compliance</span></div>
     <div class="form-card">
       {% for s in fw_summary %}
-      <div class="mb-4">
-        <div class="d-flex justify-content-between mb-1">
+      <div class="mb-6">
+        <div class="flex justify-between mb-1">
           <a href="{{ url_for('grc.framework_detail', framework_id=s.framework.id) }}"
-             class="small fw-semibold text-decoration-none">
+             class="small font-semibold no-underline">
             {{ s.framework.short_name }} {{ s.framework.version }}
           </a>
           <span class="small {% if s.pct >= 70 %}text-success{% elif s.pct >= 40 %}text-warning{% else %}text-danger{% endif %}">
@@ -159,7 +159,7 @@
           <div class="progress-bar {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
                style="width:{{ s.pct }}%"></div>
         </div>
-        <div class="d-flex gap-3 mt-1" style="font-size:0.65rem;color:var(--text-muted)">
+        <div class="flex gap-4 mt-1" style="font-size:0.65rem;color:var(--text-muted)">
           <span class="text-success">✓ {{ s.compliant }} compliant</span>
           <span class="text-warning">~ {{ s.partial }} partial</span>
           <span class="text-danger">✗ {{ s.non_compliant }} gap</span>
@@ -168,7 +168,7 @@
       </div>
       {% endfor %}
       <div class="mt-2">
-        <a href="{{ url_for('grc.compliance') }}" class="btn btn-sm btn-outline-secondary w-100">
+        <a href="{{ url_for('grc.compliance') }}" class="btn btn-sm btn-outline-secondary w-full">
           View All Frameworks
         </a>
       </div>
@@ -177,7 +177,7 @@
 
   <!-- Policy Status -->
   <div class="col-xl-3">
-    <div class="section-header mb-3"><span class="section-title">Policies</span></div>
+    <div class="section-header mb-4"><span class="section-title">Policies</span></div>
     <div class="form-card">
       {% for status, label, color in [
           ('active','Active','#4ade80'),
@@ -187,7 +187,7 @@
       ] %}
       {% set count = policies | selectattr('status','equalto',status) | list | length %}
       <a href="{{ url_for('grc.policies') }}?status={{ status }}"
-         class="d-flex justify-content-between align-items-center py-2 text-decoration-none border-bottom"
+         class="flex justify-between items-center py-2 no-underline border-b"
          style="border-color:var(--border-color)!important;color:inherit">
         <span class="small">
           <span class="me-2" style="color:{{ color }}">■</span>{{ label }}
@@ -195,8 +195,8 @@
         <span class="badge bg-secondary bg-opacity-20 text-muted">{{ count }}</span>
       </a>
       {% endfor %}
-      <div class="mt-3">
-        <a href="{{ url_for('grc.policies') }}" class="btn btn-sm btn-outline-secondary w-100">
+      <div class="mt-4">
+        <a href="{{ url_for('grc.policies') }}" class="btn btn-sm btn-outline-secondary w-full">
           Manage Policies
         </a>
       </div>
@@ -212,7 +212,7 @@
   <!-- EPSS Top-Risk CVEs -->
   {% if top_cves %}
   <div class="col-xl-7">
-    <div class="section-header mb-3">
+    <div class="section-header mb-4">
       <span class="section-title">Top CVEs by Exploit Probability (EPSS)</span>
       <span class="badge bg-warning bg-opacity-20 text-warning ms-2 small">NVD + EPSS</span>
     </div>
@@ -233,13 +233,13 @@
           <tr>
             <td>
               <a href="https://nvd.nist.gov/vuln/detail/{{ e.cve_id }}" target="_blank"
-                 class="font-monospace text-info text-decoration-none small">
+                 class="font-monospace text-info no-underline small">
                 {{ e.cve_id }}
               </a>
             </td>
             <td>
-              <div class="d-flex align-items-center gap-2">
-                <div class="progress flex-grow-1" style="height:5px;width:70px;background:rgba(255,255,255,0.1)">
+              <div class="flex items-center gap-2">
+                <div class="progress grow" style="height:5px;width:70px;background:rgba(255,255,255,0.1)">
                   <div class="progress-bar {% if e.epss_score >= 0.5 %}bg-danger{% elif e.epss_score >= 0.1 %}bg-warning{% else %}bg-info{% endif %}"
                        style="width:{{ (e.epss_score * 100) | round | int }}%"></div>
                 </div>
@@ -282,7 +282,7 @@
   <!-- ATT&CK Tactic Coverage -->
   {% if tactic_counts %}
   <div class="col-xl-5">
-    <div class="section-header mb-3">
+    <div class="section-header mb-4">
       <span class="section-title">ATT&amp;CK Tactic Coverage</span>
       <span class="badge bg-danger bg-opacity-20 text-danger ms-2 small">MITRE ATT&amp;CK</span>
     </div>
@@ -290,16 +290,16 @@
       {% set max_count = tactic_counts.values() | max %}
       {% for tactic, count in tactic_counts | dictsort(by='value', reverse=true) %}
       <div class="mb-2">
-        <div class="d-flex justify-content-between mb-1">
+        <div class="flex justify-between mb-1">
           <span class="small text-muted">{{ tactic }}</span>
-          <span class="small text-danger fw-semibold">{{ count }} CVE{{ 's' if count != 1 }}</span>
+          <span class="small text-danger font-semibold">{{ count }} CVE{{ 's' if count != 1 }}</span>
         </div>
         <div class="progress" style="height:4px;background:rgba(255,255,255,0.08)">
           <div class="progress-bar bg-danger" style="width:{{ (count / max_count * 100) | round | int }}%"></div>
         </div>
       </div>
       {% endfor %}
-      <div class="mt-3 small text-muted">
+      <div class="mt-4 small text-muted">
         <i class="bi bi-info-circle me-1"></i>
         Tactics mapped from CVEs found in your environment via MITRE ATT&amp;CK STIX data.
       </div>

@@ -11,12 +11,12 @@
 {% block content %}
 
 <!-- Filter bar -->
-<div class="form-card mb-4">
-  <form method="GET" class="d-flex flex-wrap gap-3 align-items-end">
+<div class="form-card mb-6">
+  <form method="GET" class="flex flex-wrap gap-4 items-end">
 
     <div>
       <label class="form-label small text-muted mb-1">TIME RANGE</label>
-      <div class="d-flex gap-1">
+      <div class="flex gap-1">
         {% for d, label in [('1','24h'),('7','7d'),('30','30d'),('90','90d'),('0','All')] %}
         <a href="?days={{ d }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user_id={{ user_filter }}{% endif %}"
            class="btn btn-sm {% if days_filter == d %}btn-primary{% else %}btn-outline-secondary{% endif %}">
@@ -67,8 +67,8 @@
 </div>
 
 {% if not entries %}
-<div class="form-card text-center py-5 text-muted">
-  <i class="bi bi-journal-text fs-1 d-block mb-2 opacity-30"></i>
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-journal-text text-4xl block mb-2 opacity-30"></i>
   No activity recorded yet.
   <div class="small mt-1">Events are logged as users interact with the platform.</div>
 </div>
@@ -80,21 +80,21 @@
 {% set date_str = e.timestamp | localdt('%Y-%m-%d') %}
 {% if date_str != ns.last_date %}
 {% set ns.last_date = date_str %}
-<div class="section-header mb-2 {% if not loop.first %}mt-4{% endif %}">
+<div class="section-header mb-2 {% if not loop.first %}mt-6{% endif %}">
   <span class="section-title small">{{ date_str }}</span>
 </div>
 {% endif %}
 
-<div class="form-card py-2 px-3 mb-1 d-flex align-items-start gap-3" style="border-radius:6px">
+<div class="form-card py-2 px-4 mb-1 flex items-start gap-4" style="border-radius:6px">
   <!-- Icon -->
-  <div class="flex-shrink-0 mt-1" style="width:28px;text-align:center">
+  <div class="shrink-0 mt-1" style="width:28px;text-align:center">
     <i class="bi {{ action_icons.get(e.action, 'bi-circle text-muted') }}" style="font-size:1rem"></i>
   </div>
 
   <!-- Main content -->
-  <div class="flex-grow-1" style="min-width:0">
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <span class="fw-semibold small">{{ action_labels.get(e.action, e.action) }}</span>
+  <div class="grow" style="min-width:0">
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="font-semibold small">{{ action_labels.get(e.action, e.action) }}</span>
       {% if e.entity_name %}
       <span class="text-muted small">—</span>
       <span class="text-info small font-monospace" style="font-size:0.75rem">{{ e.entity_name | truncate(60) }}</span>
@@ -109,8 +109,8 @@
   </div>
 
   <!-- Meta -->
-  <div class="flex-shrink-0 text-end" style="min-width:130px">
-    <div class="small fw-semibold {% if e.actor %}text-info{% else %}text-muted{% endif %}">
+  <div class="shrink-0 text-end" style="min-width:130px">
+    <div class="small font-semibold {% if e.actor %}text-info{% else %}text-muted{% endif %}">
       {{ e.actor.username if e.actor else 'System' }}
     </div>
     <div class="text-muted" style="font-size:0.7rem" title="{{ e.timestamp | localdt('%Y-%m-%d %H:%M:%S') }}">
@@ -130,7 +130,7 @@
     <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color)">
       <div class="modal-header" style="border-color:var(--border-color)">
         <h6 class="modal-title">Clear Old Entries</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <label class="form-label small text-muted">Delete entries older than</label>
@@ -144,7 +144,7 @@
         </select>
       </div>
       <div class="modal-footer" style="border-color:var(--border-color)">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger btn-sm" onclick="confirmClear()">Clear</button>
       </div>
     </div>

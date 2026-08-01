@@ -3,7 +3,7 @@
 {% block page_title %}My Profile{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-center">
   <div class="col-lg-5">
     {% if current_user.must_change_password %}
     <div class="alert alert-warning">
@@ -17,25 +17,25 @@
       Your administrator requires two-factor authentication on this account. Set it up below before continuing.
     </div>
     {% endif %}
-    <div class="form-card mb-3">
-      <h5 class="fw-bold mb-4">Update Profile</h5>
+    <div class="form-card mb-4">
+      <h5 class="font-bold mb-6">Update Profile</h5>
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label">Username</label>
           <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
         </div>
-        <div class="mb-4">
+        <div class="mb-6">
           <label class="form-label">Email</label>
           <input type="email" name="email" class="form-control" value="{{ current_user.email }}">
         </div>
-        <hr class="border-secondary">
-        <h6 class="text-muted mt-3 mb-3">Change Password</h6>
-        <div class="mb-3">
+        <hr class="border-line">
+        <h6 class="text-muted mt-4 mb-4">Change Password</h6>
+        <div class="mb-4">
           <label class="form-label">Current Password</label>
           <input type="password" name="current_password" class="form-control">
         </div>
-        <div class="mb-4">
+        <div class="mb-6">
           <label class="form-label">New Password</label>
           <input type="password" name="new_password" class="form-control">
         </div>
@@ -44,14 +44,14 @@
     </div>
 
     <div class="form-card">
-      <h5 class="fw-bold mb-3">Two-Factor Authentication</h5>
+      <h5 class="font-bold mb-4">Two-Factor Authentication</h5>
       {% if current_user.mfa_enabled %}
-        <p class="text-success small mb-3"><i class="bi bi-shield-check me-1"></i>Enabled</p>
+        <p class="text-success small mb-4"><i class="bi bi-shield-check me-1"></i>Enabled</p>
         <button class="btn btn-outline-danger btn-sm" type="button"
-                data-bs-toggle="collapse" data-bs-target="#mfa-disable-form">
+                data-toggle="collapse" data-target="#mfa-disable-form">
           Disable Two-Factor Authentication
         </button>
-        <div class="collapse mt-3" id="mfa-disable-form">
+        <div class="collapse mt-4" id="mfa-disable-form">
           <form method="POST" action="{{ url_for('users.mfa_disable') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-2">
@@ -66,7 +66,7 @@
           </form>
         </div>
       {% else %}
-        <p class="text-muted small mb-3">Not enabled. Add an extra layer of security with an authenticator app.</p>
+        <p class="text-muted small mb-4">Not enabled. Add an extra layer of security with an authenticator app.</p>
         <a href="{{ url_for('users.mfa_setup') }}" class="btn btn-primary btn-sm">Enable Two-Factor Authentication</a>
       {% endif %}
     </div>

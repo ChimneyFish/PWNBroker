@@ -13,18 +13,18 @@
 <div class="row g-4">
   {% for s in summaries %}
   <div class="col-md-6 col-xl-4">
-    <div class="form-card h-100">
-      <div class="d-flex justify-content-between align-items-start mb-3">
+    <div class="form-card h-full">
+      <div class="flex justify-between items-start mb-4">
         <div>
-          <div class="fw-semibold">{{ s.framework.name }}</div>
+          <div class="font-semibold">{{ s.framework.name }}</div>
           <div class="text-muted small">v{{ s.framework.version }}</div>
         </div>
-        <span class="badge {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">
+        <span class="badge {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning text-dark{% else %}bg-danger{% endif %} text-base">
           {{ s.pct }}%
         </span>
       </div>
       {% if s.framework.description %}
-      <div class="text-muted small mb-3">{{ s.framework.description }}</div>
+      <div class="text-muted small mb-4">{{ s.framework.description }}</div>
       {% endif %}
 
       <!-- Progress bar -->
@@ -38,7 +38,7 @@
       </div>
 
       <!-- Legend -->
-      <div class="d-flex gap-3 mb-4" style="font-size:0.7rem">
+      <div class="flex gap-4 mb-6" style="font-size:0.7rem">
         <span class="text-success">✓ {{ s.compliant }}</span>
         <span class="text-warning">~ {{ s.partial }}</span>
         <span class="text-danger">✗ {{ s.non_compliant }}</span>
@@ -46,9 +46,9 @@
         <span class="text-muted opacity-50">? {{ s.not_assessed }}</span>
       </div>
 
-      <div class="d-flex gap-2">
+      <div class="flex gap-2">
         <a href="{{ url_for('grc.framework_detail', framework_id=s.framework.id) }}"
-           class="btn btn-sm btn-outline-secondary flex-grow-1">
+           class="btn btn-sm btn-outline-secondary grow">
           Assess Controls <i class="bi bi-arrow-right ms-1"></i>
         </a>
         <a href="{{ url_for('grc.compliance_report', framework_id=s.framework.id) }}"

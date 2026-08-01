@@ -11,17 +11,17 @@
 
 {% block content %}
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-6">
   <div class="col-auto">
-    <a href="#scans-table" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="#scans-table" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Total Scans</div>
-      <div class="fw-semibold">{{ scans | length }}</div>
+      <div class="font-semibold">{{ scans | length }}</div>
     </a>
   </div>
   <div class="col-auto">
-    <a href="{{ url_for('targets.index') }}" class="stat-card text-decoration-none" style="color:inherit;display:block">
+    <a href="{{ url_for('targets.index') }}" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Targets with SSH</div>
-      <div class="fw-semibold">{{ targets | selectattr('ssh_username') | list | length }}</div>
+      <div class="font-semibold">{{ targets | selectattr('ssh_username') | list | length }}</div>
     </a>
   </div>
 </div>
@@ -46,8 +46,8 @@
     <tbody>
       {% for scan in scans %}
       <tr>
-        <td class="fw-semibold">
-          <a href="{{ url_for('dependency.view', scan_id=scan.id) }}" class="text-decoration-none">{{ scan.name }}</a>
+        <td class="font-semibold">
+          <a href="{{ url_for('dependency.view', scan_id=scan.id) }}" class="no-underline">{{ scan.name }}</a>
         </td>
         <td class="text-muted small">{{ scan.target.host }}</td>
         <td class="text-muted small font-monospace">{{ scan.scan_path or '—' }}</td>
@@ -73,8 +73,8 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="7" class="text-center text-muted py-5">
-          <i class="bi bi-box-seam fs-2 d-block mb-2"></i>
+        <td colspan="7" class="text-center text-muted py-12">
+          <i class="bi bi-box-seam text-3xl block mb-2"></i>
           No dependency scans yet.
           {% if current_user.is_admin %}
           <div class="mt-2">
@@ -89,7 +89,7 @@
 </div>
 
 {% if not targets | selectattr('ssh_username') | list %}
-<div class="alert alert-warning mt-3">
+<div class="alert alert-warning mt-4">
   <i class="bi bi-exclamation-triangle me-2"></i>
   No targets have SSH credentials configured.
   <a href="{{ url_for('targets.index') }}" class="alert-link">Add SSH credentials to a target</a> to enable dependency scanning.
