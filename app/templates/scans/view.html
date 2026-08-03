@@ -318,7 +318,7 @@
           {% if idb.ports %}
           <div class="flex flex-wrap gap-1 mb-1">
             {% for p in idb.ports[:8] %}
-            <span class="badge font-monospace" style="background:rgba(99,102,241,0.15);color:var(--accent);font-size:0.6rem">{{ p }}</span>
+            <span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.6rem">{{ p }}</span>
             {% endfor %}
             {% if idb.ports | length > 8 %}<span class="badge bg-secondary" style="font-size:0.6rem">+{{ idb.ports | length - 8 }}</span>{% endif %}
           </div>
@@ -430,7 +430,7 @@
         <td class="small">
           {% for src in (r.description or '').split(', ') if src %}
             {% if src == 'crt.sh' %}
-            <span class="badge me-1" style="background:rgba(99,102,241,0.15);color:var(--accent);font-size:0.65rem">crt.sh</span>
+            <span class="badge me-1" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.65rem">crt.sh</span>
             {% elif src == 'DNSDumpster' %}
             <span class="badge me-1" style="background:rgba(234,88,12,0.2);color:#fb923c;font-size:0.65rem">DNSDumpster</span>
             {% else %}

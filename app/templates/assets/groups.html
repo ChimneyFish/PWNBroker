@@ -24,7 +24,7 @@
           <div class="stat-value">{{ groups | length }}</div>
           <div class="stat-label">Total Groups</div>
         </div>
-        <div class="stat-icon" style="background:rgba(99,102,241,0.1);color:var(--accent)">
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
           <i class="bi bi-collection"></i>
         </div>
       </div>
@@ -194,11 +194,11 @@
           <div class="mb-4">
             <label class="form-label small text-muted">Color</label>
             <div class="flex gap-2 items-center">
-              <input type="color" name="color" value="#6366f1"
+              <input type="color" name="color" value="#0bbcd4"
                      class="form-control form-control-sm form-control-color"
                      style="width:40px;padding:2px;background:var(--bg-input);border-color:var(--border-color)">
               <div class="flex gap-1">
-                {% for c in ['#6366f1','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
+                {% for c in ['#0bbcd4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
                 <button type="button" class="btn btn-sm p-0"
                         style="background:{{ c }};width:20px;height:20px;border:none;border-radius:4px"
                         onclick="document.querySelector('#createModal [name=color]').value='{{ c }}'"></button>

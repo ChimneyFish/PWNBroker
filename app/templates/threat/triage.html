@@ -351,7 +351,7 @@
       {% elif idb.no_data %}
         <p class="text-muted small">No data for this IP.</p>
       {% else %}
-        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(99,102,241,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
+        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
         {% if idb.hostnames %}<div class="mb-2"><div class="text-muted small mb-1">Hostnames</div>{% for h in idb.hostnames[:4] %}<div class="small font-monospace" style="color:var(--accent)">{{ h }}</div>{% endfor %}{% if idb.hostnames | length > 4 %}<div class="text-muted small">+{{ idb.hostnames | length - 4 }} more</div>{% endif %}</div>{% endif %}
         {% if idb.vulns %}<div class="mb-2"><div class="text-muted small mb-1">Known CVEs</div><div class="flex flex-wrap gap-1">{% for cve in idb.vulns %}<a href="https://nvd.nist.gov/vuln/detail/{{ cve }}" target="_blank" class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.65rem">{{ cve }}</a>{% endfor %}</div></div>{% endif %}
         {% if idb.tags %}<div class="mb-1"><div class="text-muted small mb-1">Tags</div><div class="flex flex-wrap gap-1">{% for tag in idb.tags %}<span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem">{{ tag }}</span>{% endfor %}</div></div>{% endif %}
