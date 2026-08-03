@@ -53,6 +53,33 @@ function Die {
     exit 1
 }
 
+# Run a native executable and log its combined output, without letting the
+# global $ErrorActionPreference = "Stop" abort the script over it. PowerShell
+# converts merged stderr ("2>&1") lines from a native command into terminating
+# ErrorRecords when ErrorActionPreference is Stop — so a harmless stderr
+# warning (e.g. pip's own cache warnings) kills the whole install exactly like
+# a real failure would. Scoping ErrorActionPreference to "Continue" just for
+# the duration of the call keeps that from happening; the real signal for
+# success/failure is still $LASTEXITCODE, returned here for the caller to check.
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory)][string]$FilePath,
+        [string[]]$ArgumentList = @(),
+        [string]$LogPrefix = "  "
+    )
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $FilePath @ArgumentList 2>&1 | ForEach-Object {
+            $text = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { "$_" }
+            if ($text) { Log "$LogPrefix$text" }
+        }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    return $LASTEXITCODE
+}
+
 # ── Uninstall ─────────────────────────────────────────────────────────────────
 if ($Uninstall) {
     Log "=== PwnBroker Agent Uninstall ==="
@@ -66,7 +93,7 @@ if ($Uninstall) {
         }
         if (Test-Path $VenvPy) {
             Log "Removing service registration..."
-            & $VenvPy $AgentScript remove 2>&1 | ForEach-Object { Log $_ }
+            Invoke-Native -FilePath $VenvPy -ArgumentList @($AgentScript, "remove") | Out-Null
         } else {
             sc.exe delete $ServiceName | Out-Null
         }
@@ -153,21 +180,24 @@ if (-not $PythonExe) { Die "Python 3 could not be located after install attempts
 # ── Step 2: Virtual environment ───────────────────────────────────────────────
 Log "[2/5] Creating virtual environment at $VenvDir..."
 if (Test-Path $VenvDir) { Remove-Item -Recurse -Force $VenvDir }
-& $PythonExe -m venv $VenvDir 2>&1 | ForEach-Object { Log "  $_" }
+Invoke-Native -FilePath $PythonExe -ArgumentList @("-m", "venv", $VenvDir) | Out-Null
 if (-not (Test-Path $VenvPy)) { Die "venv creation failed." }
 
 Log "  Installing dependencies (requests, psutil, pywin32)..."
 # Invoke pip via "python -m pip", not pip.exe directly — pip.exe can't safely
 # replace itself while it's the running process, and refuses to try (this is
-# what caused the "To modify pip, please run..." error).
-& $VenvPy -m pip install --quiet --upgrade pip 2>&1 | Out-Null
-& $VenvPy -m pip install --quiet requests psutil pywin32 2>&1 | Out-Null
+# what caused the "To modify pip, please run..." error). Routed through
+# Invoke-Native so a harmless stderr line (e.g. pip's own cache warnings)
+# doesn't get treated as a terminating error by $ErrorActionPreference = "Stop".
+Invoke-Native -FilePath $VenvPy -ArgumentList @("-m", "pip", "install", "--quiet", "--upgrade", "pip") | Out-Null
+$exit = Invoke-Native -FilePath $VenvPy -ArgumentList @("-m", "pip", "install", "--quiet", "requests", "psutil", "pywin32")
+if ($exit -ne 0) { Die "Failed to install Python dependencies (pip exit $exit)." }
 
 # pywin32 post-install — registers COM DLLs and pythonservice.exe
 $PostInstall = "$VenvDir\Scripts\pywin32_postinstall.py"
 if (Test-Path $PostInstall) {
     Log "  Running pywin32 post-install..."
-    & $VenvPy $PostInstall -install 2>&1 | ForEach-Object { Log "  $_" }
+    Invoke-Native -FilePath $VenvPy -ArgumentList @($PostInstall, "-install") | Out-Null
 }
 Log "  Dependencies ready."
 
@@ -203,7 +233,7 @@ if ($existing) {
         Stop-Service -Name $ServiceName -Force
         Start-Sleep -Seconds 2
     }
-    & $VenvPy $AgentScript remove 2>&1 | ForEach-Object { Log "  $_" }
+    Invoke-Native -FilePath $VenvPy -ArgumentList @($AgentScript, "remove") | Out-Null
     Start-Sleep -Seconds 1
 }
 
