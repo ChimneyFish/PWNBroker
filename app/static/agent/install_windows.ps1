@@ -211,8 +211,13 @@ Log "  agent.py written."
 
 # ── Step 4: Register agent with server ───────────────────────────────────────
 Log "[4/5] Registering with $Server..."
-$RegArgs = @($AgentScript, "--server", $Server, "--reg-token", $RegToken, "--register")
-if ($NoVerifySsl) { $RegArgs += "--no-verify-ssl" }
+# Start-Process -ArgumentList doesn't reliably quote array elements that
+# contain spaces (e.g. $AgentScript under "C:\Program Files\..."), so it
+# splits them into extra arguments on the actual command line. Build one
+# pre-quoted string instead — that's what Start-Process passes to
+# CreateProcess mostly verbatim.
+$RegArgs = "`"$AgentScript`" --server `"$Server`" --reg-token `"$RegToken`" --register"
+if ($NoVerifySsl) { $RegArgs += " --no-verify-ssl" }
 
 $proc = Start-Process -FilePath $VenvPy -ArgumentList $RegArgs `
     -Wait -PassThru -NoNewWindow -RedirectStandardOutput "$DataDir\reg_out.txt" `
@@ -238,7 +243,8 @@ if ($existing) {
 }
 
 # Install via pywin32 HandleCommandLine
-$proc = Start-Process -FilePath $VenvPy -ArgumentList @($AgentScript, "install") `
+# Same quoting issue as the registration call above — pass a pre-quoted string.
+$proc = Start-Process -FilePath $VenvPy -ArgumentList "`"$AgentScript`" install" `
     -Wait -PassThru -NoNewWindow -RedirectStandardOutput "$DataDir\svc_out.txt" `
     -RedirectStandardError "$DataDir\svc_err.txt"
 Get-Content "$DataDir\svc_out.txt" -ErrorAction SilentlyContinue | ForEach-Object { Log "  $_" }
