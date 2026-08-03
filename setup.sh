@@ -251,8 +251,16 @@ EnvironmentFile=$ENV_FILE
 # needs this — it's the systemd equivalent of the setcap grant already used
 # for nmap below, scoped to exactly the one capability needed instead of
 # running the whole service as root.
+#
+# CAP_NET_RAW/CAP_NET_ADMIN are also listed in the bounding set (but not
+# granted ambiently) so the nmap subprocess spawned by this service can
+# actually use the file capabilities step 5 sets on the nmap binary itself.
+# CapabilityBoundingSet is a ceiling, not a grant — without these two here,
+# nmap's setcap capabilities get silently stripped at exec time no matter
+# what step 5 does, and -O (OS detection) fails under systemd even though
+# `setcap` reported success and manual runs outside the service work fine.
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN
 
 ExecStart=$INSTALL_DIR/venv/bin/gunicorn \\
     --bind 0.0.0.0:$PORT \\

@@ -124,7 +124,7 @@
           {% if result.otx.tags %}
           <div class="flex flex-wrap gap-1">
             {% for tag in result.otx.tags[:8] %}
-            <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.65rem">{{ tag }}</span>
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:var(--accent);font-size:0.65rem">{{ tag }}</span>
             {% endfor %}
           </div>
           {% endif %}
@@ -312,7 +312,7 @@
         <span class="badge bg-danger" style="font-size:0.62rem">{{ m }}</span>
         {% endfor %}
         {% for tag in pulse.tags %}
-        <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.62rem">{{ tag }}</span>
+        <span class="badge" style="background:rgba(99,102,241,0.15);color:var(--accent);font-size:0.62rem">{{ tag }}</span>
         {% endfor %}
       </div>
       {% if pulse.references %}

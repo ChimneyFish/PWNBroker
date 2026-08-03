@@ -418,10 +418,10 @@ function initTrendChart(data) {
       datasets: [{
         label: 'Scans',
         data: data.trend.data,
-        borderColor: '#0bbcd4',
-        backgroundColor: 'rgba(11,188,212,0.08)',
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
         borderWidth: 2, tension: 0.4, fill: true,
-        pointBackgroundColor: '#0bbcd4', pointRadius: 3, pointHoverRadius: 5,
+        pointBackgroundColor: '#6366f1', pointRadius: 3, pointHoverRadius: 5,
       }]
     },
     options: {
@@ -447,10 +447,10 @@ function initVulnTargetChart(data) {
       datasets: [{
         label: 'Vulnerabilities',
         data: vbt.data.length ? vbt.data : [0],
-        backgroundColor: 'rgba(11,188,212,0.25)',
-        borderColor: '#0bbcd4',
+        backgroundColor: 'rgba(99,102,241,0.25)',
+        borderColor: '#6366f1',
         borderWidth: 1.5, borderRadius: 4,
-        hoverBackgroundColor: 'rgba(11,188,212,0.4)',
+        hoverBackgroundColor: 'rgba(99,102,241,0.4)',
       }]
     },
     options: {
