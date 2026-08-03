@@ -1,0 +1,89 @@
+name: Build Windows Agent Installer
+
+# Freezes app/static/agent/pwnbroker_agent.py into a standalone agent.exe
+# (PyInstaller) and wraps it in a silent-install-capable installer (Inno
+# Setup) — see installer/windows/. Must run on a Windows runner: PyInstaller
+# builds native binaries for the OS it runs on, it can't cross-compile a
+# Windows .exe from Linux/macOS.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp on the installer (e.g. 1.2.3)"
+        required: false
+        default: "0.0.0-dev"
+  push:
+    tags:
+      - "agent-v*.*.*"
+    paths:
+      - "app/static/agent/**"
+      - "installer/windows/**"
+      - ".github/workflows/build-windows-agent.yml"
+  pull_request:
+    paths:
+      - "app/static/agent/**"
+      - "installer/windows/**"
+      - ".github/workflows/build-windows-agent.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}" -replace '^agent-v', ''
+          } elseif ("${{ github.event.inputs.version }}" -ne "") {
+            $v = "${{ github.event.inputs.version }}"
+          } else {
+            $v = "0.0.0-dev"
+          }
+          echo "version=$v" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: "x64"
+
+      - name: Install build dependencies
+        run: pip install pyinstaller pywin32 requests psutil
+
+      - name: Freeze agent.py with PyInstaller
+        run: pyinstaller installer/windows/pwnbroker_agent.spec
+        working-directory: .
+
+      - name: Smoke-test the frozen exe
+        shell: pwsh
+        run: |
+          $ver = & "dist\pwnbroker_agent\pwnbroker_agent.exe" --help 2>&1
+          Write-Host $ver
+          if ($LASTEXITCODE -ne 0) { throw "agent.exe --help exited $LASTEXITCODE" }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+            installer\windows\pwnbroker_agent.iss
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PwnBrokerAgentSetup-${{ steps.version.outputs.version }}
+          path: dist/installer/PwnBrokerAgentSetup.exe
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/installer/PwnBrokerAgentSetup.exe
+          name: "Windows Agent ${{ steps.version.outputs.version }}"

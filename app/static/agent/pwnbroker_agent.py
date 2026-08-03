@@ -285,6 +285,16 @@ def main():
         reg_token = args.reg_token or input("Registration token: ").strip()
         _save_config({})
         cfg = register(server, reg_token, verify_ssl)
+        if args.register:
+            # --register is the one-shot enrollment step every install script
+            # (systemd/launchd/Windows Service) runs before separately setting
+            # up the persistent process — which then invokes agent.py *without*
+            # --register, relying on the config just written here. Falling
+            # through into the heartbeat loop below instead of returning meant
+            # this "one-shot" step never actually returned: it just became the
+            # agent, in the foreground, forever — so every installer hung here
+            # indefinitely and never got to the "create the service" step.
+            return
 
     if not cfg.get("agent_id"):
         log.error("Not registered. Run with --register first.")
