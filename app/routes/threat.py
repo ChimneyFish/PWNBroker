@@ -4,7 +4,7 @@ import ipaddress
 import os
 from datetime import datetime, timezone, timedelta
 from flask import (Blueprint, render_template, redirect, url_for, flash,
-                   request, jsonify, Response)
+                   request, jsonify, Response, send_file)
 from flask_login import login_required, current_user
 from ..models import (ThreatConfig, EndpointAgent, AgentAlert, IOCRecord, SocCase,
                       PaloAltoFirewall, PaloAltoThreatLog)
@@ -340,6 +340,29 @@ def download_script(platform):
     content = content.replace("__AGENT_CONTENT__", agent_content)
     return Response(content, mimetype=mime,
                     headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@threat_bp.route("/download/windows-installer")
+def download_windows_installer():
+    """Serves the compiled Windows installer (PyInstaller + Inno Setup —
+    see installer/windows/) straight off local disk. Built out-of-band
+    (GitHub Actions or a local Windows build) and dropped into place at
+    app/static/agent/PwnBrokerAgentSetup.exe — the running server never
+    reaches out to GitHub itself to fetch it."""
+    cfg = _get_cfg()
+    if not _download_authorized(cfg):
+        return Response("Unauthorized — log in or supply ?token=<registration token>.",
+                        status=401, mimetype="text/plain")
+    path = os.path.join(_AGENT_DIR, "PwnBrokerAgentSetup.exe")
+    if not os.path.exists(path):
+        return Response(
+            "Installer not built yet. Run the build-windows-agent GitHub Actions "
+            "workflow and place the resulting PwnBrokerAgentSetup.exe at "
+            "app/static/agent/PwnBrokerAgentSetup.exe on this server.",
+            status=404, mimetype="text/plain",
+        )
+    return send_file(path, mimetype="application/x-msdownload",
+                      as_attachment=True, download_name="PwnBrokerAgentSetup.exe")
 
 
 # ── Agent REST API (token-based, no session) ──────────────────────────────────

@@ -10,3 +10,7 @@ logs/
 __pycache__/
 *.pyc
 scripts/build/tailwindcss
+
+# Built out-of-band (GitHub Actions or a local Windows build — see
+# installer/windows/) and placed here manually; not tracked in this repo.
+app/static/agent/PwnBrokerAgentSetup.exe

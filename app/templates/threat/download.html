@@ -143,7 +143,7 @@
         A standalone installer — no Python required on the target machine at all, installs and starts
         the Windows Service directly. Run as Administrator.
       </p>
-      <a href="https://github.com/ChimneyFish/PWNBroker/releases/latest/download/PwnBrokerAgentSetup.exe" class="btn btn-primary btn-sm">
+      <a href="{{ url_for('threat.download_windows_installer', token=cfg.registration_token) }}" class="btn btn-primary btn-sm">
         <i class="bi bi-download me-1"></i>Download PwnBrokerAgentSetup.exe
       </a>
       <p class="text-muted small mt-2 mb-1">
