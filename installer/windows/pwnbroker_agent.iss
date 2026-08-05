@@ -67,6 +67,7 @@ Filename: "{app}\{#MyAppExeName}"; Parameters: "remove"; WorkingDir: "{app}"; Fl
 [Code]
 var
   ServerPage: TInputQueryWizardPage;
+  NoVerifyCheckBox: TNewCheckBox;
 
 // Command-line params for silent/Intune installs, e.g.:
 //   /SERVER=https://host /REGTOKEN=xxxx /NOVERIFYSSL=1
@@ -99,6 +100,23 @@ begin
     ServerPage.Add('Server URL:', False);
     ServerPage.Add('Registration Token:', False);
     ServerPage.Values[0] := 'https://';
+
+    // The GUI wizard previously had no way to set this at all — only the
+    // silent /NOVERIFYSSL=1 command-line param controlled it. Anyone running
+    // the installer normally (double-click) had no way to skip verification
+    // for a self-signed cert, so registration would fail with an SSL error
+    // and there was nothing in the UI to fix it.
+    NoVerifyCheckBox := TNewCheckBox.Create(WizardForm);
+    NoVerifyCheckBox.Parent := ServerPage.Surface;
+    NoVerifyCheckBox.Left := ServerPage.Edits[1].Left;
+    NoVerifyCheckBox.Top := ServerPage.Edits[1].Top + ServerPage.Edits[1].Height + ScaleY(16);
+    NoVerifyCheckBox.Width := ServerPage.Surface.Width - NoVerifyCheckBox.Left;
+    NoVerifyCheckBox.Height := ScaleY(17);
+    NoVerifyCheckBox.Caption := 'Server uses a self-signed certificate (skip SSL verification)';
+    // Checked by default — matches the PowerShell and manual install
+    // instructions, which both default to --no-verify-ssl, since this app's
+    // own setup.sh generates a self-signed cert unless replaced.
+    NoVerifyCheckBox.Checked := True;
   end;
 end;
 
@@ -133,7 +151,7 @@ end;
 
 function GetNoVerifyFlag(Param: String): String;
 begin
-  if ParamNoVerifySsl then
+  if ParamNoVerifySsl or ((NoVerifyCheckBox <> nil) and NoVerifyCheckBox.Checked) then
     Result := ' --no-verify-ssl'
   else
     Result := '';
