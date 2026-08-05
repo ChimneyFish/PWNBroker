@@ -14,3 +14,8 @@ scripts/build/tailwindcss
 # Built out-of-band (GitHub Actions or a local Windows build — see
 # installer/windows/) and placed here manually; not tracked in this repo.
 app/static/agent/PwnBrokerAgentSetup.exe
+
+# PyInstaller/Inno Setup build output (installer/windows/build.bat runs
+# from the repo root, so these land here, not under installer/windows/).
+/build/
+/dist/
