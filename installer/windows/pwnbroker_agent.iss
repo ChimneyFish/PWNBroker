@@ -55,11 +55,6 @@ Root: HKLM; Subkey: "SOFTWARE\PwnBroker\Agent"; ValueType: string; ValueName: "I
 Root: HKLM; Subkey: "SOFTWARE\PwnBroker\Agent"; ValueType: string; ValueName: "Server"; ValueData: "{code:GetServerURL}"
 Root: HKLM; Subkey: "SOFTWARE\PwnBroker\Agent"; ValueType: string; ValueName: "InstalledAt"; ValueData: "{code:GetNowISO}"
 
-[Run]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--server ""{code:GetServerURL}"" --reg-token ""{code:GetRegToken}"" --register{code:GetNoVerifyFlag}"; WorkingDir: "{app}"; StatusMsg: "Registering agent with PwnBroker server..."; Flags: runhidden waituntilterminated
-Filename: "{app}\{#MyAppExeName}"; Parameters: "install"; WorkingDir: "{app}"; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated
-Filename: "{app}\{#MyAppExeName}"; Parameters: "start"; WorkingDir: "{app}"; StatusMsg: "Starting PwnBroker Agent service..."; Flags: runhidden waituntilterminated
-
 [UninstallRun]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "stop"; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; RunOnceId: "PwnBrokerStop"
 Filename: "{app}\{#MyAppExeName}"; Parameters: "remove"; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; RunOnceId: "PwnBrokerRemove"
@@ -160,4 +155,42 @@ end;
 function GetNowISO(Param: String): String;
 begin
   Result := GetDateTimeString('yyyy-mm-dd hh:nn:ss', '-', ':');
+end;
+
+// Register, install, and start were previously plain [Run] entries, which
+// don't check exit codes — if registration failed (bad token, unreachable
+// server, cert mismatch), the installer would silently carry on to "install"
+// and "start" anyway and report success, leaving a service that's installed
+// but never actually registered. SvcDoRun finds no config.json agent_id in
+// that case and just returns immediately, which is exactly the "service
+// started then stopped" behavior this was built to catch and explain instead
+// of hiding.
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+  ExePath, RegParams: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    ExePath := ExpandConstant('{app}\{#MyAppExeName}');
+    RegParams := '--server "' + GetServerURL('') + '" --reg-token "' + GetRegToken('') +
+      '" --register' + GetNoVerifyFlag('');
+
+    WizardForm.StatusLabel.Caption := 'Registering agent with PwnBroker server...';
+    if not Exec(ExePath, RegParams, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+    begin
+      MsgBox('Agent registration failed (exit code ' + IntToStr(ResultCode) + '). ' +
+        'Double-check the server URL and registration token, and whether the ' +
+        '"self-signed certificate" checkbox matches your server''s setup.' + #13#10#13#10 +
+        'The Windows Service will still be installed, but it will not start ' +
+        'until registration succeeds — re-run this installer to retry once ' +
+        'you''ve confirmed the details above.', mbError, MB_OK);
+    end;
+
+    WizardForm.StatusLabel.Caption := 'Installing Windows service...';
+    Exec(ExePath, 'install', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    WizardForm.StatusLabel.Caption := 'Starting PwnBroker Agent service...';
+    Exec(ExePath, 'start', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
 end;
