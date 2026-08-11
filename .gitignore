@@ -11,6 +11,9 @@ __pycache__/
 *.pyc
 scripts/build/tailwindcss
 
+# PEN is cloned+built by setup.sh at deploy time (tools/pen), not vendored
+tools/pen/
+
 # Built out-of-band (GitHub Actions or a local Windows build — see
 # installer/windows/) and placed here manually; not tracked in this repo.
 app/static/agent/PwnBrokerAgentSetup.exe

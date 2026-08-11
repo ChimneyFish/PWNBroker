@@ -110,6 +110,24 @@ def run_scan(scan_id: int, app=None):
                         raw_data=r.get("raw_data"),
                     ))
 
+            # ── PEN operational web/API pentest ────────────────────────────────
+            # URL-oriented, like web/subdomain scans — not meaningful against a
+            # CIDR range, so skip rather than trying to build a bogus URL from it.
+            if scan_type == "pen" and not _is_cidr(host):
+                from .pen_scanner import run_pen_scan
+                target_url = host if host.startswith(("http://", "https://")) else f"https://{host}"
+                pen_results = run_pen_scan(target_url, host, token=scan.pen_token)
+                for r in pen_results:
+                    results.append(ScanResult(
+                        scan_id=scan_id,
+                        result_type=r.get("result_type", "info"),
+                        host=r.get("host", host),
+                        severity=r.get("severity", "info"),
+                        title=r.get("title", ""),
+                        description=r.get("description", ""),
+                        raw_data=r.get("raw_data"),
+                    ))
+
             # ── OSV dependency scan ───────────────────────────────────────────
             if scan_type == "osv":
                 from ..models import ThreatConfig

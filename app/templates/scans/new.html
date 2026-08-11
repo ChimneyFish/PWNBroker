@@ -65,13 +65,34 @@
             Uses the <strong>osv-scanner</strong> binary if installed, otherwise queries the
             <strong>OSV API</strong> directly.
           </div>
-          <div class="mt-2 p-4 rounded" style="background:rgba(var(--bs-info-rgb),0.08);border:1px solid rgba(var(--bs-info-rgb),0.2)">
+          <div class="mt-2 p-4 rounded bg-accent/10 border border-accent/20">
             <div class="small font-semibold mb-1 text-info"><i class="bi bi-info-circle me-1"></i>Dependency Scan Info</div>
             <ul class="small text-muted mb-0 ps-4">
               <li>Scans all lockfiles found recursively in the directory</li>
               <li>Checks every package version against the <a href="https://osv.dev" target="_blank" class="text-info">OSV vulnerability database</a></li>
               <li>Provides guided remediation commands per finding</li>
               <li>Install osv-scanner for faster, more accurate results: <code class="text-primary">go install github.com/google/osv-scanner/cmd/osv-scanner@latest</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- PEN token (shown only for the PEN scan type) -->
+        <div class="mb-6" id="pen_token_field" style="display:none">
+          <label class="form-label">Bearer Token <span class="text-muted font-normal normal-case">(optional)</span></label>
+          <input type="password" name="pen_token" class="form-control font-monospace"
+                 placeholder="Leave blank if the target doesn't need one" autocomplete="off">
+          <div class="form-text text-muted">
+            Used for the modules that need authenticated requests (file upload test, lateral movement,
+            privilege escalation). Stored encrypted and only for this scan.
+          </div>
+          <div class="mt-2 p-4 rounded bg-red/10 border border-red/20">
+            <div class="small font-semibold mb-1" style="color:var(--color-red)">
+              <i class="bi bi-exclamation-triangle me-1"></i>Active exploitation, not passive scanning
+            </div>
+            <ul class="small text-muted mb-0 ps-4">
+              <li>Runs all 11 PEN modules, including hash cracking and a privilege-escalation attempt — only run this against systems you're authorized to test.</li>
+              <li>Several modules (IDOR/upload/SQLi/lateral-movement/exploitation) probe endpoints specific to PEN's own reference vulnerable app and will simply find nothing on most real targets — the generic recon modules (GraphQL, WebSocket, git exposure, fingerprinting, misconfigurations) are what actually apply broadly.</li>
+              <li>Capped at 40 minutes; a slow hash-crack attempt is cut off rather than run indefinitely.</li>
             </ul>
           </div>
         </div>
@@ -91,11 +112,14 @@
 const sel = document.getElementById('scan_type_select');
 const portField = document.getElementById('port_range_field');
 const osvField  = document.getElementById('osv_path_field');
+const penField  = document.getElementById('pen_token_field');
 function updateFields() {
   const isOsv = sel.value === 'osv';
-  const noPort = isOsv || sel.value === 'subdomain';
+  const isPen = sel.value === 'pen';
+  const noPort = isOsv || isPen || sel.value === 'subdomain';
   portField.style.display = noPort ? 'none' : '';
   osvField.style.display  = isOsv ? '' : 'none';
+  penField.style.display  = isPen ? '' : 'none';
 }
 sel.addEventListener('change', updateFields);
 updateFields();

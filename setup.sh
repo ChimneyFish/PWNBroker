@@ -54,7 +54,7 @@ info "Service user: $SERVICE_USER"
 echo ""
 
 # =============================================================================
-step "1 / 10 — System Packages"
+step "1 / 11 — System Packages"
 # =============================================================================
 info "Updating package lists..."
 apt-get update -qq
@@ -65,13 +65,14 @@ PKGS=(
     curl git ufw
     build-essential libssl-dev libffi-dev
     pkg-config libxml2-dev libxmlsec1-dev
+    golang-go john
 )
 info "Installing: ${PKGS[*]}"
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKGS[@]}" -qq
 ok "System packages installed"
 
 # =============================================================================
-step "2 / 10 — Service User"
+step "2 / 11 — Service User"
 # =============================================================================
 if ! id "$SERVICE_USER" &>/dev/null; then
     useradd --system --no-create-home --shell /bin/false \
@@ -82,7 +83,7 @@ else
 fi
 
 # =============================================================================
-step "3 / 10 — Application Files"
+step "3 / 11 — Application Files"
 # =============================================================================
 # $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
 # deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
@@ -123,7 +124,7 @@ chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================
-step "4 / 10 — Python Virtual Environment"
+step "4 / 11 — Python Virtual Environment"
 # =============================================================================
 PY_VER=$(python3 --version 2>&1)
 info "Using $PY_VER"
@@ -144,7 +145,34 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
 # =============================================================================
-step "5 / 10 — nmap Raw-Socket Capability"
+step "5 / 11 — PEN Operational Scanner"
+# =============================================================================
+# PEN (github.com/ekomsSavior/PEN) has no releases/module path to `go install`
+# directly — it has to be cloned and built from source, per its own README.
+# Skip if already built so re-running setup.sh doesn't rebuild every time (same
+# idempotency pattern as the venv/.env steps above).
+PEN_DIR="$INSTALL_DIR/tools/pen"
+if [[ -x "$PEN_DIR/pen" ]]; then
+    ok "PEN already built at $PEN_DIR/pen"
+else
+    info "Cloning and building PEN..."
+    mkdir -p "$(dirname "$PEN_DIR")"
+    if [[ -d "$PEN_DIR" ]]; then
+        rm -rf "$PEN_DIR"  # partial/failed build from a previous run
+    fi
+    if git clone --quiet https://github.com/ekomsSavior/PEN.git "$PEN_DIR" \
+        && ( cd "$PEN_DIR" && { go mod init pen >/dev/null 2>&1 || true; } && go mod tidy && go build -o pen main.go ); then
+        chmod 755 "$PEN_DIR/pen"
+        ok "PEN built at $PEN_DIR/pen"
+    else
+        warn "PEN build failed — the 'pen' scan type will report itself unavailable until this is fixed"
+        warn "Retry manually: cd $PEN_DIR && go mod tidy && go build -o pen main.go"
+    fi
+fi
+warn "PEN's exploitation module can optionally crack hashes with john (installed above) and dump exposed git repos with git-dumper (pip install git-dumper, not installed automatically) — both are optional, PEN skips them gracefully if missing"
+
+# =============================================================================
+step "6 / 11 — nmap Raw-Socket Capability"
 # =============================================================================
 # nmap needs CAP_NET_RAW for OS fingerprinting (-O) and CAP_NET_ADMIN for some
 # scan types.  setcap grants these to the nmap binary so the service user
@@ -159,7 +187,7 @@ else
 fi
 
 # =============================================================================
-step "6 / 10 — TLS Certificate"
+step "7 / 11 — TLS Certificate"
 # =============================================================================
 CERT="$INSTALL_DIR/data/ssl/cert.pem"
 KEY="$INSTALL_DIR/data/ssl/key.pem"
@@ -182,7 +210,7 @@ else
 fi
 
 # =============================================================================
-step "7 / 10 — Environment File"
+step "8 / 11 — Environment File"
 # =============================================================================
 ENV_FILE="$INSTALL_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -224,7 +252,7 @@ chmod 640 "$ENV_FILE"
 chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
-step "8 / 10 — Systemd Service"
+step "9 / 11 — Systemd Service"
 # =============================================================================
 # One worker, multiple threads — not scaled by CPU count. APScheduler's
 # background jobs (scan checks, report sends, the Palo Alto poller) and the
@@ -300,7 +328,7 @@ ok "Unit file written: $SERVICE_FILE"
 ok "Service enabled for autostart on boot"
 
 # =============================================================================
-step "9 / 10 — Log Rotation"
+step "10 / 11 — Log Rotation"
 # =============================================================================
 cat > /etc/logrotate.d/pwnbroker << EOF
 $INSTALL_DIR/logs/*.log {
@@ -319,7 +347,7 @@ EOF
 ok "Logrotate config installed (/etc/logrotate.d/pwnbroker)"
 
 # =============================================================================
-step "10 / 10 — Firewall & Service Start"
+step "11 / 11 — Firewall & Service Start"
 # =============================================================================
 # Firewall
 if command -v ufw &>/dev/null; then

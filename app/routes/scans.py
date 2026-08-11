@@ -78,6 +78,7 @@ SCAN_TYPES = [
     ("web",       "Web Vulnerability Scan"),
     ("cve",       "CVE Lookup Only"),
     ("subdomain", "Subdomain Enumeration"),
+    ("pen",       "PEN — Operational Web/API Pentest (Run All)"),
 ]
 
 
@@ -127,6 +128,7 @@ def new():
         scan_type  = request.form.get("scan_type", "full")
         port_range = request.form.get("port_range", "1-1024").strip()
         scan_path  = request.form.get("scan_path", "").strip() if scan_type == "osv" else None
+        pen_token  = (request.form.get("pen_token", "").strip() or None) if scan_type == "pen" else None
 
         if not raw_target or not name:
             flash("Target and scan name are required.", "danger")
@@ -147,7 +149,7 @@ def new():
                 target_obj = Target.query.get_or_404(group.target_id)
                 scan = Scan(
                     name=f"{name} — {group.name}", target_id=target_obj.id, scan_type=scan_type,
-                    port_range=port_range, created_by=current_user.id, status="pending",
+                    port_range=port_range, pen_token=pen_token, created_by=current_user.id, status="pending",
                 )
                 db.session.add(scan)
                 db.session.commit()
@@ -178,7 +180,7 @@ def new():
                 scan = Scan(
                     name=f"{name} — {asset.ip_address}",
                     target_id=t.id, scan_type=scan_type,
-                    port_range=port_range, created_by=current_user.id, status="pending",
+                    port_range=port_range, pen_token=pen_token, created_by=current_user.id, status="pending",
                 )
                 db.session.add(scan)
                 db.session.flush()
@@ -198,7 +200,7 @@ def new():
             return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
 
         scan = Scan(name=name, target_id=target_id, scan_type=scan_type,
-                    port_range=port_range, scan_path=scan_path,
+                    port_range=port_range, scan_path=scan_path, pen_token=pen_token,
                     created_by=current_user.id, status="pending")
         db.session.add(scan)
         db.session.commit()

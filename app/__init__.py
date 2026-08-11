@@ -285,6 +285,7 @@ def _migrate_columns(app):
         "scans": [
             ("scan_path", "VARCHAR(512)"),
             ("auto_remediate", "BOOLEAN DEFAULT 0"),
+            ("pen_token", "TEXT"),
         ],
         "scan_results": [
             ("fixed_version", "VARCHAR(100)"),
@@ -371,6 +372,7 @@ def _migrate_encrypt_secrets(app):
         ]),
         ("paloalto_firewalls", "id", ["api_key", "password"]),
         ("targets", "id", ["ssh_password", "ssh_private_key", "ssh_key_passphrase"]),
+        ("scans", "id", ["pen_token"]),
     ]
 
     total = 0
