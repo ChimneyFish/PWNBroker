@@ -54,7 +54,7 @@ info "Service user: $SERVICE_USER"
 echo ""
 
 # =============================================================================
-step "1 / 11 — System Packages"
+step "1 / 12 — System Packages"
 # =============================================================================
 info "Updating package lists..."
 apt-get update -qq
@@ -72,7 +72,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKG
 ok "System packages installed"
 
 # =============================================================================
-step "2 / 11 — Service User"
+step "2 / 12 — Service User"
 # =============================================================================
 if ! id "$SERVICE_USER" &>/dev/null; then
     useradd --system --no-create-home --shell /bin/false \
@@ -83,7 +83,7 @@ else
 fi
 
 # =============================================================================
-step "3 / 11 — Application Files"
+step "3 / 12 — Application Files"
 # =============================================================================
 # $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
 # deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
@@ -124,7 +124,7 @@ chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================
-step "4 / 11 — Python Virtual Environment"
+step "4 / 12 — Python Virtual Environment"
 # =============================================================================
 PY_VER=$(python3 --version 2>&1)
 info "Using $PY_VER"
@@ -145,7 +145,7 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
 # =============================================================================
-step "5 / 11 — PEN Operational Scanner"
+step "5 / 12 — PEN Operational Scanner"
 # =============================================================================
 # PEN (github.com/ekomsSavior/PEN) has no releases/module path to `go install`
 # directly — it has to be cloned and built from source, per its own README.
@@ -172,7 +172,35 @@ fi
 warn "PEN's exploitation module can optionally crack hashes with john (installed above) and dump exposed git repos with git-dumper (pip install git-dumper, not installed automatically) — both are optional, PEN skips them gracefully if missing"
 
 # =============================================================================
-step "6 / 11 — nmap Raw-Socket Capability"
+step "6 / 12 — REAPER Secret Scanner"
+# =============================================================================
+# REAPER (github.com/ekomsSavior/REAPER) ships its own go.mod/go.sum, so no
+# `go mod init` step is needed here (unlike PEN). Note the build command is
+# `go build -o reaper .` (the whole package) — reaper.go depends on symbols
+# defined in detector.go, so `go build -o reaper reaper.go` (building only
+# that one file) fails with "undefined: Detector" and similar errors.
+REAPER_DIR="$INSTALL_DIR/tools/reaper"
+if [[ -x "$REAPER_DIR/reaper" ]]; then
+    ok "REAPER already built at $REAPER_DIR/reaper"
+else
+    info "Cloning and building REAPER..."
+    mkdir -p "$(dirname "$REAPER_DIR")"
+    if [[ -d "$REAPER_DIR" ]]; then
+        rm -rf "$REAPER_DIR"  # partial/failed build from a previous run
+    fi
+    if git clone --quiet https://github.com/ekomsSavior/REAPER.git "$REAPER_DIR" \
+        && ( cd "$REAPER_DIR" && go mod tidy && go build -o reaper . ); then
+        chmod 755 "$REAPER_DIR/reaper"
+        ok "REAPER built at $REAPER_DIR/reaper"
+    else
+        warn "REAPER build failed — the Secrets section will report itself unavailable until this is fixed"
+        warn "Retry manually: cd $REAPER_DIR && go mod tidy && go build -o reaper ."
+    fi
+fi
+warn "REAPER requires a GitHub token (Settings → Threat Intel APIs, repo + public_repo scopes) — scans return a 'token required' result until one is configured"
+
+# =============================================================================
+step "7 / 12 — nmap Raw-Socket Capability"
 # =============================================================================
 # nmap needs CAP_NET_RAW for OS fingerprinting (-O) and CAP_NET_ADMIN for some
 # scan types.  setcap grants these to the nmap binary so the service user
@@ -187,7 +215,7 @@ else
 fi
 
 # =============================================================================
-step "7 / 11 — TLS Certificate"
+step "8 / 12 — TLS Certificate"
 # =============================================================================
 CERT="$INSTALL_DIR/data/ssl/cert.pem"
 KEY="$INSTALL_DIR/data/ssl/key.pem"
@@ -210,7 +238,7 @@ else
 fi
 
 # =============================================================================
-step "8 / 11 — Environment File"
+step "9 / 12 — Environment File"
 # =============================================================================
 ENV_FILE="$INSTALL_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -252,7 +280,7 @@ chmod 640 "$ENV_FILE"
 chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
-step "9 / 11 — Systemd Service"
+step "10 / 12 — Systemd Service"
 # =============================================================================
 # One worker, multiple threads — not scaled by CPU count. APScheduler's
 # background jobs (scan checks, report sends, the Palo Alto poller) and the
@@ -328,7 +356,7 @@ ok "Unit file written: $SERVICE_FILE"
 ok "Service enabled for autostart on boot"
 
 # =============================================================================
-step "10 / 11 — Log Rotation"
+step "11 / 12 — Log Rotation"
 # =============================================================================
 cat > /etc/logrotate.d/pwnbroker << EOF
 $INSTALL_DIR/logs/*.log {
@@ -347,7 +375,7 @@ EOF
 ok "Logrotate config installed (/etc/logrotate.d/pwnbroker)"
 
 # =============================================================================
-step "11 / 11 — Firewall & Service Start"
+step "12 / 12 — Firewall & Service Start"
 # =============================================================================
 # Firewall
 if command -v ufw &>/dev/null; then

@@ -47,6 +47,7 @@ def create_app(config_class=Config):
     from .routes.api import api_bp
     from .routes.atlassian import atlassian_bp
     from .routes.dependency import dependency_bp
+    from .routes.secrets import secrets_bp
     from .routes.threat import threat_bp
     from .routes.vulns import vulns_bp
     from .routes.assets import assets_bp
@@ -64,6 +65,7 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp)
     app.register_blueprint(atlassian_bp)
     app.register_blueprint(dependency_bp)
+    app.register_blueprint(secrets_bp)
     app.register_blueprint(threat_bp)
     app.register_blueprint(vulns_bp)
     app.register_blueprint(assets_bp)

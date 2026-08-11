@@ -19,6 +19,20 @@ def _is_cidr(host: str) -> bool:
     return bool(_CIDR_RE.match(host.strip()))
 
 
+def _parse_github_repo_host(host: str):
+    """Split a github_repo Target's host field ('owner/repo', or a full
+    https://github.com/owner/repo URL) into (owner, repo)."""
+    raw_host = host.strip()
+    for prefix in ("https://github.com/", "http://github.com/", "github.com/"):
+        if raw_host.startswith(prefix):
+            raw_host = raw_host[len(prefix):]
+            break
+    parts = raw_host.strip("/").split("/", 1)
+    owner = parts[0]
+    repo = parts[1] if len(parts) > 1 else ""
+    return owner, repo
+
+
 def _is_domain(host: str) -> bool:
     h = host.strip()
     return not _IP_RE.match(h) and not _CIDR_RE.match(h)
@@ -128,6 +142,35 @@ def run_scan(scan_id: int, app=None):
                         raw_data=r.get("raw_data"),
                     ))
 
+            # ── REAPER GitHub secret scan ─────────────────────────────────────
+            if scan_type == "reaper":
+                from ..models import ThreatConfig
+                from .reaper_scanner import run_reaper_scan
+                _tc = ThreatConfig.query.first()
+                gh_token = _tc.github_advisory_token if _tc else None
+
+                if scan.target and scan.target.target_type == "github_repo":
+                    owner, repo = _parse_github_repo_host(scan.target.host)
+                    reaper_results = run_reaper_scan(owner, repo, gh_token)
+                else:
+                    reaper_results = [{
+                        "result_type": "info", "host": host, "severity": "info",
+                        "title": "REAPER requires a GitHub repository target",
+                        "description": "This scan's target isn't a GitHub repository — "
+                                        "REAPER only scans GitHub repos for exposed secrets.",
+                    }]
+
+                for r in reaper_results:
+                    results.append(ScanResult(
+                        scan_id=scan_id,
+                        result_type=r.get("result_type", "info"),
+                        host=r.get("host", host),
+                        severity=r.get("severity", "info"),
+                        title=r.get("title", ""),
+                        description=r.get("description", ""),
+                        raw_data=r.get("raw_data"),
+                    ))
+
             # ── OSV dependency scan ───────────────────────────────────────────
             if scan_type == "osv":
                 from ..models import ThreatConfig
@@ -136,15 +179,7 @@ def run_scan(scan_id: int, app=None):
 
                 if scan.target and scan.target.target_type == "github_repo":
                     from .github_repo_scanner import run_github_dep_scan, create_fix_pr
-                    raw_host = scan.target.host.strip()
-                    # Strip leading github.com/ or https://github.com/
-                    for prefix in ("https://github.com/", "http://github.com/", "github.com/"):
-                        if raw_host.startswith(prefix):
-                            raw_host = raw_host[len(prefix):]
-                            break
-                    parts = raw_host.strip("/").split("/", 1)
-                    owner = parts[0]
-                    repo  = parts[1] if len(parts) > 1 else ""
+                    owner, repo = _parse_github_repo_host(scan.target.host)
                     dep_results = run_github_dep_scan(
                         scan, owner, repo, gh_token, subpath=scan.scan_path or ""
                     )

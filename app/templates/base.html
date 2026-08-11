@@ -74,6 +74,8 @@
             <a href="{{ url_for("threat.paloalto_list") }}" class="dropdown-item"><i class="bi bi-hdd-network me-2"></i>Palo Alto</a>
           </div>
         </div>
+
+        <a href="{{ url_for("secrets.index") }}" class="topnav-link {% if 'secrets' in (request.endpoint or '') %}active{% endif %}">Secrets</a>
       </nav>
 
       <div class="topnav-right">
