@@ -171,6 +171,31 @@ def run_scan(scan_id: int, app=None):
                         raw_data=r.get("raw_data"),
                     ))
 
+            # ── Backdoor Detector static analysis ──────────────────────────────
+            if scan_type == "backdoor":
+                from .backdoor_scanner import run_backdoor_scan
+
+                if scan.target and scan.target.target_type == "local_path":
+                    backdoor_results = run_backdoor_scan(scan.target.host)
+                else:
+                    backdoor_results = [{
+                        "result_type": "info", "host": host, "severity": "info",
+                        "title": "Backdoor scan requires a local-path target",
+                        "description": "This scan's target isn't a Local Path target — "
+                                        "Backdoor Detector only analyzes directories on this server.",
+                    }]
+
+                for r in backdoor_results:
+                    results.append(ScanResult(
+                        scan_id=scan_id,
+                        result_type=r.get("result_type", "info"),
+                        host=r.get("host", host),
+                        severity=r.get("severity", "info"),
+                        title=r.get("title", ""),
+                        description=r.get("description", ""),
+                        raw_data=r.get("raw_data"),
+                    ))
+
             # ── OSV dependency scan ───────────────────────────────────────────
             if scan_type == "osv":
                 from ..models import ThreatConfig

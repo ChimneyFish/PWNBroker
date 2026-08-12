@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}New Backdoor Scan — PwnBroker{% endblock %}
+{% block page_title %}New Backdoor Scan{% endblock %}
+
+{% block content %}
+<div class="row justify-center">
+  <div class="col-lg-7">
+    <div class="form-card">
+      <h5 class="font-bold mb-1">Statically Analyze a Local Directory</h5>
+      <p class="text-muted small mb-6">
+        PwnBroker will use <strong>Backdoor Detector</strong> to check a directory already on
+        this server for YARA-matched malware/backdoor signatures, hardcoded secrets, and
+        vulnerable dependencies.
+      </p>
+
+      <div class="mb-6 p-4 rounded bg-accent/10 border border-accent/20">
+        <div class="small font-semibold mb-1 text-info"><i class="bi bi-shield-check me-1"></i>Read-only — nothing in the directory is ever executed</div>
+        <div class="small text-muted">
+          This tool has an optional "runtime analysis" mode upstream that auto-detects and
+          <em>runs</em> a project's entry point to watch its network behavior. PwnBroker never
+          uses that mode — only static analysis (YARA signatures, hardcoded-secret patterns,
+          and dependency vulnerability checks) runs, so nothing on disk is ever executed.
+        </div>
+      </div>
+
+      <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+          <label class="form-label">Scan Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Vendor Drop — Backdoor Scan" required>
+        </div>
+
+        <div class="mb-6">
+          <label class="form-label">Path</label>
+          <select name="target_id" class="form-select" required>
+            <option value="">— Select a Local Path target —</option>
+            {% for t in targets %}
+            <option value="{{ t.id }}">{{ t.name }} ({{ t.host }})</option>
+            {% endfor %}
+          </select>
+          <div class="mt-1 small text-muted">
+            Only <strong>Local Path</strong>-type targets appear here.
+            <a href="{{ url_for('targets.new') }}">+ Add a Local Path target</a>
+          </div>
+        </div>
+
+        <div class="p-4 rounded mb-6 bg-accent/10 border border-accent/20">
+          <div class="small font-semibold mb-1 text-info"><i class="bi bi-info-circle me-1"></i>What this scans</div>
+          <ul class="small text-muted mb-0 ps-4">
+            <li>YARA signature matching against every file (malware packers, process injection, anti-debugging, backdoor keyword patterns)</li>
+            <li>Hardcoded API keys, passwords, tokens, private keys, and AWS/SSH credentials in source files</li>
+            <li>Vulnerable dependencies via Safety, Trivy, pip-audit, and npm audit (whichever are installed — missing ones are skipped)</li>
+            <li>Capped at 10 minutes; unlike other scan types here, results are only available once the whole run finishes — a timeout returns no partial findings</li>
+          </ul>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill me-1"></i>Start Scan</button>
+          <a href="{{ url_for('backdoor.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

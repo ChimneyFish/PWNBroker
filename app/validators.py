@@ -8,6 +8,9 @@ _HOSTNAME_RE = re.compile(
     r"^(?=.{1,253}$)(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$"
 )
 _PORT_RANGE_RE = re.compile(r"^[\d\s,\-]+$")
+_GITHUB_REPO_RE = re.compile(
+    r"^(?:https?://github\.com/)?[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$"
+)
 
 
 def is_valid_host(value):
@@ -27,6 +30,24 @@ def is_valid_host(value):
     except ValueError:
         pass
     return bool(_HOSTNAME_RE.match(value))
+
+
+def is_valid_github_repo(value):
+    """Accept 'owner/repo' or a full https://github.com/owner/repo URL."""
+    value = (value or "").strip()
+    if not value or len(value) > 253:
+        return False
+    return bool(_GITHUB_REPO_RE.match(value))
+
+
+def is_valid_local_path(value):
+    """Accept a non-empty absolute filesystem path. Existence/is-directory is
+    checked separately at scan time, not here — an admin may add the target
+    before the directory exists on the server."""
+    value = (value or "").strip()
+    if not value or len(value) > 512:
+        return False
+    return value.startswith("/")
 
 
 def is_valid_port_range(value):

@@ -11,9 +11,10 @@ __pycache__/
 *.pyc
 scripts/build/tailwindcss
 
-# PEN and REAPER are cloned+built by setup.sh at deploy time, not vendored
+# PEN, REAPER, and Backdoor Detector are cloned by setup.sh at deploy time, not vendored
 tools/pen/
 tools/reaper/
+tools/backdoor_detector/
 
 # Built out-of-band (GitHub Actions or a local Windows build — see
 # installer/windows/) and placed here manually; not tracked in this repo.

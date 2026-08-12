@@ -76,6 +76,7 @@
         </div>
 
         <a href="{{ url_for("secrets.index") }}" class="topnav-link {% if 'secrets' in (request.endpoint or '') %}active{% endif %}">Secrets</a>
+        <a href="{{ url_for("backdoor.index") }}" class="topnav-link {% if 'backdoor' in (request.endpoint or '') %}active{% endif %}">Backdoor Scan</a>
       </nav>
 
       <div class="topnav-right">

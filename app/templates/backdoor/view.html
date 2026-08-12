@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ scan.name }} — Backdoor Scan — PwnBroker{% endblock %}
+{% block page_title %}{{ scan.name }}{% endblock %}
+
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <form method="POST" action="{{ url_for('backdoor.delete', scan_id=scan.id) }}" class="inline"
+        data-confirm="Delete this scan and all findings?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+{% set vulns = results | selectattr('result_type', 'equalto', 'vulnerability') | list %}
+{% set all_info = results | selectattr('result_type', 'equalto', 'info') | list %}
+{% set checklist_result = all_info | selectattr('title', 'equalto', 'Manual Review Checklist') | first %}
+{% set info_results = all_info | rejectattr('title', 'equalto', 'Manual Review Checklist') | list %}
+
+<!-- Stats bar -->
+<div class="row g-3 mb-6">
+  <div class="col-auto">
+    <a href="{{ url_for('targets.index') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="stat-label">Path</div>
+      <div class="font-semibold font-monospace">{{ scan.target.host }}</div>
+    </a>
+  </div>
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <span id="scan-status-badge" class="badge-status status-{{ scan.status }}">{{ scan.status.upper() }}</span>
+    </div>
+  </div>
+  <div class="col-auto">
+    <a href="#backdoor-results" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="stat-label">Findings</div>
+      <div class="font-semibold" data-stat="vulns">{{ vulns | length }}</div>
+    </a>
+  </div>
+  <div class="col-auto">
+    <a href="#backdoor-results" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="stat-label">Critical</div>
+      <div class="font-semibold text-danger" data-stat="critical">
+        {{ vulns | selectattr('severity', 'equalto', 'critical') | list | length }}
+      </div>
+    </a>
+  </div>
+  {% if scan.duration %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Duration</div>
+      <div class="font-semibold">{{ scan.duration }}s</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if scan.status in ('pending', 'running') %}
+<div class="alert alert-primary flex items-center gap-2">
+  <span class="pulse text-primary"><i class="bi bi-circle-fill" style="font-size:0.6rem"></i></span>
+  Scan is <strong>{{ scan.status }}</strong> — running YARA, secret, and dependency checks (read-only, nothing is executed)…
+</div>
+{% endif %}
+
+<!-- Scanner info banner -->
+{% if info_results %}
+<div class="alert py-2 mb-4 small" style="background:rgba(255,255,255,0.04);border:1px solid var(--border-color)">
+  <i class="bi bi-info-circle me-1 text-primary"></i>
+  {% for r in info_results %}<div>{{ r.title }}{% if r.description %} — {{ r.description }}{% endif %}</div>{% endfor %}
+</div>
+{% endif %}
+
+<!-- Findings -->
+{% if vulns %}
+<div class="section-header mt-2 mb-4" id="backdoor-results">
+  <span class="section-title">Findings ({{ vulns | length }})</span>
+</div>
+
+{% for sev in ['critical','high','medium','low','info'] %}
+{% set sev_items = vulns | selectattr('severity', 'equalto', sev) | list %}
+{% if sev_items %}
+<div class="mb-1 mt-4 uppercase font-bold small
+  {% if sev == 'critical' %}text-danger
+  {% elif sev == 'high' %}text-warning
+  {% else %}text-muted{% endif %}" style="letter-spacing:0.08em">
+  {{ sev }} — {{ sev_items | length }} finding{% if sev_items | length != 1 %}s{% endif %}
+</div>
+
+{% for r in sev_items %}
+{% set raw = r.raw_data | fromjson %}
+<div class="mb-4 p-4 rounded" style="background:var(--bg-card);border:1px solid
+       {% if sev == 'critical' %}var(--critical)
+       {% elif sev == 'high' %}rgba(255,171,0,0.4)
+       {% else %}var(--border-color){% endif %}">
+
+  <div class="flex items-center gap-2 mb-2 flex-wrap">
+    <span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span>
+    {% if raw.get('type') %}
+    <span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.7rem">{{ raw['type'] }}</span>
+    {% endif %}
+    {% if raw.get('file') %}
+    <span class="badge bg-secondary bg-opacity-15 text-muted font-monospace" style="font-size:0.7rem">
+      {{ raw['file'] }}{% if raw.get('line_number') %}:{{ raw['line_number'] }}{% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="font-semibold text-base mb-2">{{ raw.get('description', r.description) }}</div>
+
+  {% if raw.get('context') %}
+  <div class="mb-2">
+    <code class="px-4 py-2 rounded block" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);font-size:0.8rem;white-space:pre-wrap;word-break:break-word">{{ raw['context'] }}</code>
+  </div>
+  {% endif %}
+
+  {% if raw.get('rule') %}
+  <div class="small text-muted"><i class="bi bi-bookmark me-1"></i>YARA rule: <code class="text-primary">{{ raw['rule'] }}</code></div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% elif scan.status == 'done' and not info_results %}
+<div class="text-center py-12">
+  <i class="bi bi-shield-check text-4xl block mb-2 text-success"></i>
+  <div class="font-semibold text-success">No backdoor indicators found.</div>
+  <div class="text-muted small mt-1">Nothing matched YARA signatures, secret patterns, or dependency vulnerability checks.</div>
+</div>
+{% endif %}
+
+<!-- Manual review checklist -->
+{% if checklist_result %}
+<div class="section-header mt-6 mb-4">
+  <span class="section-title">Manual Review Checklist</span>
+</div>
+<div class="form-card">
+  <p class="small text-muted mb-4">
+    Generic reference guidance — not specific to this scan's findings. Worth a manual look
+    regardless of what static analysis surfaced above.
+  </p>
+  {% for line in checklist_result.description.split('\n') %}
+  {% set parts = line.split(': ', 1) %}
+  <div class="mb-3">
+    <div class="font-semibold small mb-1">{{ parts[0] }}</div>
+    <ul class="small text-muted mb-0 ps-4">
+      {% for item in parts[1].split('; ') if parts | length > 1 %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if scan.status in ('pending', 'running') %}
+<script>pollScanStatus({{ scan.id }});</script>
+{% endif %}
+{% endblock %}

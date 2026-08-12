@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from ..models import Target, DomainRecord, ThreatConfig
 from ..extensions import db
-from ..validators import is_valid_host
+from ..validators import is_valid_host, is_valid_github_repo, is_valid_local_path
 from .decorators import admin_required
 
 targets_bp = Blueprint("targets", __name__, url_prefix="/targets")
@@ -25,17 +25,25 @@ def new():
         name = request.form.get("name", "").strip()
         host = request.form.get("host", "").strip()
         description = request.form.get("description", "").strip()
+        target_type = request.form.get("target_type", "host")
         if not name or not host:
             flash("Name and host are required.", "danger")
             return render_template("targets/new.html")
-        if not is_valid_host(host):
-            flash(f"'{host}' isn't a valid IP address, CIDR range, or hostname.", "danger")
+
+        if target_type == "github_repo":
+            valid, err = is_valid_github_repo(host), f"'{host}' isn't a valid GitHub repository (expected owner/repo)."
+        elif target_type == "local_path":
+            valid, err = is_valid_local_path(host), f"'{host}' isn't a valid absolute path (must start with /)."
+        else:
+            valid, err = is_valid_host(host), f"'{host}' isn't a valid IP address, CIDR range, or hostname."
+        if not valid:
+            flash(err, "danger")
             return render_template("targets/new.html")
 
         t = Target(
             name=name, host=host, description=description,
             created_by=current_user.id,
-            target_type=request.form.get("target_type", "host"),
+            target_type=target_type,
         )
         t.ssh_port = int(request.form.get("ssh_port") or 22)
         t.ssh_username = request.form.get("ssh_username", "").strip() or None

@@ -54,7 +54,7 @@ info "Service user: $SERVICE_USER"
 echo ""
 
 # =============================================================================
-step "1 / 12 — System Packages"
+step "1 / 13 — System Packages"
 # =============================================================================
 info "Updating package lists..."
 apt-get update -qq
@@ -72,7 +72,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKG
 ok "System packages installed"
 
 # =============================================================================
-step "2 / 12 — Service User"
+step "2 / 13 — Service User"
 # =============================================================================
 if ! id "$SERVICE_USER" &>/dev/null; then
     useradd --system --no-create-home --shell /bin/false \
@@ -83,7 +83,7 @@ else
 fi
 
 # =============================================================================
-step "3 / 12 — Application Files"
+step "3 / 13 — Application Files"
 # =============================================================================
 # $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
 # deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
@@ -124,7 +124,7 @@ chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================
-step "4 / 12 — Python Virtual Environment"
+step "4 / 13 — Python Virtual Environment"
 # =============================================================================
 PY_VER=$(python3 --version 2>&1)
 info "Using $PY_VER"
@@ -145,7 +145,7 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
 # =============================================================================
-step "5 / 12 — PEN Operational Scanner"
+step "5 / 13 — PEN Operational Scanner"
 # =============================================================================
 # PEN (github.com/ekomsSavior/PEN) has no releases/module path to `go install`
 # directly — it has to be cloned and built from source, per its own README.
@@ -172,7 +172,7 @@ fi
 warn "PEN's exploitation module can optionally crack hashes with john (installed above) and dump exposed git repos with git-dumper (pip install git-dumper, not installed automatically) — both are optional, PEN skips them gracefully if missing"
 
 # =============================================================================
-step "6 / 12 — REAPER Secret Scanner"
+step "6 / 13 — REAPER Secret Scanner"
 # =============================================================================
 # REAPER (github.com/ekomsSavior/REAPER) ships its own go.mod/go.sum, so no
 # `go mod init` step is needed here (unlike PEN). Note the build command is
@@ -200,7 +200,49 @@ fi
 warn "REAPER requires a GitHub token (Settings → Threat Intel APIs, repo + public_repo scopes) — scans return a 'token required' result until one is configured"
 
 # =============================================================================
-step "7 / 12 — nmap Raw-Socket Capability"
+step "7 / 13 — Backdoor Detector"
+# =============================================================================
+# Backdoor Detector (github.com/ekomsSavior/backdoor_detector) is pure Python
+# — no build step, just a clone-if-missing like PEN/REAPER's source checkout,
+# minus the `go build`.
+BACKDOOR_DIR="$INSTALL_DIR/tools/backdoor_detector"
+if [[ -f "$BACKDOOR_DIR/backdoor_detector.py" ]]; then
+    ok "Backdoor Detector already present at $BACKDOOR_DIR"
+else
+    info "Cloning Backdoor Detector..."
+    mkdir -p "$(dirname "$BACKDOOR_DIR")"
+    if [[ -d "$BACKDOOR_DIR" ]]; then
+        rm -rf "$BACKDOOR_DIR"  # partial/failed clone from a previous run
+    fi
+    if git clone --quiet https://github.com/ekomsSavior/backdoor_detector.git "$BACKDOOR_DIR"; then
+        ok "Backdoor Detector cloned to $BACKDOOR_DIR"
+    else
+        warn "Backdoor Detector clone failed — the 'backdoor' scan type will report itself unavailable until this is fixed"
+        warn "Retry manually: git clone https://github.com/ekomsSavior/backdoor_detector.git $BACKDOOR_DIR"
+    fi
+fi
+
+# Trivy (dependency-vulnerability sub-scanner used by Backdoor Detector's
+# scan_for_vulnerabilities() phase) — pinned release, not the `main`-branch
+# "latest" installer some docs suggest. Installed to /usr/local/bin, no sudo
+# needed since this script already runs as root.
+TRIVY_VERSION="v0.68.2"
+if command -v trivy &>/dev/null; then
+    ok "Trivy already installed ($(trivy --version 2>/dev/null | head -1))"
+else
+    info "Installing Trivy $TRIVY_VERSION..."
+    if curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+        | sh -s -- -b /usr/local/bin "$TRIVY_VERSION" >/dev/null 2>&1; then
+        ok "Trivy $TRIVY_VERSION installed to /usr/local/bin"
+    else
+        warn "Trivy install failed — Backdoor Detector's Trivy sub-scan will be skipped gracefully until this is fixed"
+        warn "Retry manually: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin $TRIVY_VERSION"
+    fi
+fi
+warn "Backdoor Detector's npm-audit sub-scan needs Node.js/npm — not installed automatically (this project's stack doesn't otherwise need Node); install from nodejs.org if you want that sub-scan to run. Safety and pip-audit are already installed via requirements.txt."
+
+# =============================================================================
+step "8 / 13 — nmap Raw-Socket Capability"
 # =============================================================================
 # nmap needs CAP_NET_RAW for OS fingerprinting (-O) and CAP_NET_ADMIN for some
 # scan types.  setcap grants these to the nmap binary so the service user
@@ -215,7 +257,7 @@ else
 fi
 
 # =============================================================================
-step "8 / 12 — TLS Certificate"
+step "9 / 13 — TLS Certificate"
 # =============================================================================
 CERT="$INSTALL_DIR/data/ssl/cert.pem"
 KEY="$INSTALL_DIR/data/ssl/key.pem"
@@ -238,7 +280,7 @@ else
 fi
 
 # =============================================================================
-step "9 / 12 — Environment File"
+step "10 / 13 — Environment File"
 # =============================================================================
 ENV_FILE="$INSTALL_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -280,7 +322,7 @@ chmod 640 "$ENV_FILE"
 chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
-step "10 / 12 — Systemd Service"
+step "11 / 13 — Systemd Service"
 # =============================================================================
 # One worker, multiple threads — not scaled by CPU count. APScheduler's
 # background jobs (scan checks, report sends, the Palo Alto poller) and the
@@ -356,7 +398,7 @@ ok "Unit file written: $SERVICE_FILE"
 ok "Service enabled for autostart on boot"
 
 # =============================================================================
-step "11 / 12 — Log Rotation"
+step "12 / 13 — Log Rotation"
 # =============================================================================
 cat > /etc/logrotate.d/pwnbroker << EOF
 $INSTALL_DIR/logs/*.log {
@@ -375,7 +417,7 @@ EOF
 ok "Logrotate config installed (/etc/logrotate.d/pwnbroker)"
 
 # =============================================================================
-step "12 / 12 — Firewall & Service Start"
+step "13 / 13 — Firewall & Service Start"
 # =============================================================================
 # Firewall
 if command -v ufw &>/dev/null; then
