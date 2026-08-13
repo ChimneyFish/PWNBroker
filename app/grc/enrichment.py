@@ -23,6 +23,13 @@ _ATTACK_CACHE = os.path.join(
     "data", "attack_enterprise.json",
 )
 _ATTACK_MAX_AGE_DAYS = 30
+
+_KEV_URL   = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+_KEV_CACHE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "data", "cisa_kev.json",
+)
+_KEV_MAX_AGE_HOURS = 12  # CISA adds entries throughout the day; refresh often since it's one cheap request
 _SESSION = requests.Session()
 _SESSION.headers["User-Agent"] = "PwnBroker/1.0 (+security-research)"
 
@@ -224,6 +231,69 @@ def get_techniques_for_cves(cve_ids: list[str]) -> dict[str, list[dict]]:
     return {cid: index.get(cid.upper(), []) for cid in cve_ids}
 
 
+# ── CISA KEV (Known Exploited Vulnerabilities) ───────────────────────────────
+
+def _kev_cache_fresh() -> bool:
+    if not os.path.exists(_KEV_CACHE):
+        return False
+    mtime = datetime.fromtimestamp(os.path.getmtime(_KEV_CACHE), tz=timezone.utc)
+    return (datetime.now(timezone.utc) - mtime).total_seconds() < _KEV_MAX_AGE_HOURS * 3600
+
+
+def refresh_kev_cache() -> bool:
+    """Download and cache the full CISA KEV catalog JSON. Returns True on success."""
+    try:
+        log.info("Downloading CISA KEV catalog…")
+        resp = _SESSION.get(_KEV_URL, timeout=30)
+        resp.raise_for_status()
+        os.makedirs(os.path.dirname(_KEV_CACHE), exist_ok=True)
+        with open(_KEV_CACHE, "w", encoding="utf-8") as f:
+            f.write(resp.text)
+        log.info("CISA KEV cache written to %s", _KEV_CACHE)
+        return True
+    except Exception as e:
+        log.warning("CISA KEV cache refresh failed: %s", e)
+        return False
+
+
+def build_kev_index() -> dict[str, dict]:
+    """Parse the cached KEV catalog into {cve_id: {date_added, due_date, ransomware}}."""
+    if not os.path.exists(_KEV_CACHE):
+        return {}
+    try:
+        with open(_KEV_CACHE, "r", encoding="utf-8") as f:
+            catalog = json.load(f)
+    except Exception as e:
+        log.warning("CISA KEV cache parse failed: %s", e)
+        return {}
+
+    index = {}
+    for entry in catalog.get("vulnerabilities", []):
+        cve_id = (entry.get("cveID") or "").upper()
+        if not cve_id:
+            continue
+
+        def _parse_date(s):
+            try:
+                return datetime.strptime(s, "%Y-%m-%d").replace(tzinfo=timezone.utc) if s else None
+            except Exception:
+                return None
+
+        index[cve_id] = {
+            "date_added": _parse_date(entry.get("dateAdded")),
+            "due_date":   _parse_date(entry.get("dueDate")),
+            "ransomware": (entry.get("knownRansomwareCampaignUse") or "").strip().lower() == "known",
+        }
+    return index
+
+
+def get_kev_index() -> dict[str, dict]:
+    """Return the KEV index, refreshing the on-disk cache first if it's stale."""
+    if not _kev_cache_fresh():
+        refresh_kev_cache()
+    return build_kev_index()
+
+
 # ── Orchestrator ──────────────────────────────────────────────────────────────
 
 def enrich_all_cves(app=None):
@@ -251,7 +321,25 @@ def enrich_all_cves(app=None):
         cfg     = ThreatConfig.query.first()
         nvd_key = cfg.nvd_api_key if cfg else None
 
-        # Only re-fetch stale entries
+        # 0. KEV listing status — checked for every known CVE on every run
+        # (not just the ones stale on the EPSS/NVD clock below), since CISA
+        # can add a CVE to the catalog at any time and it's one cheap request.
+        kev_index = get_kev_index()
+        kev_now   = datetime.now(timezone.utc)
+        for cve_id in all_cves:
+            e = CVEEnrichment.query.filter_by(cve_id=cve_id).first()
+            if not e:
+                e = CVEEnrichment(cve_id=cve_id)
+                db.session.add(e)
+            kev = kev_index.get(cve_id.upper())
+            e.kev_listed     = bool(kev)
+            e.kev_date_added = kev["date_added"] if kev else None
+            e.kev_due_date   = kev["due_date"] if kev else None
+            e.kev_ransomware = kev["ransomware"] if kev else False
+            e.kev_fetched_at = kev_now
+        db.session.commit()
+
+        # Only re-fetch EPSS/NVD/ATT&CK for stale entries
         stale = []
         for cve_id in all_cves:
             e = CVEEnrichment.query.filter_by(cve_id=cve_id).first()

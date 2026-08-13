@@ -40,7 +40,7 @@
 {% if not pending %}
 <div class="form-card text-center py-12 text-muted mb-6">
   <i class="bi bi-shield-check text-4xl block mb-2 text-success opacity-50"></i>
-  No cases pending review. IOCs confirmed suspicious by ≥2 sources, or flagged by a Palo Alto threat log, will appear here automatically.
+  No cases pending review. IOCs confirmed suspicious by ≥2 sources, flagged by a Palo Alto threat log, or a KEV/high-EPSS vulnerability corroborated by observed malicious activity on the same host, will appear here automatically.
 </div>
 {% else %}
 {% for case in pending %}
@@ -60,6 +60,16 @@
         <span class="text-muted small ms-auto">{{ case.created_at | localdt('%Y-%m-%d %H:%M') }}</span>
       </div>
 
+      {% if case.vuln_ticket_id and case.vuln_ticket %}
+      <div class="mb-2">
+        <a href="{{ url_for('vulns.device', target_id=case.vuln_ticket.target_id, host=case.vuln_ticket.host_ip) }}"
+           class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.65rem">
+          <i class="bi bi-bug me-1"></i>Correlated with {{ case.vuln_ticket.cve_id or case.vuln_ticket.vuln_name }}
+          on this host
+        </a>
+      </div>
+      {% endif %}
+
       <!-- Flagging sources -->
       <div class="mb-2">
         <span class="text-muted small">Flagged by:</span>
@@ -74,6 +84,13 @@
           <span class="badge ms-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
           {% elif src == 'PaloAlto' %}
           <span class="badge ms-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
+          {% elif src == 'EndpointAgent' %}
+          <span class="badge ms-1" style="background:rgba(11,188,212,0.2);color:#0bbcd4">Endpoint Agent</span>
+          {% elif src == 'SocCase' %}
+          <span class="badge ms-1" style="background:rgba(11,188,212,0.2);color:#0bbcd4">SOC Case</span>
+          {% elif src.startswith('VulnMgmt:') %}
+          <span class="badge ms-1" style="background:rgba(220,38,38,0.2);color:#f87171"
+                title="{{ src }}">{{ src.split(':')[1] }} Vuln</span>
           {% endif %}
         {% endfor %}
       </div>

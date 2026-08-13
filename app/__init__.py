@@ -328,6 +328,14 @@ def _migrate_columns(app):
         "soc_cases": [
             ("pulsedrive_result", "TEXT"),
             ("paloalto_result",   "TEXT"),
+            ("vuln_ticket_id",    "INTEGER"),
+        ],
+        "cve_enrichments": [
+            ("kev_listed",     "BOOLEAN DEFAULT 0"),
+            ("kev_date_added", "DATETIME"),
+            ("kev_due_date",   "DATETIME"),
+            ("kev_ransomware", "BOOLEAN DEFAULT 0"),
+            ("kev_fetched_at", "DATETIME"),
         ],
         "policies": [
             ("content",      "TEXT"),

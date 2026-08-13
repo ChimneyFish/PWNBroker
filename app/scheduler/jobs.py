@@ -56,6 +56,17 @@ def register_jobs(app):
         minutes=5,
         replace_existing=True,
     )
+    # Vuln management <-> threat intel correlation — every 15 minutes.
+    # Runs after both the CVE enrichment (KEV/EPSS) and PaloAlto polling jobs
+    # have had a chance to populate the data it correlates against.
+    scheduler.add_job(
+        id="correlate_vuln_threat",
+        func=_run_vuln_threat_correlation,
+        args=[app],
+        trigger="interval",
+        minutes=15,
+        replace_existing=True,
+    )
 
 
 def _run_scheduled_scans(app):
@@ -204,6 +215,15 @@ def _run_auto_assess(app):
             run_auto_assess(app)
     except Exception as e:
         app.logger.error(f"Auto-assessment job failed: {e}")
+
+
+def _run_vuln_threat_correlation(app):
+    with app.app_context():
+        from ..threat.correlation import run_correlation
+        try:
+            run_correlation()
+        except Exception as e:
+            app.logger.error(f"Vuln/threat-intel correlation job failed: {e}")
 
 
 def _run_paloalto_poll(app):

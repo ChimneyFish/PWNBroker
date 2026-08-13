@@ -75,6 +75,13 @@
           {% if t.cve_id %}
           <a href="https://nvd.nist.gov/vuln/detail/{{ t.cve_id }}" target="_blank"
              class="badge bg-danger text-white no-underline" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
+          {% set enr = enrichments.get(t.cve_id) %}
+          {% if enr and enr.kev_listed %}
+          <span class="badge bg-warning text-dark no-underline block mt-1" style="font-size:0.6rem;white-space:nowrap"
+                title="CISA Known Exploited Vulnerabilities catalog — confirmed active exploitation in the wild">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>KEV{% if enr.kev_ransomware %} / Ransomware{% endif %}
+          </span>
+          {% endif %}
           {% else %}<span class="text-muted small">—</span>{% endif %}
         </td>
         <td class="small">

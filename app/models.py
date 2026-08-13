@@ -401,6 +401,10 @@ class SocCase(db.Model):
     reviewed_at      = db.Column(db.DateTime)
     reviewed_by      = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     ioc_record_id    = db.Column(db.Integer, db.ForeignKey("ioc_records.id"), nullable=True)
+    vuln_ticket_id   = db.Column(db.Integer, db.ForeignKey("vuln_tickets.id"), nullable=True)
+
+    vuln_ticket = db.relationship("VulnTicket", foreign_keys=[vuln_ticket_id],
+                                  backref=db.backref("soc_cases", lazy="dynamic"))
 
 
 class IOCRecord(db.Model):
@@ -631,6 +635,13 @@ class CVEEnrichment(db.Model):
     # MITRE ATT&CK
     attack_techniques = db.Column(db.Text)         # JSON list of {id, name, tactic}
     attack_fetched_at = db.Column(db.DateTime)
+    # CISA Known Exploited Vulnerabilities catalog — confirmed active exploitation,
+    # not just a theoretical exploitability estimate like EPSS.
+    kev_listed        = db.Column(db.Boolean, default=False)
+    kev_date_added    = db.Column(db.DateTime)
+    kev_due_date       = db.Column(db.DateTime)
+    kev_ransomware    = db.Column(db.Boolean, default=False)  # "knownRansomwareCampaignUse" == "Known"
+    kev_fetched_at    = db.Column(db.DateTime)
 
     @property
     def epss_pct(self):
