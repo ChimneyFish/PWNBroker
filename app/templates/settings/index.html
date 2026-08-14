@@ -839,11 +839,15 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
         <div class="flex items-center gap-3 flex-wrap">
           <button type="submit" class="btn btn-primary">Save Email Security Settings</button>
           <button type="button" class="btn btn-outline-secondary" id="test-o365-btn" onclick="testO365()">Test Connection</button>
-          <a href="{{ url_for('email_security.oauth_authorize') }}"
-             class="btn btn-outline-info {% if not (o365_cfg and o365_cfg.tenant_id and o365_cfg.client_id) %}disabled{% endif %}"
-             title="{% if not (o365_cfg and o365_cfg.tenant_id and o365_cfg.client_id) %}Save Tenant ID and Client ID first{% endif %}">
+          {% if o365_cfg and o365_cfg.tenant_id and o365_cfg.client_id %}
+          <a href="{{ url_for('email_security.oauth_authorize') }}" class="btn btn-outline-info">
             <i class="bi bi-microsoft me-1"></i>Authorize in Microsoft
           </a>
+          {% else %}
+          <button type="button" class="btn btn-outline-info" disabled title="Save Tenant ID and Client ID first">
+            <i class="bi bi-microsoft me-1"></i>Authorize in Microsoft
+          </button>
+          {% endif %}
           <span id="o365-test-status" class="small text-muted"></span>
         </div>
       </form>

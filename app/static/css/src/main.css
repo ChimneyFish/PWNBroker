@@ -270,6 +270,10 @@
   .bg-opacity-30 { --bg-op: 0.30; }
   .fade { transition: opacity 0.15s linear; }
   .collapse:not(.show) { display: none; }
+  /* Tailwind's own `.collapse` utility (visibility:collapse, for table rows)
+     shares this class name — without this, an opened panel gets display:block
+     from the rule above but stays invisible because nothing resets visibility. */
+  .collapse.show { visibility: visible; }
   .collapsing { height: 0; overflow: hidden; transition: height 0.2s ease; }
 }
 
