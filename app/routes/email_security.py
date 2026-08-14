@@ -1,7 +1,8 @@
 import json
+import secrets
 from datetime import datetime, timezone
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_required, current_user
 
 from ..models import O365Config, MonitoredMailbox, EmailScanResult
@@ -18,6 +19,61 @@ def _get_cfg():
         db.session.add(cfg)
         db.session.commit()
     return cfg
+
+
+@email_security_bp.route("/oauth/authorize")
+@login_required
+@admin_required
+def oauth_authorize():
+    """Kicks off Microsoft's hosted admin-consent flow — the one-click
+    "Authorize in Microsoft" button. Requires the Azure AD app (tenant_id +
+    client_id) to already exist; see the quick-setup script in Settings for
+    the one-time app-registration step this can't skip."""
+    cfg = _get_cfg()
+    if not (cfg.tenant_id and cfg.client_id):
+        flash("Enter Tenant ID and Client ID in Settings first (or run the quick-setup script), then Authorize.", "warning")
+        return redirect(url_for("settings.index") + "#o365")
+
+    state = secrets.token_urlsafe(24)
+    session["o365_oauth_state"] = state
+    redirect_uri = url_for("email_security.oauth_callback", _external=True)
+    consent_url = (
+        f"https://login.microsoftonline.com/{cfg.tenant_id}/adminconsent"
+        f"?client_id={cfg.client_id}&redirect_uri={redirect_uri}&state={state}"
+    )
+    return redirect(consent_url)
+
+
+@email_security_bp.route("/oauth/callback")
+@login_required
+def oauth_callback():
+    """Microsoft redirects the admin's browser back here after they accept
+    (or decline) the consent prompt. There's no client secret exchange here —
+    admin-consent only grants the permissions already declared on the app; the
+    client secret PWNBroker uses for the actual Graph calls is still entered
+    separately in Settings."""
+    error = request.args.get("error")
+    if error:
+        flash(f"Microsoft consent failed: {request.args.get('error_description', error)}", "danger")
+        return redirect(url_for("settings.index") + "#o365")
+
+    expected_state = session.pop("o365_oauth_state", None)
+    state = request.args.get("state")
+    if not state or not expected_state or state != expected_state:
+        flash("Consent request could not be verified (state mismatch) — please try Authorize again.", "danger")
+        return redirect(url_for("settings.index") + "#o365")
+
+    if request.args.get("admin_consent") != "True":
+        flash("Consent was not granted.", "warning")
+        return redirect(url_for("settings.index") + "#o365")
+
+    cfg = _get_cfg()
+    cfg.status = "ok"
+    cfg.last_error = None
+    db.session.commit()
+    flash("Microsoft 365 admin consent granted. Make sure your client secret is saved and "
+          "Email Security is enabled below.", "success")
+    return redirect(url_for("settings.index") + "#o365")
 
 
 @email_security_bp.route("/")

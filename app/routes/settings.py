@@ -352,6 +352,7 @@ def index():
         tz_list=_tz_list(),
         saml_acs_url=url_for("auth.saml_acs", _external=True),
         saml_default_entity_id=url_for("auth.saml_metadata", _external=True),
+        o365_redirect_uri=url_for("email_security.oauth_callback", _external=True),
     )
 
 

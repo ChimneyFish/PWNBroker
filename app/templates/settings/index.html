@@ -711,12 +711,69 @@
   <div class="col-12">
     <div class="form-card" id="o365">
       <h5 class="font-bold mb-1"><i class="bi bi-envelope-exclamation me-2 text-primary"></i>Email Security (Microsoft 365)</h5>
-      <p class="text-muted small mb-6">
+      <p class="text-muted small mb-4">
         Requires an Azure AD app registration with <strong>application</strong> (not delegated) Graph API
         permissions — <code>Mail.Read</code> and <code>User.Read.All</code> — granted admin consent.
         This scans every licensed mailbox in the tenant; scope it down in
         <a href="{{ url_for('email_security.mailboxes') }}">Email Security → Mailboxes</a> per-inbox if needed.
       </p>
+
+      <!-- Quick setup: one script instead of clicking through the Azure Portal -->
+      <div class="mb-6">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-toggle="collapse" data-target="#o365-quicksetup">
+          <i class="bi bi-terminal me-1"></i>Quick Setup Script (Azure CLI) — do this once
+        </button>
+        <div class="collapse mt-3" id="o365-quicksetup">
+          <div class="p-4 rounded" style="background:rgba(0,0,0,0.25);border:1px solid var(--border-color)">
+            <p class="small text-muted mb-2">
+              Creates the Azure AD app registration PWNBroker needs (own client secret, per this install — never
+              shared across installs) and grants it <code>Mail.Read</code> + <code>User.Read.All</code>. Run this
+              once in <a href="https://shell.azure.com" target="_blank" rel="noopener">Azure Cloud Shell</a> (or
+              locally with <code>az login</code>) as a Global Administrator, then paste the three printed values
+              below and Save.
+            </p>
+            <div class="position-relative">
+              <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="top:0.5rem;right:0.5rem"
+                      onclick="copyO365Script()">Copy</button>
+              <pre class="small p-3 mb-0 rounded" id="o365-script" style="background:rgba(0,0,0,0.35);overflow-x:auto;white-space:pre">#!/usr/bin/env bash
+# Creates the PwnBroker Email Security app registration for this tenant.
+set -euo pipefail
+
+APP_NAME="PwnBroker Email Security"
+REDIRECT_URI="{{ o365_redirect_uri }}"
+GRAPH_APP_ID="00000003-0000-0000-c000-000000000000"
+MAIL_READ_ROLE="810c84a8-4a9e-49e6-bf7d-12d183f40d01"       # Mail.Read (Application)
+USER_READ_ALL_ROLE="df021288-bdef-4463-88db-98f22de89214"   # User.Read.All (Application)
+
+APP_ID=$(az ad app create \
+  --display-name "$APP_NAME" \
+  --sign-in-audience AzureADMyOrg \
+  --web-redirect-uris "$REDIRECT_URI" \
+  --required-resource-accesses '[{"resourceAppId":"'"$GRAPH_APP_ID"'","resourceAccess":[{"id":"'"$MAIL_READ_ROLE"'","type":"Role"},{"id":"'"$USER_READ_ALL_ROLE"'","type":"Role"}]}]' \
+  --query appId -o tsv)
+
+az ad sp create --id "$APP_ID" >/dev/null
+SECRET=$(az ad app credential reset --id "$APP_ID" --years 2 --query password -o tsv)
+TENANT_ID=$(az account show --query tenantId -o tsv)
+
+az ad app permission admin-consent --id "$APP_ID" \
+  || echo "NOTE: admin-consent needs a Global Admin — use the 'Authorize in Microsoft' button in PwnBroker instead."
+
+echo
+echo "Tenant ID:     $TENANT_ID"
+echo "Client ID:     $APP_ID"
+echo "Client Secret: $SECRET"
+echo
+echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre>
+            </div>
+            <p class="small text-muted mt-3 mb-0">
+              If your Azure app already exists, its redirect URI (Authentication → Web) must include:<br>
+              <code>{{ o365_redirect_uri }}</code>
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form method="POST">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="form" value="o365">
@@ -779,9 +836,14 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
           <button type="submit" class="btn btn-primary">Save Email Security Settings</button>
           <button type="button" class="btn btn-outline-secondary" id="test-o365-btn" onclick="testO365()">Test Connection</button>
+          <a href="{{ url_for('email_security.oauth_authorize') }}"
+             class="btn btn-outline-info {% if not (o365_cfg and o365_cfg.tenant_id and o365_cfg.client_id) %}disabled{% endif %}"
+             title="{% if not (o365_cfg and o365_cfg.tenant_id and o365_cfg.client_id) %}Save Tenant ID and Client ID first{% endif %}">
+            <i class="bi bi-microsoft me-1"></i>Authorize in Microsoft
+          </a>
           <span id="o365-test-status" class="small text-muted"></span>
         </div>
       </form>
@@ -1094,6 +1156,12 @@ async function testAllKeys() {
 
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-plug me-1"></i>Test All Keys';
+}
+
+// ── O365 quick-setup script copy ────────────────────────────────────────────────
+function copyO365Script() {
+  const text = document.getElementById('o365-script').textContent;
+  navigator.clipboard.writeText(text).catch(() => {});
 }
 
 // ── O365 test connection ───────────────────────────────────────────────────────
