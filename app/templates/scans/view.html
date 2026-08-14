@@ -213,7 +213,6 @@
 {% set v  = td.get('verdict', {}) %}
 {% set pd  = td.get('pd') %}
 {% set idb = td.get('idb', {}) %}
-{% set vt  = td.get('vt') %}
 <div class="mb-6 p-4 rounded-lg"
      style="background:{% if v.level == 'success' %}rgba(22,163,74,0.07);border:1px solid rgba(22,163,74,0.3)
             {% elif v.level == 'danger' %}rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.3)
@@ -256,7 +255,7 @@
     <!-- pulseDrive -->
     {% set crim = pd.criminalip if pd else None %}
     {% set urlh = pd.urlhaus if pd else None %}
-    <div class="col-md-4">
+    <div class="col-md-6">
       <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
         <div class="flex items-center gap-2 mb-2">
           <span class="badge font-bold" style="background:#7c3aed;font-size:0.65rem">PD</span>
@@ -295,7 +294,7 @@
     </div>
 
     <!-- InternetDB -->
-    <div class="col-md-4">
+    <div class="col-md-6">
       <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
         <div class="flex items-center gap-2 mb-2">
           <span class="badge font-bold" style="background:#a01f24;font-size:0.65rem">IDB</span>
@@ -343,53 +342,6 @@
       </div>
     </div>
 
-    <!-- VirusTotal -->
-    <div class="col-md-4">
-      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="badge font-bold" style="background:#3950de;font-size:0.65rem">VT</span>
-          <span class="small font-semibold">VirusTotal</span>
-          {% if not vt %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">No Key</span>
-          {% elif vt.error is defined %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Error</span>
-          {% elif vt.not_found %}
-            <span class="badge bg-secondary ms-auto" style="font-size:0.6rem">Not Found</span>
-          {% elif vt.malicious >= 5 %}
-            <span class="badge bg-danger ms-auto" style="font-size:0.6rem">Malicious</span>
-          {% elif vt.malicious > 0 or vt.suspicious > 0 %}
-            <span class="badge bg-warning text-dark ms-auto" style="font-size:0.6rem">Suspicious</span>
-          {% else %}
-            <span class="badge bg-success ms-auto" style="font-size:0.6rem">Clean</span>
-          {% endif %}
-        </div>
-        {% if not vt %}
-          <p class="text-muted small mb-0" style="font-size:0.72rem">Add VirusTotal key in Settings.</p>
-        {% elif vt.error is defined %}
-          <p class="text-danger small mb-0" style="font-size:0.72rem">{{ vt.error }}</p>
-        {% elif vt.not_found %}
-          <p class="text-muted small mb-0" style="font-size:0.72rem">Not found in VirusTotal.</p>
-        {% else %}
-          <div class="flex items-baseline gap-1 mb-1">
-            <span class="font-bold" style="font-size:1.3rem;
-              color:{% if vt.malicious >= 5 %}#f87171{% elif vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
-              {{ vt.malicious }}
-            </span>
-            <span class="text-muted small">/ {{ vt.total_engines }} engines</span>
-          </div>
-          {% if vt.reputation is defined %}
-          <div class="small text-muted" style="font-size:0.72rem">
-            Score: <span class="{% if vt.reputation < 0 %}text-danger{% elif vt.reputation > 0 %}text-success{% else %}text-muted{% endif %}">{{ vt.reputation }}</span>
-          </div>
-          {% endif %}
-          {% if vt.detections %}
-          {% for d in vt.detections[:2] %}
-          <div class="small font-monospace" style="color:#f87171;font-size:0.68rem">{{ d.engine }}: {{ d.result or d.category }}</div>
-          {% endfor %}
-          {% endif %}
-        {% endif %}
-      </div>
-    </div>
   </div>
 </div>
 {% endfor %}

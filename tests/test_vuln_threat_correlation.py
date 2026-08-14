@@ -35,7 +35,7 @@ def _make_enrichment(cve_id, kev_listed=False, epss_score=None):
     return e
 
 
-def _make_soc_case(ioc, verdict="malicious", sources=("VirusTotal", "OTX")):
+def _make_soc_case(ioc, verdict="malicious", sources=("OTX", "AbuseIPDB")):
     c = SocCase(ioc=ioc, ioc_type="ip", verdict=verdict, threat_score=80,
                 flagging_sources=json.dumps(list(sources)), source_count=len(sources),
                 status="pending")

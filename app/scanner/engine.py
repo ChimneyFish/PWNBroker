@@ -323,11 +323,7 @@ def run_scan(scan_id: int, app=None):
                 else:
                     triage_hosts = [host]
                 for triage_host in triage_hosts:
-                    t_result = triage_run(
-                        triage_host,
-                        cfg=_tc,
-                        vt_key=_tc.virustotal_api_key if _tc else None,
-                    )
+                    t_result = triage_run(triage_host, cfg=_tc)
                     v = t_result["verdict"]
                     results.append(ScanResult(
                         scan_id=scan_id,

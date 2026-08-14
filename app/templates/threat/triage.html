@@ -74,9 +74,7 @@
       <div class="mb-2">
         <span class="text-muted small">Flagged by:</span>
         {% for src in case.flagging_sources | fromjson %}
-          {% if src == 'VirusTotal' %}
-          <span class="badge ms-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>
-          {% elif src == 'OTX' %}
+          {% if src == 'OTX' %}
           <span class="badge ms-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
           {% elif src == 'AbuseIPDB' %}
           <span class="badge ms-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">AbuseIPDB</span>
@@ -97,13 +95,6 @@
 
       <!-- Source detail row -->
       <div class="row g-2 mb-2" style="font-size:0.8rem">
-        {% if case.vt_result %}{% set vt = case.vt_result | fromjson %}
-        <div class="col-auto">
-          <span class="text-muted">VT:</span>
-          <span class="{% if vt.verdict == 'malicious' %}text-danger{% else %}text-warning{% endif %}">
-            {{ vt.malicious or 0 }}/{{ vt.total_engines or '?' }} engines
-          </span>
-        </div>{% endif %}
         {% if case.otx_result %}{% set otx = case.otx_result | fromjson %}
         <div class="col-auto">
           <span class="text-muted">OTX:</span>
@@ -197,8 +188,7 @@
         <td class="small">{{ case.threat_score }}/100</td>
         <td class="small">
           {% for src in case.flagging_sources | fromjson %}
-            {% if src == 'VirusTotal' %}<span class="badge me-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>
-            {% elif src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
+            {% if src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
             {% elif src == 'AbuseIPDB' %}<span class="badge me-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>
             {% elif src.startswith('pulseDrive:') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
             {% elif src == 'PaloAlto' %}<span class="badge me-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
@@ -217,7 +207,7 @@
 <!-- ── Manual Triage Lookup ───────────────────────────────────────────────── -->
 <div class="section-header mb-4 mt-6">
   <span class="section-title">Manual IP Triage</span>
-  <span class="text-muted small">pulseDrive · Shodan InternetDB · VirusTotal</span>
+  <span class="text-muted small">pulseDrive · Shodan InternetDB</span>
 </div>
 
 <div class="form-card mb-6">
@@ -229,7 +219,7 @@
         <input type="text" name="ip" class="form-control form-control-lg font-monospace"
                value="{{ ip }}" placeholder="e.g. 198.51.100.1" required autofocus>
         <div class="form-text">
-          Queries pulseDrive (ThreatMiner, URLhaus, Criminal IP), Shodan InternetDB (ports/CVEs), and VirusTotal simultaneously.
+          Queries pulseDrive (ThreatMiner, URLhaus, Criminal IP) and Shodan InternetDB (ports/CVEs) simultaneously.
         </div>
       </div>
       <div class="col-lg-3">
@@ -249,7 +239,6 @@
 {% set v = result.verdict %}
 {% set pd  = result.pd %}
 {% set idb = result.idb %}
-{% set vt  = result.vt %}
 
 <!-- Verdict banner -->
 <div class="mb-6 p-6 rounded-lg flex items-center justify-between flex-wrap gap-4"
@@ -294,7 +283,7 @@
   {% set crim = pd.criminalip if pd else None %}
   {% set urlh = pd.urlhaus if pd else None %}
   {% set tm   = pd.threatminer if pd else None %}
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
         <span class="badge font-bold" style="background:#7c3aed;font-size:0.75rem">PD</span>
@@ -353,7 +342,7 @@
   </div>
 
   <!-- InternetDB -->
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
         <span class="badge font-bold" style="background:#a01f24;font-size:0.75rem">IDB</span>
@@ -377,39 +366,6 @@
     </div>
   </div>
 
-  <!-- VirusTotal -->
-  <div class="col-md-4">
-    <div class="form-card h-full">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="badge font-bold" style="background:#3950de;font-size:0.75rem">VT</span>
-        <span class="font-semibold">VirusTotal</span>
-        {% if not vt %}<span class="badge bg-secondary ms-auto">No Key</span>
-        {% elif vt.error is defined %}<span class="badge bg-secondary ms-auto">Error</span>
-        {% elif vt.not_found %}<span class="badge bg-secondary ms-auto">Not Found</span>
-        {% elif vt.malicious >= 5 %}<span class="badge bg-danger ms-auto">Malicious</span>
-        {% elif vt.malicious > 0 or vt.suspicious > 0 %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
-        {% else %}<span class="badge bg-success ms-auto">Clean</span>{% endif %}
-      </div>
-      {% if not vt %}
-        <p class="text-muted small">Configure VirusTotal API key in Settings → Threat Intelligence.</p>
-      {% elif vt.error is defined %}
-        <p class="text-danger small">{{ vt.error }}</p>
-      {% elif vt.not_found %}
-        <p class="text-muted small">IP not found in VirusTotal database.</p>
-      {% else %}
-        <div class="mb-4 text-center">
-          <div style="font-size:2.2rem;font-weight:700;color:{% if vt.malicious >= 5 %}#f87171{% elif vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
-            {{ vt.malicious }}<span class="text-muted text-lg font-normal"> / {{ vt.total_engines }}</span>
-          </div>
-          <div class="text-muted small">Engines Detected</div>
-        </div>
-        {% if vt.suspicious > 0 %}<div class="small text-warning mb-1">{{ vt.suspicious }} suspicious</div>{% endif %}
-        {% if vt.reputation is defined %}<div class="small mb-2"><span class="text-muted">Community Score:</span> <span class="{% if vt.reputation < 0 %}text-danger{% elif vt.reputation > 0 %}text-success{% else %}text-muted{% endif %} font-semibold">{{ vt.reputation }}</span></div>{% endif %}
-        {% if vt.country %}<div class="small mb-1"><span class="text-muted">Country:</span> {{ vt.country }}</div>{% endif %}
-        {% if vt.detections %}<div class="mt-2"><div class="text-muted small mb-1">Detections</div>{% for d in vt.detections[:5] %}<div class="small font-monospace" style="color:#f87171;font-size:0.72rem">{{ d.engine }}: {{ d.result or d.category }}</div>{% endfor %}</div>{% endif %}
-      {% endif %}
-    </div>
-  </div>
 </div>
 {% endif %}
 
@@ -431,8 +387,7 @@
             <td class="small">{{ case.threat_score }}/100</td>
             <td class="small">
               {% for src in case.flagging_sources | fromjson %}
-                {% if src == 'VirusTotal' %}<span class="badge" style="background:rgba(57,80,222,0.2);color:#8599ff;font-size:0.6rem">VT</span>
-                {% elif src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#e17c00;font-size:0.6rem">OTX</span>
+                {% if src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#e17c00;font-size:0.6rem">OTX</span>
                 {% elif src == 'AbuseIPDB' %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d;font-size:0.6rem">Abuse</span>
                 {% elif src.startswith('pulseDrive:') %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;font-size:0.6rem">{{ src.split(':')[1] }}</span>
                 {% elif src == 'PaloAlto' %}<span class="badge" style="background:rgba(250,146,20,0.2);color:#fb923c;font-size:0.6rem">PA</span>

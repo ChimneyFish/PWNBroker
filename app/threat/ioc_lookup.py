@@ -34,7 +34,7 @@ def is_private_ip(ip):
 
 def lookup(indicator, cfg, user_id=None, force=False):
     from ..models import IOCRecord
-    from . import otx, virustotal, abuseipdb, pulsedrive
+    from . import otx, abuseipdb, pulsedrive
 
     indicator = indicator.strip()
     ioc_type  = detect_type(indicator)
@@ -86,13 +86,6 @@ def lookup(indicator, cfg, user_id=None, force=False):
             scores.append(otx_result.get("threat_score", 0))
             verdicts.append(otx_result.get("verdict", "clean"))
 
-    vt_result = None
-    if cfg.virustotal_api_key:
-        vt_result = virustotal.lookup(indicator, ioc_type, cfg.virustotal_api_key)
-        if vt_result and "error" not in vt_result:
-            scores.append(vt_result.get("threat_score", 0))
-            verdicts.append(vt_result.get("verdict", "clean"))
-
     abuse_result = None
     if ioc_type == "ip" and cfg.abuseipdb_api_key:
         abuse_result = abuseipdb.check_ip(indicator, cfg.abuseipdb_api_key)
@@ -137,7 +130,6 @@ def lookup(indicator, cfg, user_id=None, force=False):
     record.threat_score      = overall_score
     record.verdict           = overall_verdict
     record.otx_result        = json.dumps(otx_result)   if otx_result   else None
-    record.vt_result         = json.dumps(vt_result)    if vt_result    else None
     record.abuseipdb_result  = json.dumps(abuse_result) if abuse_result else None
     record.pulsedrive_result = json.dumps(pd_result)    if pd_result    else None
     record.looked_up_by      = user_id
@@ -156,7 +148,6 @@ def _maybe_queue_triage(record):
     from ..models import SocCase
     flagging = []
     for field, source in [
-        (record.vt_result,        "VirusTotal"),
         (record.otx_result,       "OTX"),
         (record.abuseipdb_result, "AbuseIPDB"),
     ]:
@@ -185,7 +176,6 @@ def _maybe_queue_triage(record):
         existing.flagging_sources  = json.dumps(flagging)
         existing.source_count      = len(flagging)
         existing.otx_result        = record.otx_result
-        existing.vt_result         = record.vt_result
         existing.abuseipdb_result  = record.abuseipdb_result
         existing.pulsedrive_result = record.pulsedrive_result
         db.session.commit()
@@ -199,7 +189,6 @@ def _maybe_queue_triage(record):
         flagging_sources  = json.dumps(flagging),
         source_count      = len(flagging),
         otx_result        = record.otx_result,
-        vt_result         = record.vt_result,
         abuseipdb_result  = record.abuseipdb_result,
         pulsedrive_result = record.pulsedrive_result,
         ioc_record_id     = record.id,
@@ -215,7 +204,6 @@ def _format_record(record):
         "threat_score": record.threat_score,
         "verdict":     record.verdict,
         "otx":        json.loads(record.otx_result)        if record.otx_result        else None,
-        "vt":         json.loads(record.vt_result)         if record.vt_result         else None,
         "abuse":      json.loads(record.abuseipdb_result)  if record.abuseipdb_result  else None,
         "pulsedrive": json.loads(record.pulsedrive_result) if record.pulsedrive_result else None,
         "created_at":  record.created_at,

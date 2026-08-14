@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Email Alerts — PwnBroker{% endblock %}
+{% block page_title %}Email Security Alerts{% endblock %}
+
+{% block content %}
+
+<div class="form-card mb-6">
+  <div class="flex flex-wrap gap-4 items-center">
+    <span class="text-muted small font-semibold">FLAG</span>
+    {% for f, label in [('','All'),('phishing','Phishing'),('dlp','Personal Email / DLP'),('shadow_it','Shadow IT')] %}
+    <a href="{{ url_for('email_security.alerts') }}?flag={{ f }}&status={{ status_filter }}"
+       class="btn btn-sm {% if flag_filter == f %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+    <span class="text-muted small font-semibold ms-4">STATUS</span>
+    {% for s, label in [('new','New'),('reviewed','Reviewed'),('dismissed','Dismissed'),('escalated','Escalated'),('all','All')] %}
+    <a href="{{ url_for('email_security.alerts') }}?flag={{ flag_filter }}&status={{ s }}"
+       class="btn btn-sm {% if status_filter == s %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if not results %}
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-check-circle text-4xl block mb-2 text-success opacity-50"></i>
+  No emails match these filters.
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr><th>Flags</th><th>Sender</th><th>Subject</th><th>Direction</th><th>Severity</th><th>Received</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr onclick="window.location='{{ url_for('email_security.alert_detail', result_id=r.id) }}'" style="cursor:pointer">
+        <td>
+          {% if r.is_phishing_risk %}<span class="badge bg-danger me-1" style="font-size:0.6rem">Phishing</span>{% endif %}
+          {% if r.is_dlp_risk %}<span class="badge bg-warning text-dark me-1" style="font-size:0.6rem">DLP</span>{% endif %}
+          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#a78bfa;font-size:0.6rem">Shadow IT</span>{% endif %}
+        </td>
+        <td class="small font-monospace">{{ r.sender }}</td>
+        <td class="small">{{ r.subject | truncate(60) }}</td>
+        <td class="small text-muted">{{ r.direction }}</td>
+        <td><span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span></td>
+        <td class="small text-muted">{{ r.received_at | localdt('%Y-%m-%d %H:%M') if r.received_at else '—' }}</td>
+        <td class="small text-muted">{{ r.status | upper }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -169,21 +169,6 @@
             </div>
           </div>
 
-          <!-- VirusTotal -->
-          <div class="col-md-4">
-            <label class="form-label flex items-center gap-2">
-              VirusTotal API Key
-              <span class="key-pill" id="pill-virustotal" data-svc="virustotal">
-                {% if threat_cfg.virustotal_api_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
-              </span>
-            </label>
-            <input type="password" name="virustotal_api_key" class="form-control font-monospace"
-                   placeholder="Leave blank to keep current" autocomplete="new-password">
-            <div class="form-text">
-              <a href="https://www.virustotal.com/gui/my-apikey" target="_blank" rel="noopener" class="text-info">Get key at virustotal.com</a>
-            </div>
-          </div>
-
           <!-- AbuseIPDB -->
           <div class="col-md-4">
             <label class="form-label flex items-center gap-2">
@@ -722,6 +707,90 @@
     </div>
   </div>
 
+  <!-- O365 Email Security -->
+  <div class="col-12">
+    <div class="form-card" id="o365">
+      <h5 class="font-bold mb-1"><i class="bi bi-envelope-exclamation me-2 text-primary"></i>Email Security (Microsoft 365)</h5>
+      <p class="text-muted small mb-6">
+        Requires an Azure AD app registration with <strong>application</strong> (not delegated) Graph API
+        permissions — <code>Mail.Read</code> and <code>User.Read.All</code> — granted admin consent.
+        This scans every licensed mailbox in the tenant; scope it down in
+        <a href="{{ url_for('email_security.mailboxes') }}">Email Security → Mailboxes</a> per-inbox if needed.
+      </p>
+      <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form" value="o365">
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" name="o365_enabled" id="o365_enabled"
+                     {% if o365_cfg and o365_cfg.enabled %}checked{% endif %}>
+              <label class="form-check-label font-semibold" for="o365_enabled">Enable Email Security</label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Tenant ID</label>
+            <input type="text" name="tenant_id" class="form-control font-monospace"
+                   value="{{ o365_cfg.tenant_id or '' if o365_cfg else '' }}"
+                   placeholder="00000000-0000-0000-0000-000000000000">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Client (Application) ID</label>
+            <input type="text" name="client_id" class="form-control font-monospace"
+                   value="{{ o365_cfg.client_id or '' if o365_cfg else '' }}"
+                   placeholder="00000000-0000-0000-0000-000000000000">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label flex items-center gap-2">
+              Client Secret
+              <span class="key-pill" id="pill-o365">
+                {% if o365_cfg and o365_cfg.client_secret %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="client_secret" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="p-4 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="font-semibold mb-3 small text-muted">TUNING (optional)</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Shadow-IT Allowlist</label>
+              <input type="text" name="shadow_it_allowlist" class="form-control"
+                     value="{{ o365_cfg.shadow_it_allowlist or '' if o365_cfg else '' }}"
+                     placeholder="approved-vendor.com, okta.com">
+              <div class="form-text text-muted">Sender domains exempt from shadow-IT flags (already-approved SaaS).</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Extra Shadow-IT Keywords</label>
+              <input type="text" name="shadow_it_keywords_extra" class="form-control"
+                     value="{{ o365_cfg.shadow_it_keywords_extra or '' if o365_cfg else '' }}"
+                     placeholder="your workspace is ready">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Extra Personal Email Domains</label>
+              <input type="text" name="personal_domains_extra" class="form-control"
+                     value="{{ o365_cfg.personal_domains_extra or '' if o365_cfg else '' }}"
+                     placeholder="qq.com, mail.ru">
+              <div class="form-text text-muted">Added to the built-in free-webmail list used by the DLP lookalike check.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="submit" class="btn btn-primary">Save Email Security Settings</button>
+          <button type="button" class="btn btn-outline-secondary" id="test-o365-btn" onclick="testO365()">Test Connection</button>
+          <span id="o365-test-status" class="small text-muted"></span>
+        </div>
+      </form>
+      {% if o365_cfg and o365_cfg.status == 'error' and o365_cfg.last_error %}
+      <div class="text-danger small mt-3">Last error: {{ o365_cfg.last_error }}</div>
+      {% endif %}
+    </div>
+  </div>
+
   <!-- TLS / HTTPS Certificate -->
   <div class="col-12">
     <div class="form-card" id="tls">
@@ -973,7 +1042,7 @@ async function testAllKeys() {
   status.textContent = '';
 
   // Collect any key values currently typed into the form (unsaved keys can be tested live)
-  const keyFields = ['otx_api_key','virustotal_api_key','abuseipdb_api_key',
+  const keyFields = ['otx_api_key','abuseipdb_api_key',
                      'dnsdumpster_api_key','nvd_api_key',
                      'urlhaus_api_key','criminalip_api_key','vulners_api_key','hybridanalysis_api_key'];
   const liveKeys = {};
@@ -1025,6 +1094,44 @@ async function testAllKeys() {
 
   btn.disabled = false;
   btn.innerHTML = '<i class="bi bi-plug me-1"></i>Test All Keys';
+}
+
+// ── O365 test connection ───────────────────────────────────────────────────────
+async function testO365() {
+  const btn = document.getElementById('test-o365-btn');
+  const status = document.getElementById('o365-test-status');
+  const form = document.querySelector('input[name="form"][value="o365"]')?.closest('form');
+  if (!form) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:.75rem;height:.75rem;border-width:1.5px"></span>Testing…';
+  status.textContent = '';
+
+  const payload = {
+    tenant_id: form.querySelector('[name="tenant_id"]')?.value?.trim() || '',
+    client_id: form.querySelector('[name="client_id"]')?.value?.trim() || '',
+    client_secret: form.querySelector('[name="client_secret"]')?.value?.trim() || '',
+  };
+
+  try {
+    const res = await fetch('/settings/test-o365', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      status.innerHTML = `<span class="text-success">${data.detail}</span>`;
+    } else {
+      status.innerHTML = `<span class="text-danger">${data.error}</span>`;
+    }
+  } catch (e) {
+    status.textContent = 'Test failed — check console.';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Test Connection';
 }
 
 // ── Cloud auth toggle ─────────────────────────────────────────────────────────

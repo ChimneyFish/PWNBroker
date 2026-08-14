@@ -419,7 +419,6 @@ Configure all keys under **Settings → Threat Intelligence APIs**.
 | Service | Used for |
 |---------|---------|
 | OTX (AlienVault) | IOC reputation, threat feed pulses |
-| VirusTotal | File hash / URL / domain / IP reputation |
 | AbuseIPDB | IP abuse reports and confidence scores |
 | GreyNoise | Internet noise classification (RIOT / mass-scanner detection) |
 | DNSDumpster | Subdomain enumeration |
@@ -859,7 +858,7 @@ getcap $(which nmap)
 ### API keys "INVALID" even though they are correct
 
 - Ensure there are no leading/trailing spaces in the key fields
-- Some services (VirusTotal, NVD) have rate limits — a 429 response is treated as "key accepted"
+- Some services (NVD) have rate limits — a 429 response is treated as "key accepted"
 - Network issues (DNS, firewall) to the external APIs will show as "Network error"
 
 ### Timezone not applying to old timestamps

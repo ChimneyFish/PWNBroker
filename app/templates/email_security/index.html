@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Email Security — PwnBroker{% endblock %}
+{% block page_title %}Email Security{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('email_security.alerts') }}" class="btn btn-sm btn-primary">
+  <i class="bi bi-envelope-exclamation me-1"></i>Review Alerts
+</a>
+<a href="{{ url_for('email_security.mailboxes') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-inboxes me-1"></i>Mailboxes
+</a>
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('email_security.poll_now') }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-sm btn-outline-secondary" {% if not cfg.enabled %}disabled{% endif %}>
+    <i class="bi bi-arrow-repeat me-1"></i>Poll Now
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if not cfg.enabled %}
+<div class="form-card mb-6" style="border-left:3px solid rgba(217,119,6,0.6)">
+  <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+  O365 email security isn't configured yet.
+  <a href="{{ url_for('settings.index') }}#o365">Add your Azure AD app credentials in Settings</a> to start monitoring mail tenant-wide.
+</div>
+{% endif %}
+
+<div class="row g-3 mb-6">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('email_security.mailboxes') }}" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value">{{ total_mailboxes }}</div>
+          <div class="stat-label">Mailboxes Monitored</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)"><i class="bi bi-inboxes"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('email_security.alerts') }}?flag=phishing" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value {% if phishing_count > 0 %}text-danger{% endif %}">{{ phishing_count }}</div>
+          <div class="stat-label">Phishing Flags</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171"><i class="bi bi-shield-x"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('email_security.alerts') }}?flag=dlp" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value {% if dlp_count > 0 %}text-warning{% endif %}">{{ dlp_count }}</div>
+          <div class="stat-label">Personal-Email / DLP Flags</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#fcd34d"><i class="bi bi-usb-drive"></i></div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{{ url_for('email_security.alerts') }}?flag=shadow_it" class="stat-card no-underline" style="color:inherit;display:block">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="stat-value {% if shadow_it_count > 0 %}text-info{% endif %}">{{ shadow_it_count }}</div>
+          <div class="stat-label">Shadow IT Flags</div>
+        </div>
+        <div class="stat-icon" style="background:rgba(124,58,237,0.1);color:#a78bfa"><i class="bi bi-cloud-plus"></i></div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="section-header mb-4">
+  <span class="section-title">Recently Flagged</span>
+  <span class="text-muted small">{{ pending_count }} pending review</span>
+</div>
+
+{% if not recent %}
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-shield-check text-4xl block mb-2 text-success opacity-50"></i>
+  Nothing flagged yet.
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Flags</th><th>Sender</th><th>Subject</th><th>Direction</th><th>Severity</th><th>Received</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in recent %}
+      <tr onclick="window.location='{{ url_for('email_security.alert_detail', result_id=r.id) }}'" style="cursor:pointer">
+        <td>
+          {% if r.is_phishing_risk %}<span class="badge bg-danger me-1" style="font-size:0.6rem">Phishing</span>{% endif %}
+          {% if r.is_dlp_risk %}<span class="badge bg-warning text-dark me-1" style="font-size:0.6rem">DLP</span>{% endif %}
+          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#a78bfa;font-size:0.6rem">Shadow IT</span>{% endif %}
+        </td>
+        <td class="small font-monospace">{{ r.sender }}</td>
+        <td class="small">{{ r.subject | truncate(60) }}</td>
+        <td class="small text-muted">{{ r.direction }}</td>
+        <td><span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span></td>
+        <td class="small text-muted">{{ r.received_at | localdt('%Y-%m-%d %H:%M') if r.received_at else '—' }}</td>
+        <td class="small text-muted">{{ r.status | upper }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

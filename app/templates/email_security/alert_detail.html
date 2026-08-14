@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Email Alert — PwnBroker{% endblock %}
+{% block page_title %}Email Alert Detail{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('email_security.alerts') }}" class="btn btn-sm btn-outline-secondary">
+  <i class="bi bi-arrow-left me-1"></i>Back to Alerts
+</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-card mb-6">
+  <div class="flex items-center gap-2 mb-4 flex-wrap">
+    {% if r.is_phishing_risk %}<span class="badge bg-danger">Phishing</span>{% endif %}
+    {% if r.is_dlp_risk %}<span class="badge bg-warning text-dark">Personal Email / DLP</span>{% endif %}
+    {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#a78bfa">Shadow IT</span>{% endif %}
+    <span class="badge-severity sev-{{ r.severity }}">{{ r.severity }}</span>
+    <span class="badge bg-secondary ms-auto">{{ r.status | upper }}</span>
+  </div>
+
+  <div class="row g-3 mb-2">
+    <div class="col-md-6">
+      <div class="text-muted small">From</div>
+      <div class="font-monospace">{{ r.sender }}</div>
+    </div>
+    <div class="col-md-6">
+      <div class="text-muted small">To</div>
+      <div class="font-monospace small">{{ (r.recipients | fromjson) | join(', ') if r.recipients else '—' }}</div>
+    </div>
+  </div>
+  <div class="row g-3 mb-2">
+    <div class="col-md-6">
+      <div class="text-muted small">Mailbox</div>
+      <div class="font-monospace">{{ r.mailbox.upn if r.mailbox else '—' }} <span class="text-muted">({{ r.direction }})</span></div>
+    </div>
+    <div class="col-md-6">
+      <div class="text-muted small">Received</div>
+      <div>{{ r.received_at | localdt('%Y-%m-%d %H:%M') if r.received_at else '—' }}</div>
+    </div>
+  </div>
+  <div class="mb-2">
+    <div class="text-muted small">Subject</div>
+    <div class="font-semibold">{{ r.subject or '(no subject)' }}</div>
+  </div>
+  {% if r.snippet %}
+  <div class="mb-2">
+    <div class="text-muted small">Preview</div>
+    <div class="small text-muted p-2 rounded" style="background:rgba(0,0,0,0.2)">{{ r.snippet }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if r.is_phishing_risk %}
+{% set p = r.phishing_detail | fromjson %}
+<div class="form-card mb-4" style="border-left:3px solid var(--critical)">
+  <div class="font-semibold mb-2"><i class="bi bi-shield-x text-danger me-2"></i>Phishing Signals</div>
+  {% if p.reputation_hits %}
+  <div class="mb-2">
+    <div class="text-muted small mb-1">Reputation hits (existing threat-intel sources):</div>
+    {% for h in p.reputation_hits %}
+    <span class="badge bg-danger me-1">{{ h.domain }} — {{ h.verdict }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if p.heuristic_signals %}
+  <div class="text-muted small mb-1">Heuristic signals:</div>
+  <ul class="small mb-0">
+    {% for s in p.heuristic_signals %}<li>{{ s }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if r.is_dlp_risk %}
+{% set d = r.dlp_detail | fromjson %}
+<div class="form-card mb-4" style="border-left:3px solid rgba(217,119,6,0.6)">
+  <div class="font-semibold mb-2"><i class="bi bi-usb-drive text-warning me-2"></i>Personal Email / Data Loss Signal</div>
+  <p class="small mb-1">Recipient <code>{{ d.recipient }}</code> on personal domain
+     <strong>{{ d.recipient_domain }}</strong> closely resembles the sender's own address
+     (similarity {{ (d.similarity * 100) | round | int }}%) — possible self-forwarding of company data.</p>
+</div>
+{% endif %}
+
+{% if r.is_shadow_it %}
+{% set s = r.shadow_it_detail | fromjson %}
+<div class="form-card mb-4" style="border-left:3px solid #7c3aed">
+  <div class="font-semibold mb-2"><i class="bi bi-cloud-plus me-2" style="color:#a78bfa"></i>Shadow IT Signal</div>
+  <p class="small mb-1">Sender domain: <strong>{{ s.sender_domain }}</strong></p>
+  <div class="flex flex-wrap gap-1">
+    {% for kw in s.matched_keywords %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ kw }}</span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if current_user.is_admin %}
+<div class="form-card">
+  <div class="font-semibold mb-3">Review</div>
+  <form method="POST" action="{{ url_for('email_security.alert_review', result_id=r.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label small text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="reviewed">Reviewed</option>
+          <option value="escalated">Escalated</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label small text-muted">Notes</label>
+        <input type="text" name="notes" class="form-control" placeholder="Optional analyst notes">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm mt-3">Save</button>
+  </form>
+  {% if r.notes %}
+  <div class="text-muted small mt-3">Previous notes: {{ r.notes }}</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -43,7 +43,7 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 | **Network Scanning** | nmap-powered port, service, OS, and CVE scans with CIDR and asset-group targeting |
 | **Vulnerability Management** | Ticket-based remediation workflow with SLA tracking, assignees, and auto-dedup |
 | **Dependency Scanner** | SSH into hosts (password, RSA, Ed25519, or ECDSA key auth), pull package manifests, cross-reference OSV — Python, npm, Go, Rust, Ruby, Java, PHP, and more |
-| **Threat Intelligence** | Multi-source IOC lookups (OTX, VirusTotal, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed |
+| **Threat Intelligence** | Multi-source IOC lookups (OTX, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed |
 | **Endpoint Agents** | Lightweight Python agent watches outbound connections in real time and fires alerts to the SOC queue |
 | **CVE Enrichment** | EPSS scores, NVD CVSS v3 vectors, CWE IDs, and MITRE ATT&CK technique mapping — refreshed nightly |
 | **GRC** | Risk register (5×5 heat-map), NIST CSF 2.0 / CIS Controls v8 / ISO 27001:2022 compliance tracking, policy library, evidence file uploads, audit-ready PDF exports |
@@ -77,7 +77,6 @@ Optional API keys (all free tiers available):
 |---|---|
 | [NVD](https://nvd.nist.gov/developers/request-an-api-key) | `NVD_API_KEY` — 10× higher rate limit |
 | [AlienVault OTX](https://otx.alienvault.com) | IOC lookups, threat feed |
-| [VirusTotal](https://www.virustotal.com) | File, URL, domain, IP reputation |
 | [AbuseIPDB](https://www.abuseipdb.com) | IP abuse confidence scores |
 | [GreyNoise](https://www.greynoise.io) | Internet noise / mass-scanner classification |
 | [DNSDumpster](https://dnsdumpster.com) | Subdomain enumeration |
@@ -179,7 +178,7 @@ MAIL_DEFAULT_SENDER=
 # DATABASE_URL=postgresql://pwnbroker:password@localhost/pwnbroker
 ```
 
-All threat intel API keys (OTX, VirusTotal, AbuseIPDB, GreyNoise, DNSDumpster) are entered through the web UI under **Settings → Threat Intelligence APIs** and stored in the database.
+All threat intel API keys (OTX, AbuseIPDB, GreyNoise, DNSDumpster) are entered through the web UI under **Settings → Threat Intelligence APIs** and stored in the database.
 
 ### PostgreSQL (recommended for production)
 

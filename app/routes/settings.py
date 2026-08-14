@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, available_timezones
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig, SSOConfig
+from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig, SSOConfig, O365Config
 from ..extensions import db
 from .decorators import admin_required
 
@@ -146,6 +146,7 @@ def index():
     threat_cfg   = ThreatConfig.query.first()   or ThreatConfig()
     time_cfg     = TimeConfig.query.first()     or TimeConfig()
     sso_cfg      = SSOConfig.query.first()      or SSOConfig()
+    o365_cfg     = O365Config.query.first()     or O365Config()
     users        = User.query.order_by(User.created_at.desc()).all()
 
     if request.method == "POST":
@@ -184,7 +185,6 @@ def index():
         if form == "threat":
             from ..models import IOCRecord
             otx_key = request.form.get("otx_api_key", "").strip()
-            vt_key  = request.form.get("virustotal_api_key", "").strip()
             ab_key  = request.form.get("abuseipdb_api_key", "").strip()
             dd_key  = request.form.get("dnsdumpster_api_key", "").strip()
             nvd_key = request.form.get("nvd_api_key", "").strip()
@@ -199,8 +199,6 @@ def index():
 
             if otx_key:
                 threat_cfg.otx_api_key = otx_key
-            if vt_key:
-                threat_cfg.virustotal_api_key = vt_key
             if ab_key:
                 threat_cfg.abuseipdb_api_key = ab_key
             if dd_key:
@@ -230,12 +228,10 @@ def index():
             # Expire stale cached IOC records that are missing data for any now-configured
             # service, so the next lookup re-queries instead of returning "No Key" results.
             active_otx = bool(threat_cfg.otx_api_key)
-            active_vt  = bool(threat_cfg.virustotal_api_key)
             active_ab  = bool(threat_cfg.abuseipdb_api_key)
             past = datetime(2000, 1, 1, tzinfo=timezone.utc)
             for rec in IOCRecord.query.all():
                 if (active_otx and rec.otx_result is None) or \
-                   (active_vt  and rec.vt_result  is None) or \
                    (active_ab  and rec.abuseipdb_result is None and rec.ioc_type == "ip"):
                     rec.expires_at = past
 
@@ -318,6 +314,25 @@ def index():
             flash("SSO settings saved — restart PwnBroker for changes to take effect.", "success")
             return redirect(url_for("settings.index") + "#sso")
 
+        if form == "o365":
+            o365_cfg.enabled = request.form.get("o365_enabled") == "on"
+            o365_cfg.tenant_id = request.form.get("tenant_id", "").strip()
+            o365_cfg.client_id = request.form.get("client_id", "").strip()
+            client_secret = request.form.get("client_secret", "")
+            if client_secret:
+                o365_cfg.client_secret = client_secret
+            o365_cfg.shadow_it_allowlist = request.form.get("shadow_it_allowlist", "").strip()
+            o365_cfg.shadow_it_keywords_extra = request.form.get("shadow_it_keywords_extra", "").strip()
+            o365_cfg.personal_domains_extra = request.form.get("personal_domains_extra", "").strip()
+            o365_cfg.created_by = o365_cfg.created_by or current_user.id
+            o365_cfg.updated_at = datetime.now(timezone.utc)
+            db.session.add(o365_cfg)
+            db.session.commit()
+            from ..audit import log_action
+            log_action("settings.o365_save", detail="O365 email security settings updated")
+            flash("O365 email security settings saved.", "success")
+            return redirect(url_for("settings.index") + "#o365")
+
         if form == "saml":
             sso_cfg.saml_enabled = request.form.get("saml_enabled") == "on"
             sso_cfg.saml_sp_entity_id = request.form.get("saml_sp_entity_id", "").strip() or None
@@ -330,7 +345,7 @@ def index():
     return render_template(
         "settings/index.html",
         cfg=cfg, cloud_cfg=cloud_cfg, atlassian_cfg=atlassian_cfg,
-        threat_cfg=threat_cfg, time_cfg=time_cfg, sso_cfg=sso_cfg, users=users,
+        threat_cfg=threat_cfg, time_cfg=time_cfg, sso_cfg=sso_cfg, o365_cfg=o365_cfg, users=users,
         cert_info=_read_cert_info(),
         ntp_status=_ntp_status(),
         ntp_server_current=_read_ntp_server(),
@@ -421,24 +436,6 @@ def test_keys():
             results["otx"] = {"status": "error", "detail": f"HTTP {code}"}
     else:
         results["otx"] = {"status": "not_set", "detail": "Not configured"}
-
-    # ── VirusTotal ───────────────────────────────────────────────────────────
-    vt_key = _key("virustotal_api_key")
-    if vt_key:
-        code, resp = _get("https://www.virustotal.com/api/v3/domains/virustotal.com",
-                          headers={"x-apikey": vt_key})
-        if code == 200:
-            results["virustotal"] = {"status": "ok", "detail": "Valid"}
-        elif code in (401, 403):
-            results["virustotal"] = {"status": "error", "detail": "Invalid key"}
-        elif code == 429:
-            results["virustotal"] = {"status": "ok", "detail": "Rate limited (key accepted)"}
-        elif code is None:
-            results["virustotal"] = {"status": "error", "detail": f"Network error: {resp}"}
-        else:
-            results["virustotal"] = {"status": "error", "detail": f"HTTP {code}"}
-    else:
-        results["virustotal"] = {"status": "not_set", "detail": "Not configured — save key first"}
 
     # ── AbuseIPDB ─────────────────────────────────────────────────────────────
     ab_key = _key("abuseipdb_api_key")
@@ -564,6 +561,28 @@ def test_keys():
         results["nvd"] = {"status": "not_set", "detail": "Not configured"}
 
     return results
+
+
+@settings_bp.route("/test-o365", methods=["POST"])
+@login_required
+@admin_required
+def test_o365():
+    """Acquires an app-only Graph token and probes /organization. Accepts an
+    optional JSON body with tenant_id/client_id/client_secret typed into the
+    form but not yet saved, same fallback-to-DB pattern as /test-keys."""
+    cfg = O365Config.query.first() or O365Config()
+    body = request.get_json(silent=True) or {}
+
+    def _val(field):
+        v = body.get(field, "").strip()
+        return v if v else getattr(cfg, field, None)
+
+    tenant_id, client_id, client_secret = _val("tenant_id"), _val("client_id"), _val("client_secret")
+    if not (tenant_id and client_id and client_secret):
+        return {"error": "Tenant ID, Client ID, and Client Secret are all required."}
+
+    from ..email_security.graph_client import test_connection
+    return test_connection(tenant_id, client_id, client_secret)
 
 
 @settings_bp.route("/users/add", methods=["POST"])

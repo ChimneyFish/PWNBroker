@@ -67,6 +67,24 @@ def register_jobs(app):
         minutes=15,
         replace_existing=True,
     )
+    # O365 email security — mailbox list refreshed daily (new hires/departures),
+    # mail polled every 10 minutes via Graph delta queries.
+    scheduler.add_job(
+        id="sync_o365_mailboxes",
+        func=_run_o365_mailbox_sync,
+        args=[app],
+        trigger="interval",
+        hours=24,
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        id="poll_o365_mail",
+        func=_run_o365_mail_poll,
+        args=[app],
+        trigger="interval",
+        minutes=10,
+        replace_existing=True,
+    )
 
 
 def _run_scheduled_scans(app):
@@ -224,6 +242,24 @@ def _run_vuln_threat_correlation(app):
             run_correlation()
         except Exception as e:
             app.logger.error(f"Vuln/threat-intel correlation job failed: {e}")
+
+
+def _run_o365_mailbox_sync(app):
+    with app.app_context():
+        from ..email_security.scanner import sync_mailboxes
+        try:
+            sync_mailboxes()
+        except Exception as e:
+            app.logger.error(f"O365 mailbox sync failed: {e}")
+
+
+def _run_o365_mail_poll(app):
+    with app.app_context():
+        from ..email_security.scanner import poll_mail
+        try:
+            poll_mail()
+        except Exception as e:
+            app.logger.error(f"O365 mail poll failed: {e}")
 
 
 def _run_paloalto_poll(app):

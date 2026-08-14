@@ -55,6 +55,7 @@ def create_app(config_class=Config):
     from .routes.grc import grc_bp
     from .routes.activity import activity_bp
     from .routes.eol import eol_bp
+    from .routes.email_security import email_security_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -74,6 +75,7 @@ def create_app(config_class=Config):
     app.register_blueprint(grc_bp)
     app.register_blueprint(activity_bp)
     app.register_blueprint(eol_bp)
+    app.register_blueprint(email_security_bp)
 
     @app.template_global("now")
     def _now():
@@ -376,7 +378,7 @@ def _migrate_encrypt_secrets(app):
 
     plan = [
         ("threat_configs", "id", [
-            "otx_api_key", "virustotal_api_key", "abuseipdb_api_key",
+            "otx_api_key", "abuseipdb_api_key",
             "securitytrails_api_key", "dnsdumpster_api_key", "nvd_api_key",
             "github_advisory_token", "urlhaus_api_key", "criminalip_api_key",
             "vulners_api_key", "hybridanalysis_api_key", "phishtank_api_key",

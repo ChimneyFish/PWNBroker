@@ -73,7 +73,7 @@
 <div class="row g-3 mb-6">
 
   <!-- OTX -->
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
         <span class="badge" style="background:#e17c00;font-size:0.75rem">OTX</span>
@@ -135,61 +135,8 @@
     </div>
   </div>
 
-  <!-- VirusTotal -->
-  <div class="col-md-4">
-    <div class="form-card h-full">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="badge" style="background:#3950de;font-size:0.75rem">VT</span>
-        <span class="font-semibold">VirusTotal</span>
-        {% if result.vt %}
-          {% if result.vt.not_found %}<span class="badge bg-secondary ms-auto">Not Found</span>
-          {% elif result.vt.verdict == "malicious" %}<span class="badge bg-danger ms-auto">Malicious</span>
-          {% elif result.vt.verdict == "suspicious" %}<span class="badge bg-warning text-dark ms-auto">Suspicious</span>
-          {% else %}<span class="badge bg-success ms-auto">Clean</span>{% endif %}
-        {% else %}
-          <span class="badge bg-secondary ms-auto">No Key</span>
-        {% endif %}
-      </div>
-      {% if result.vt %}
-        {% if result.vt.error %}
-          <p class="text-danger small">{{ result.vt.error }}</p>
-        {% elif result.vt.not_found %}
-          <p class="text-muted small">Indicator not found in VirusTotal database.</p>
-        {% else %}
-          <div class="mb-4 text-center">
-            <div style="font-size:2rem;font-weight:700;color:{% if result.vt.malicious >= 5 %}#f87171{% elif result.vt.malicious > 0 %}#fcd34d{% else %}#4ade80{% endif %}">
-              {{ result.vt.malicious }}<span class="text-muted text-lg font-normal"> / {{ result.vt.total_engines }}</span>
-            </div>
-            <div class="text-muted small">Engines Detected</div>
-          </div>
-          {% if result.vt.suspicious > 0 %}
-          <div class="small mb-1 text-warning">{{ result.vt.suspicious }} suspicious detection(s)</div>
-          {% endif %}
-          {% if result.vt.country %}
-          <div class="small mb-1"><span class="text-muted">Country:</span> {{ result.vt.country }}</div>
-          {% endif %}
-          {% if result.vt.reputation is defined %}
-          <div class="small mb-2"><span class="text-muted">Reputation:</span>
-            <span class="{% if result.vt.reputation < 0 %}text-danger{% elif result.vt.reputation > 0 %}text-success{% else %}text-muted{% endif %}">
-              {{ result.vt.reputation }}
-            </span>
-          </div>
-          {% endif %}
-          {% if result.vt.detections %}
-          <div class="small text-muted mb-1">Top detections:</div>
-          {% for d in result.vt.detections[:5] %}
-          <div class="small font-monospace" style="color:#f87171">{{ d.engine }}: {{ d.result or d.category }}</div>
-          {% endfor %}
-          {% endif %}
-        {% endif %}
-      {% else %}
-        <p class="text-muted small">Configure VirusTotal API key in Settings → Threat Intelligence.</p>
-      {% endif %}
-    </div>
-  </div>
-
   <!-- AbuseIPDB -->
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
         <span class="badge" style="background:#c0392b;font-size:0.75rem">ABUSE</span>
@@ -371,7 +318,6 @@
         <td class="small">{{ rec.threat_score }}/100</td>
         <td class="small text-muted">
           {% if rec.otx_result %}{% set _o = rec.otx_result | fromjson %}{% if _o.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>{% endif %}{% endif %}
-          {% if rec.vt_result %}{% set _v = rec.vt_result | fromjson %}{% if _v.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(57,80,222,0.2);color:#8599ff">VT</span>{% endif %}{% endif %}
           {% if rec.abuseipdb_result %}{% set _a = rec.abuseipdb_result | fromjson %}{% if _a.verdict in ('suspicious','malicious') %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>{% endif %}{% endif %}
           {% if rec.pulsedrive_result %}{% set _pd = rec.pulsedrive_result | fromjson %}{% for _name, _src in _pd.items() %}{% if _src.verdict in ('suspicious','malicious') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ _name }}</span>{% endif %}{% endfor %}{% endif %}
         </td>

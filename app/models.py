@@ -335,7 +335,6 @@ class ThreatConfig(db.Model):
     __tablename__ = "threat_configs"
     id                      = db.Column(db.Integer, primary_key=True)
     otx_api_key             = db.Column(EncryptedString)
-    virustotal_api_key      = db.Column(EncryptedString)
     abuseipdb_api_key       = db.Column(EncryptedString)
     securitytrails_api_key  = db.Column(EncryptedString)
     dnsdumpster_api_key     = db.Column(EncryptedString)
@@ -388,10 +387,10 @@ class SocCase(db.Model):
     ioc_type         = db.Column(db.String(20))
     threat_score     = db.Column(db.Integer, default=0)
     verdict          = db.Column(db.String(20))           # suspicious | malicious
-    flagging_sources = db.Column(db.Text)                 # JSON list e.g. ["VT","OTX"]
+    flagging_sources = db.Column(db.Text)                 # JSON list e.g. ["OTX","AbuseIPDB"]
     source_count     = db.Column(db.Integer, default=0)
     otx_result        = db.Column(db.Text)
-    vt_result         = db.Column(db.Text)
+    vt_result         = db.Column(db.Text)   # legacy — VirusTotal integration retired, no longer populated
     abuseipdb_result  = db.Column(db.Text)
     pulsedrive_result = db.Column(db.Text)
     paloalto_result   = db.Column(db.Text)                # JSON: {firewall, threat_name, category, action, ...}
@@ -415,7 +414,7 @@ class IOCRecord(db.Model):
     threat_score     = db.Column(db.Integer, default=0)
     verdict          = db.Column(db.String(20))    # clean | suspicious | malicious | unknown
     otx_result        = db.Column(db.Text)
-    vt_result         = db.Column(db.Text)
+    vt_result         = db.Column(db.Text)   # legacy — VirusTotal integration retired, no longer populated
     abuseipdb_result  = db.Column(db.Text)
     pulsedrive_result = db.Column(db.Text)
     looked_up_by     = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
@@ -477,6 +476,79 @@ class PaloAltoThreatLog(db.Model):
     created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (db.UniqueConstraint("firewall_id", "seqno", name="uq_paloalto_log_firewall_seqno"),)
+
+
+# ── Email Security (Microsoft 365 / Graph API) ───────────────────────────────
+
+class O365Config(db.Model):
+    __tablename__ = "o365_config"
+    id                       = db.Column(db.Integer, primary_key=True)
+    enabled                  = db.Column(db.Boolean, default=False)
+    tenant_id                = db.Column(db.String(128))
+    client_id                = db.Column(db.String(128))
+    client_secret            = db.Column(EncryptedString)
+    status                   = db.Column(db.String(20), default="unknown")  # unknown | ok | error
+    last_error               = db.Column(db.Text)
+    last_tested_at           = db.Column(db.DateTime)
+    last_mailbox_sync_at     = db.Column(db.DateTime)
+    last_mail_poll_at        = db.Column(db.DateTime)
+    # Comma-separated sender domains exempted from the shadow-IT keyword flag
+    # (e.g. already-approved SaaS vendors), and additive keyword/domain lists
+    # layered on top of the built-in defaults in email_security/analyzer.py.
+    shadow_it_allowlist      = db.Column(db.Text)
+    shadow_it_keywords_extra = db.Column(db.Text)
+    personal_domains_extra   = db.Column(db.Text)
+    created_by               = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    updated_at               = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class MonitoredMailbox(db.Model):
+    __tablename__ = "monitored_mailboxes"
+    id                    = db.Column(db.Integer, primary_key=True)
+    user_id               = db.Column(db.String(128), unique=True, nullable=False)  # Graph object id
+    upn                   = db.Column(db.String(256), nullable=False, index=True)
+    display_name          = db.Column(db.String(256))
+    enabled               = db.Column(db.Boolean, default=True)  # per-mailbox opt-out under tenant-wide scope
+    inbox_delta_link      = db.Column(db.Text)
+    sentitems_delta_link  = db.Column(db.Text)
+    last_synced_at        = db.Column(db.DateTime)
+    last_error            = db.Column(db.Text)
+    created_at            = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    scan_results = db.relationship("EmailScanResult", backref="mailbox", lazy="dynamic",
+                                   cascade="all, delete-orphan")
+
+
+class EmailScanResult(db.Model):
+    __tablename__  = "email_scan_results"
+    id             = db.Column(db.Integer, primary_key=True)
+    mailbox_id     = db.Column(db.Integer, db.ForeignKey("monitored_mailboxes.id", ondelete="CASCADE"),
+                               nullable=False)
+    message_id     = db.Column(db.String(512), nullable=False)  # Graph immutable message id
+    direction      = db.Column(db.String(10))    # inbound | outbound
+    sender         = db.Column(db.String(320))
+    recipients     = db.Column(db.Text)           # JSON list
+    subject        = db.Column(db.String(500))
+    received_at    = db.Column(db.DateTime)
+    snippet        = db.Column(db.Text)           # truncated preview only, not the full body
+
+    is_phishing_risk  = db.Column(db.Boolean, default=False)
+    phishing_detail   = db.Column(db.Text)         # JSON
+    is_dlp_risk       = db.Column(db.Boolean, default=False)
+    dlp_detail        = db.Column(db.Text)         # JSON — lookalike sender/recipient details
+    is_shadow_it      = db.Column(db.Boolean, default=False)
+    shadow_it_detail  = db.Column(db.Text)         # JSON — matched keywords/sender domain
+
+    severity       = db.Column(db.String(20), default="info")  # critical | high | medium | low | info
+    status         = db.Column(db.String(20), default="new")   # new | reviewed | dismissed | escalated
+    reviewed_by    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at    = db.Column(db.DateTime)
+    notes          = db.Column(db.Text)
+    created_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by])
+
+    __table_args__ = (db.UniqueConstraint("mailbox_id", "message_id", name="uq_email_scan_mailbox_message"),)
 
 
 _SLA_DAYS = {"critical": 1, "high": 7, "medium": 30, "low": 90, "info": 180}

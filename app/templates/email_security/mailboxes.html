@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Monitored Mailboxes — PwnBroker{% endblock %}
+{% block page_title %}Monitored Mailboxes{% endblock %}
+
+{% block header_actions %}
+{% if current_user.is_admin %}
+<form method="POST" action="{{ url_for('email_security.mailboxes_sync') }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button class="btn btn-sm btn-primary" {% if not cfg.enabled %}disabled{% endif %}>
+    <i class="bi bi-arrow-repeat me-1"></i>Sync from Tenant
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<p class="text-muted small mb-4">
+  Tenant-wide scope: every licensed mailbox is synced in automatically. Disable individual mailboxes
+  here to exclude them without narrowing the Graph API permission grant.
+</p>
+
+{% if not boxes %}
+<div class="form-card text-center py-12 text-muted">
+  <i class="bi bi-inboxes text-4xl block mb-2 opacity-50"></i>
+  No mailboxes synced yet. {% if current_user.is_admin %}Click "Sync from Tenant" above.{% endif %}
+</div>
+{% else %}
+<div class="data-table">
+  <table class="table table-dark table-hover mb-0">
+    <thead>
+      <tr><th>Mailbox</th><th>Display Name</th><th>Last Synced</th><th>Status</th><th style="width:80px"></th></tr>
+    </thead>
+    <tbody>
+      {% for mb in boxes %}
+      <tr id="mb-row-{{ mb.id }}">
+        <td class="small font-monospace">{{ mb.upn }}</td>
+        <td class="small">{{ mb.display_name or '—' }}</td>
+        <td class="small text-muted">{{ mb.last_synced_at | localdt('%Y-%m-%d %H:%M') if mb.last_synced_at else 'never' }}</td>
+        <td>
+          {% if mb.enabled %}<span class="badge bg-success">Monitored</span>
+          {% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}
+          {% if mb.last_error %}<span class="badge bg-danger ms-1" title="{{ mb.last_error }}">Error</span>{% endif %}
+        </td>
+        <td>
+          {% if current_user.is_admin %}
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                  onclick="toggleMailbox({{ mb.id }})">
+            {{ 'Disable' if mb.enabled else 'Enable' }}
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+function toggleMailbox(id) {
+  fetch(`/email-security/mailboxes/${id}/toggle`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content}
+  }).then(r => r.json()).then(() => location.reload());
+}
+</script>
+
+{% endblock %}

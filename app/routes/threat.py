@@ -225,7 +225,7 @@ def triage():
         if ip and not error:
             cfg = _get_cfg()
             from ..threat.triage import run as triage_run
-            result = triage_run(ip, cfg=cfg, vt_key=cfg.virustotal_api_key or None)
+            result = triage_run(ip, cfg=cfg)
 
     return render_template("threat/triage.html",
                            pending=pending, alerted=alerted, dismissed=dismissed,
@@ -444,13 +444,7 @@ def api_heartbeat():
                 rec.expires_at       = now + timedelta(hours=24)
 
                 if result.get("verdict") != "clean":
-                    vt_ok = otx_ok = False
-                    if cfg.virustotal_api_key:
-                        from ..threat.virustotal import lookup as _vt_lookup
-                        vt_res = _vt_lookup(ip, "ip", cfg.virustotal_api_key)
-                        if "error" not in vt_res:
-                            rec.vt_result = json.dumps(vt_res)
-                            vt_ok = vt_res.get("verdict") in ("malicious", "suspicious")
+                    otx_ok = False
                     if cfg.otx_api_key:
                         from ..threat.otx import lookup as _otx_lookup
                         otx_res = _otx_lookup(ip, "ip", cfg.otx_api_key)
@@ -459,7 +453,7 @@ def api_heartbeat():
                             otx_ok = otx_res.get("verdict") in ("malicious", "suspicious")
 
                     db.session.add(rec)
-                    if vt_ok or otx_ok:
+                    if otx_ok:
                         created = _ensure_alert(agent, ip, rec)
                         if created:
                             new_count += 1
@@ -478,14 +472,13 @@ def api_heartbeat():
 
 
 def _secondary_confirmed(ioc_record):
-    """True if a stored VT or OTX result confirms the IP is non-clean."""
-    for field in (ioc_record.vt_result, ioc_record.otx_result):
-        if field:
-            try:
-                if json.loads(field).get("verdict") in ("malicious", "suspicious"):
-                    return True
-            except Exception:
-                pass
+    """True if a stored OTX result confirms the IP is non-clean."""
+    if ioc_record.otx_result:
+        try:
+            if json.loads(ioc_record.otx_result).get("verdict") in ("malicious", "suspicious"):
+                return True
+        except Exception:
+            pass
     return False
 
 
