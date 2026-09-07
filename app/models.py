@@ -173,6 +173,8 @@ class ScanResult(db.Model):
     package_version = db.Column(db.String(100))     # installed version (OSV scans)
     ecosystem = db.Column(db.String(50))            # PyPI, npm, Go, etc.
     is_remediated = db.Column(db.Boolean, default=False)
+    cpe = db.Column(db.String(256))                 # CPE 2.3 string the CVE match was resolved against, if any
+    match_confidence = db.Column(db.String(20), default="none")  # cpe | keyword | none
     raw_data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -728,6 +730,47 @@ class CVEEnrichment(db.Model):
         cvss = self.cvss_v3 or self.cvss_v2 or 5.0
         epss = self.epss_percentile or 0.0
         return round(cvss * epss, 3)
+
+
+# ── CPE / CVE lookup caching (network-service scan accuracy) ─────────────────
+
+class CpeResolutionCache(db.Model):
+    """Caches product/version -> resolved NVD CPE 2.3 string (or None on a
+    failed resolution) so repeated/scheduled scans don't re-query the NVD CPE
+    dictionary for the same service fingerprint. A product/version's CPE
+    identity doesn't change, so this can be cached for a long time."""
+    __tablename__  = "cpe_resolution_cache"
+    id             = db.Column(db.Integer, primary_key=True)
+    product_key    = db.Column(db.String(300), unique=True, nullable=False, index=True)
+    resolved_cpe   = db.Column(db.String(256))  # NULL = resolution failed (negative cache)
+    fetched_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    @property
+    def is_stale(self):
+        fetched = self.fetched_at
+        if fetched.tzinfo is None:      # SQLite round-trips DateTime columns as naive
+            fetched = fetched.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - fetched > timedelta(days=30)
+
+
+class CpeCveCache(db.Model):
+    """Caches the CVE list returned for a resolved CPE (lookup_type='cpe') or
+    for a keyword-search fallback (lookup_type='keyword'), keyed by cache_key.
+    Keeps scans off the NVD CVE API's tight rate limit on repeat runs."""
+    __tablename__  = "cpe_cve_cache"
+    id             = db.Column(db.Integer, primary_key=True)
+    cache_key      = db.Column(db.String(300), unique=True, nullable=False, index=True)
+    lookup_type    = db.Column(db.String(10))  # cpe | keyword
+    cve_data       = db.Column(db.Text)         # JSON list of {cve_id, description, cvss_score, severity, url}
+    fetched_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    @property
+    def is_stale(self):
+        fetched = self.fetched_at
+        if fetched.tzinfo is None:      # SQLite round-trips DateTime columns as naive
+            fetched = fetched.replace(tzinfo=timezone.utc)
+        max_age = timedelta(hours=24) if self.lookup_type == "keyword" else timedelta(days=7)
+        return datetime.now(timezone.utc) - fetched > max_age
 
 
 # ── GRC ───────────────────────────────────────────────────────────────────────

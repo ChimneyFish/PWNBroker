@@ -58,6 +58,7 @@ class Config:
     NMAP_PATH = os.environ.get("NMAP_PATH", "/usr/bin/nmap")
     NVD_API_KEY = os.environ.get("NVD_API_KEY", "")
     NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+    NVD_CPE_API_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
 
     # Scheduler
     SCHEDULER_API_ENABLED = False

@@ -72,10 +72,15 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
             severity="info",
             title=f"Open Port {p['port']}/{p['protocol']}",
             description=f"Service: {p.get('service','unknown')} {p.get('product','')} {p.get('version','')}".strip(),
+            cpe=p.get("cpe", ""),
             raw_data=str(p),
         ))
         if do_cve:
-            cves = lookup_cves_for_service(p.get("product", p.get("service", "")), p.get("version", ""))
+            cves = lookup_cves_for_service(
+                p.get("product", p.get("service", "")),
+                p.get("version", ""),
+                cpe=p.get("cpe", ""),
+            )
             for cve in cves:
                 results.append(ScanResult(
                     scan_id=scan_id,
@@ -88,6 +93,8 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
                     description=cve["description"],
                     cve_id=cve["cve_id"],
                     cvss_score=cve["cvss_score"],
+                    cpe=cve.get("cpe", ""),
+                    match_confidence=cve.get("match_confidence", "none"),
                 ))
 
 
@@ -398,6 +405,14 @@ def run_scan(scan_id: int, app=None):
 
             db.session.bulk_save_objects(results)
             scan.status = "done"
+
+            new_cve_ids = [r.cve_id for r in results if getattr(r, "cve_id", None)]
+            if new_cve_ids:
+                try:
+                    from ..grc.enrichment import enrich_scan_cves
+                    enrich_scan_cves(new_cve_ids, app=_app)
+                except Exception as e:
+                    current_app.logger.warning("Post-scan CVE enrichment failed: %s", e)
         except Exception as e:
             scan.status = "failed"
             db.session.add(ScanResult(

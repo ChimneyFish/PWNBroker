@@ -394,6 +394,49 @@ def enrich_all_cves(app=None):
         log.info("CVE enrichment complete.")
 
 
+def enrich_scan_cves(cve_ids: list[str], app=None):
+    """
+    Lightweight, scan-triggered enrichment: populate/refresh EPSS + KEV status
+    for a specific list of freshly-discovered CVE IDs, without requiring a
+    VulnTicket to exist first (unlike enrich_all_cves, which only enriches
+    CVEs already attached to a ticket). Cheap — one batched EPSS call plus the
+    already-cached KEV index — so it's safe to call inline right after a scan
+    commits its results. NVD CVSS/description and ATT&CK mapping are left to
+    the slower scheduled enrich_all_cves job.
+    """
+    if not cve_ids:
+        return
+    _app = app or _get_app()
+    with _app.app_context():
+        from ..models import CVEEnrichment
+        from ..extensions import db
+
+        unique_ids = list(set(cve_ids))
+        now = datetime.now(timezone.utc)
+        kev_index = get_kev_index()
+        epss_data = fetch_epss(unique_ids)
+
+        for cve_id in unique_ids:
+            e = CVEEnrichment.query.filter_by(cve_id=cve_id).first()
+            if not e:
+                e = CVEEnrichment(cve_id=cve_id)
+                db.session.add(e)
+
+            kev = kev_index.get(cve_id.upper())
+            e.kev_listed     = bool(kev)
+            e.kev_date_added = kev["date_added"] if kev else e.kev_date_added
+            e.kev_due_date   = kev["due_date"] if kev else e.kev_due_date
+            e.kev_ransomware = kev["ransomware"] if kev else e.kev_ransomware
+            e.kev_fetched_at = now
+
+            if cve_id in epss_data:
+                e.epss_score      = epss_data[cve_id]["score"]
+                e.epss_percentile = epss_data[cve_id]["percentile"]
+                e.epss_fetched_at = now
+
+        db.session.commit()
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _chunks(lst, n):

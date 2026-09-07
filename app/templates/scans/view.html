@@ -417,7 +417,7 @@
       <tr>
         <th>Severity</th><th>Title</th><th>Host</th>
         {% if rtype == 'port' %}<th>Port</th><th>Service</th>
-        {% elif rtype == 'vulnerability' %}<th>CVE</th><th>CVSS</th><th>Description</th>
+        {% elif rtype == 'vulnerability' %}<th>CVE</th><th>Match</th><th>CVSS</th><th>Description</th>
         {% else %}<th>Description</th><th>Remediation</th>{% endif %}
       </tr>
     </thead>
@@ -432,6 +432,19 @@
           <td class="text-muted small">{{ r.service or '—' }}</td>
         {% elif rtype == 'vulnerability' %}
           <td>{% if r.cve_id %}<a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank" class="text-primary small">{{ r.cve_id }}</a>{% else %}—{% endif %}</td>
+          <td>
+            {% if r.match_confidence == 'cpe' %}
+            <span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.65rem"
+                  title="Version-matched via CPE — NVD applied its own version-range check">
+              <i class="bi bi-patch-check-fill me-1"></i>CPE-matched
+            </span>
+            {% elif r.match_confidence == 'keyword' %}
+            <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.65rem"
+                  title="No CPE could be resolved for this service — matched by free-text keyword search only, verify manually">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>Keyword match
+            </span>
+            {% else %}—{% endif %}
+          </td>
           <td>{% if r.cvss_score %}<strong>{{ r.cvss_score }}</strong>{% else %}—{% endif %}</td>
           <td class="text-muted small" style="max-width:300px">
             {{ (r.description or '')[:140] }}{% if r.description and r.description|length > 140 %}…{% endif %}

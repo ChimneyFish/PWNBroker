@@ -299,6 +299,8 @@ def _migrate_columns(app):
             ("package_version", "VARCHAR(100)"),
             ("ecosystem", "VARCHAR(50)"),
             ("is_remediated", "BOOLEAN DEFAULT 0"),
+            ("cpe", "VARCHAR(256)"),
+            ("match_confidence", "VARCHAR(20) DEFAULT 'none'"),
         ],
         "threat_configs": [
             ("securitytrails_api_key",  "VARCHAR(512)"),
