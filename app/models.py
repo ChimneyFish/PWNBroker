@@ -668,6 +668,8 @@ class Asset(db.Model):
     tags   = db.relationship("Tag", secondary=asset_tags, lazy="subquery",
                              backref=db.backref("assets", lazy=True))
 
+    __table_args__ = (db.UniqueConstraint("ip_address", "target_id", name="uq_asset_ip_target"),)
+
 
 asset_group_members = db.Table(
     "asset_group_members",

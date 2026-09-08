@@ -93,7 +93,16 @@ def _enrich_assets(target_id, host_meta: dict):
     Assets page — not as part of "scan a subnet" itself.) Now creates the
     Asset immediately, matching a subnet scan being the actual inventory
     mechanism, not just a vulnerability finder.
+
+    Asset has a unique constraint on (ip_address, target_id) (see
+    _migrate_dedupe_assets/_migrate_indexes) — two scans against the same
+    target discovering the same new host at once would otherwise both pass
+    the check above and race to insert it, so the insert commit is guarded
+    the same way the CPE/CVE cache tables are in cve_lookup.py: on a
+    conflict, roll back and fall through to updating the row the winner
+    already created instead of erroring the whole scan out over it.
     """
+    from sqlalchemy.exc import IntegrityError
     from ..models import Asset
     now = datetime.now(timezone.utc)
     for ip, data in host_meta.items():
@@ -105,8 +114,15 @@ def _enrich_assets(target_id, host_meta: dict):
                 first_seen=now, last_seen=now,
             )
             db.session.add(asset)
-            db.session.commit()
-            continue
+            try:
+                db.session.commit()
+                continue
+            except IntegrityError:
+                db.session.rollback()
+                asset = Asset.query.filter_by(ip_address=ip, target_id=target_id).first()
+                if not asset:
+                    continue  # shouldn't happen, but don't crash the scan over it
+
         if data.get("hostname") and not asset.hostname:
             asset.hostname = data["hostname"]
         if data.get("os_name") and not asset.os_name:

@@ -2,6 +2,7 @@ import threading
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash, current_app
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 from ..models import Asset, Tag, AssetGroup, Target, ScanResult, VulnTicket, Scan, asset_tags
 from ..extensions import db
 from .decorators import admin_required
@@ -40,26 +41,38 @@ def _sync_assets():
     if not host_map:
         return
 
-    existing = {(a.ip_address, a.target_id): a for a in Asset.query.all()}
-    changed  = False
+    existing  = {(a.ip_address, a.target_id): a for a in Asset.query.all()}
+    new_hosts = []
+    changed   = False
 
+    # Phase 1: update last_seen on assets that already exist. Never touches
+    # the (ip_address, target_id) unique key, so this batch can't conflict.
     for (ip, target_id), last_seen in host_map.items():
-        if (ip, target_id) in existing:
-            asset = existing[(ip, target_id)]
-            if last_seen and (not asset.last_seen or last_seen > asset.last_seen):
-                asset.last_seen = last_seen
-                changed = True
-        else:
-            db.session.add(Asset(
-                ip_address = ip,
-                target_id  = target_id,
-                first_seen = last_seen,
-                last_seen  = last_seen,
-            ))
+        if (ip, target_id) not in existing:
+            new_hosts.append((ip, target_id))
+            continue
+        asset = existing[(ip, target_id)]
+        if last_seen and (not asset.last_seen or last_seen > asset.last_seen):
+            asset.last_seen = last_seen
             changed = True
-
     if changed:
         db.session.commit()
+
+    # Phase 2: insert newly-discovered hosts one at a time, each in its own
+    # commit. Asset has a unique constraint on (ip_address, target_id) — a
+    # scan's own _enrich_assets() (engine.py) can insert one of these same
+    # hosts between the `existing` snapshot above and here, so a single
+    # collision must not cost every other legitimate new asset in this pass.
+    for ip, target_id in new_hosts:
+        last_seen = host_map[(ip, target_id)]
+        db.session.add(Asset(
+            ip_address=ip, target_id=target_id,
+            first_seen=last_seen, last_seen=last_seen,
+        ))
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()  # already created by whoever won the race
 
 
 def _open_vuln_counts():

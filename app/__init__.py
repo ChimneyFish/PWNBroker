@@ -167,6 +167,7 @@ def create_app(config_class=Config):
         db.create_all()
         _migrate_vuln_ticket_scan_result_nullable(app)
         _migrate_columns(app)
+        _migrate_dedupe_assets(app)
         _migrate_indexes(app)
         _migrate_encrypt_secrets(app)
         _seed_admin(app)
@@ -387,6 +388,38 @@ def _migrate_indexes(app):
     with db.engine.connect() as conn:
         for index_name, table, column in indexes:
             conn.execute(text(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table} ({column})"))
+        # A plain index doesn't enforce uniqueness — this one has to be UNIQUE
+        # to actually stop the duplicate-Asset race in _enrich_assets()/
+        # _sync_assets() (see _migrate_dedupe_assets, which must run first:
+        # SQLite refuses to create a unique index over rows that already
+        # violate it).
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_asset_ip_target "
+            "ON assets (ip_address, target_id)"
+        ))
+        conn.commit()
+
+
+def _migrate_dedupe_assets(app):
+    """Collapse duplicate (ip_address, target_id) Asset rows before
+    _migrate_indexes adds a unique constraint on that pair.
+
+    Before that constraint existed, _enrich_assets() (scan-time) and
+    _sync_assets() (routes/assets.py, lazy on the Assets page) each did a
+    check-then-insert with no protection against two scans finding the same
+    new host at once, so a handful of real deployments may already have
+    duplicate rows for the same host. Keeps the most recently created row
+    (highest id) per pair — the one most likely to carry the latest
+    scan's hostname/OS/last_seen data — and drops the rest.
+    """
+    from sqlalchemy import text
+    with db.engine.connect() as conn:
+        conn.execute(text("""
+            DELETE FROM assets
+            WHERE id NOT IN (
+                SELECT MAX(id) FROM assets GROUP BY ip_address, target_id
+            )
+        """))
         conn.commit()
 
 
