@@ -83,21 +83,36 @@ def _is_domain(host: str) -> bool:
 
 
 def _enrich_assets(target_id, host_meta: dict):
-    """Write hostname and OS name back to Asset records discovered by nmap."""
+    """Create/update Asset records for every host nmap discovered.
+
+    Previously this only updated hostname/os_name on an Asset that already
+    existed for that IP — a subnet scan finding a host nobody had manually
+    added as an Asset before left it completely out of the asset inventory.
+    (routes/assets.py's _sync_assets() does eventually backfill new Assets
+    from ScanResult rows, but only lazily, the next time someone loads the
+    Assets page — not as part of "scan a subnet" itself.) Now creates the
+    Asset immediately, matching a subnet scan being the actual inventory
+    mechanism, not just a vulnerability finder.
+    """
     from ..models import Asset
+    now = datetime.now(timezone.utc)
     for ip, data in host_meta.items():
         asset = Asset.query.filter_by(ip_address=ip, target_id=target_id).first()
         if not asset:
+            asset = Asset(
+                ip_address=ip, target_id=target_id,
+                hostname=data.get("hostname"), os_name=data.get("os_name"),
+                first_seen=now, last_seen=now,
+            )
+            db.session.add(asset)
+            db.session.commit()
             continue
-        changed = False
         if data.get("hostname") and not asset.hostname:
             asset.hostname = data["hostname"]
-            changed = True
         if data.get("os_name") and not asset.os_name:
             asset.os_name = data["os_name"]
-            changed = True
-        if changed:
-            db.session.commit()
+        asset.last_seen = now
+        db.session.commit()
 
 
 def _append_port_results(results, scan_id, ports, do_cve=False):

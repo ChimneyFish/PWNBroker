@@ -55,6 +55,19 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     nm = nmap.PortScanner()
     is_subnet = bool(_CIDR_RE.match(host.strip()))
 
+    # -Pn: treat every address as online and port-scan it directly, instead of
+    # first ping-sweeping the range and silently dropping any host that
+    # doesn't answer nmap's default discovery probes (ICMP echo, TCP SYN 443,
+    # TCP ACK 80, ICMP timestamp). Plenty of real, vulnerable hosts run a
+    # host firewall that drops exactly those probes while still exposing
+    # open services — without -Pn those hosts are skipped *entirely* (never
+    # even attempted), not just under-scanned, which silently shrinks "scan
+    # this subnet" down to "scan whatever happens to answer a ping" and can
+    # legitimately explain a scan going from many findings to zero if
+    # network conditions (or the scanning host's raw-socket privileges)
+    # changed. The cost is scanning every address even when it's genuinely
+    # offline — worth it for an authorized internal vuln scan.
+    #
     # Subnet scans skip OS detection and heavy NSE scripts — far too slow across many hosts.
     # Single-host scans add the "vuln" NSE category alongside the "default" one: those
     # scripts actively probe the live service (e.g. ssl-heartbleed, smb-vuln-ms17-010)
@@ -64,9 +77,9 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     # framework, and _append_port_results() promotes a positive hit to a confirmed
     # vulnerability rather than the "maybe, based on the banner" CVE matches.
     if is_subnet:
-        args = "-sV --open -T4"
+        args = "-sV -Pn --open -T4"
     else:
-        args = "-sV --script default,vuln -O --osscan-guess --open -T4"
+        args = "-sV -Pn --script default,vuln -O --osscan-guess --open -T4"
 
     try:
         nm.scan(hosts=host, ports=port_range, arguments=args)
@@ -83,7 +96,7 @@ def run_web_port_scan(host: str) -> Tuple[List[Dict], Dict]:
     """
     nm = nmap.PortScanner()
     try:
-        nm.scan(hosts=host, ports=WEB_PORTS, arguments="-sV --open -T4")
+        nm.scan(hosts=host, ports=WEB_PORTS, arguments="-sV -Pn --open -T4")
     except Exception as e:
         return [{"error": str(e)}], {}
 
