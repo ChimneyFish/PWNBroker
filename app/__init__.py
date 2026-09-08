@@ -167,6 +167,7 @@ def create_app(config_class=Config):
         db.create_all()
         _migrate_vuln_ticket_scan_result_nullable(app)
         _migrate_columns(app)
+        _migrate_indexes(app)
         _migrate_encrypt_secrets(app)
         _seed_admin(app)
         _recover_orphaned_scans(app)
@@ -363,6 +364,28 @@ def _migrate_columns(app):
             for col_name, col_type in cols:
                 if col_name not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"))
+        conn.commit()
+
+
+def _migrate_indexes(app):
+    """Add indexes to existing tables that predate them.
+
+    db.create_all() only creates indexes when it creates the table itself —
+    it never retrofits one onto a table that already exists, so a column that
+    picks up `index=True` after go-live (like PaloAltoThreatLog.created_at)
+    needs an explicit CREATE INDEX here or every deployed DB keeps doing a
+    full table scan for its lifetime. This table is ingested into every 5
+    minutes and each row carries a full raw XML blob, so an unindexed scan on
+    it is exactly the kind of thing that pegs the single worker process and
+    stalls the dashboard for everyone else.
+    """
+    from sqlalchemy import text
+    indexes = [
+        ("ix_paloalto_threat_logs_created_at", "paloalto_threat_logs", "created_at"),
+    ]
+    with db.engine.connect() as conn:
+        for index_name, table, column in indexes:
+            conn.execute(text(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table} ({column})"))
         conn.commit()
 
 

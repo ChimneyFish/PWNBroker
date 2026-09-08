@@ -475,7 +475,7 @@ class PaloAltoThreatLog(db.Model):
     outbound_if      = db.Column(db.String(80))
     direction        = db.Column(db.String(20))
     raw_xml          = db.Column(db.Text)
-    created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at       = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     __table_args__ = (db.UniqueConstraint("firewall_id", "seqno", name="uq_paloalto_log_firewall_seqno"),)
 
