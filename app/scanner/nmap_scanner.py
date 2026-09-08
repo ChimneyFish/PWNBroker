@@ -1,3 +1,4 @@
+import ipaddress
 import re
 import nmap
 from typing import List, Dict, Tuple
@@ -6,6 +7,19 @@ _CIDR_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$')
 
 # Common web/service ports used when doing a fast secondary scan of subdomains
 WEB_PORTS = "21,22,25,53,80,443,8080,8443,8000,3000,3306,5432,6379,9000,9200"
+
+# -Pn makes nmap port-scan every address in the range unconditionally instead
+# of ping-sweeping first and skipping non-responders — see run_port_scan.
+# Target host validation (app/validators.py) accepts any CIDR size, including
+# a /16 or larger (the codebase already anticipates this — see
+# _MAX_TRIAGE_HOSTS's own comment about "large /16s"), so -Pn is only safe to
+# add below this size: 1024 addresses at -T4 is a bounded, if long, scan;
+# 65536 (a /16) would turn into a days-long one. Above this cap, the scan
+# falls back to nmap's default ping-sweep-then-scan behavior — same
+# known limitation it always had (a host whose firewall drops the discovery
+# probes gets skipped), traded off against not letting an oversized range
+# hang a scan slot indefinitely.
+_MAX_PN_ADDRESSES = 1024
 
 
 def _parse_hosts(nm) -> Tuple[List[Dict], Dict]:
@@ -76,10 +90,18 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     # exploit-confirmation available without shelling out to an actual exploit
     # framework, and _append_port_results() promotes a positive hit to a confirmed
     # vulnerability rather than the "maybe, based on the banner" CVE matches.
+    use_pn = True
     if is_subnet:
-        args = "-sV -Pn --open -T4"
+        try:
+            use_pn = ipaddress.ip_network(host.strip(), strict=False).num_addresses <= _MAX_PN_ADDRESSES
+        except ValueError:
+            use_pn = False
+    pn_flag = "-Pn " if use_pn else ""
+
+    if is_subnet:
+        args = f"-sV {pn_flag}--open -T4"
     else:
-        args = "-sV -Pn --script default,vuln -O --osscan-guess --open -T4"
+        args = f"-sV {pn_flag}--script default,vuln -O --osscan-guess --open -T4"
 
     try:
         nm.scan(hosts=host, ports=port_range, arguments=args)

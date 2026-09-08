@@ -52,3 +52,44 @@ class TestPnFlagPresent:
             ns.run_port_scan("10.0.0.0/24", "1-1024")
         args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
         assert "--script" not in args
+
+
+class TestPnBoundedByRangeSize:
+    """Target host validation (app/validators.py) accepts any CIDR size, so
+    -Pn — which makes nmap port-scan every address instead of skipping
+    non-responders — must not be applied unboundedly, or an oversized range
+    (a /16 or larger) turns into a days-long scan tying up a scan slot
+    indefinitely instead of the bounded, if imperfect, default behavior."""
+
+    def test_large_subnet_omits_pn(self):
+        with patch.object(ns.nmap, "PortScanner", return_value=_fake_scanner()) as mock_cls:
+            ns.run_port_scan("10.0.0.0/16", "1-1024")  # 65536 addresses
+        args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
+        assert "-Pn" not in args.split()
+
+    def test_small_subnet_still_gets_pn(self):
+        with patch.object(ns.nmap, "PortScanner", return_value=_fake_scanner()) as mock_cls:
+            ns.run_port_scan("10.0.0.0/24", "1-1024")  # 256 addresses
+        args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
+        assert "-Pn" in args.split()
+
+    def test_boundary_at_max_pn_addresses_is_inclusive(self):
+        # /22 == 1024 addresses == _MAX_PN_ADDRESSES exactly
+        with patch.object(ns.nmap, "PortScanner", return_value=_fake_scanner()) as mock_cls:
+            ns.run_port_scan("10.0.0.0/22", "1-1024")
+        args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
+        assert "-Pn" in args.split()
+
+    def test_just_over_boundary_omits_pn(self):
+        # /21 == 2048 addresses, over the cap
+        with patch.object(ns.nmap, "PortScanner", return_value=_fake_scanner()) as mock_cls:
+            ns.run_port_scan("10.0.0.0/21", "1-1024")
+        args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
+        assert "-Pn" not in args.split()
+
+    def test_large_subnet_scan_args_have_no_malformed_spacing(self):
+        with patch.object(ns.nmap, "PortScanner", return_value=_fake_scanner()) as mock_cls:
+            ns.run_port_scan("10.0.0.0/16", "1-1024")
+        args = mock_cls.return_value.scan.call_args.kwargs["arguments"]
+        assert "  " not in args
+        assert args.split()[0] == "-sV"
