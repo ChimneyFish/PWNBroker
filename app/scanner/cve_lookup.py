@@ -1,11 +1,23 @@
 import json
 import re
+import threading
 import time
 from datetime import datetime, timezone
 from flask import current_app
 from typing import List, Dict, Optional
 
 import requests
+from sqlalchemy.exc import IntegrityError
+
+# NVD's rate limit (5 req/30s unauthenticated, 50 req/30s with a key) is
+# global, not per-thread — a scan against a group of hosts spawns one thread
+# per host (see scheduler/jobs.py), and without this lock those threads each
+# independently pace and back off against the same limit, guaranteeing 403s
+# and stacking exponential backoffs (up to minutes per call, per thread) once
+# more than a couple of scans overlap. Serializing calls here makes the
+# pacing/backoff sleeps additive instead of concurrent, which is the only way
+# a fixed per-call delay actually respects a shared limit.
+_NVD_CALL_LOCK = threading.Lock()
 
 
 def _get_nvd_api_key() -> str:
@@ -31,27 +43,43 @@ def _nvd_get(url: str, params: dict, api_key: str, max_retries: int = 5) -> Opti
     headers = {"apiKey": api_key} if api_key else {}
     delay = 0.7 if api_key else 6.5
 
-    for attempt in range(max_retries):
-        try:
-            resp = requests.get(url, params=params, headers=headers, timeout=15)
-        except requests.RequestException:
-            time.sleep(delay * (2 ** attempt))
-            continue
+    with _NVD_CALL_LOCK:
+        for attempt in range(max_retries):
+            try:
+                resp = requests.get(url, params=params, headers=headers, timeout=15)
+            except requests.RequestException:
+                time.sleep(delay * (2 ** attempt))
+                continue
 
-        if resp.status_code in (403, 429):
-            time.sleep(delay * (2 ** attempt))
-            continue
+            if resp.status_code in (403, 429):
+                time.sleep(delay * (2 ** attempt))
+                continue
 
-        try:
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception:
-            return None
+            try:
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception:
+                return None
 
-        time.sleep(delay)
-        return data
+            time.sleep(delay)
+            return data
 
     return None
+
+
+def _commit_cache_row(db, model, filter_kwargs, row):
+    """Commit a new/updated cache row. A subnet scan resolves the same
+    product/version (or CPE) on many hosts at once via one thread per host
+    (see scheduler/jobs.py), so two threads can both miss the cache for the
+    same key and race to INSERT it — the loser's commit hits the table's
+    unique constraint. That's a harmless duplicate lookup, not a real error,
+    so fall back to whatever the winner wrote instead of failing the scan."""
+    try:
+        db.session.commit()
+        return row
+    except IntegrityError:
+        db.session.rollback()
+        return model.query.filter_by(**filter_kwargs).first()
 
 
 def _score_to_severity(score) -> str:
@@ -180,9 +208,9 @@ def resolve_cpe(product: str, version: str = "") -> Optional[str]:
     else:
         cached = CpeResolutionCache(product_key=key, resolved_cpe=resolved)
         db.session.add(cached)
-    db.session.commit()
+    cached = _commit_cache_row(db, CpeResolutionCache, {"product_key": key}, cached)
 
-    return resolved
+    return cached.resolved_cpe if cached else resolved
 
 
 def lookup_cves_by_cpe(cpe: str, max_results: int = 20) -> List[Dict]:
@@ -220,7 +248,12 @@ def lookup_cves_by_cpe(cpe: str, max_results: int = 20) -> List[Dict]:
     else:
         cached = CpeCveCache(cache_key=cpe, lookup_type="cpe", cve_data=json.dumps(cves))
         db.session.add(cached)
-    db.session.commit()
+    winner = _commit_cache_row(db, CpeCveCache, {"cache_key": cpe}, cached)
+    if winner is not cached and winner is not None:
+        try:
+            return json.loads(winner.cve_data)
+        except Exception:
+            pass
 
     return cves
 
@@ -259,7 +292,12 @@ def lookup_cves_by_keyword(product: str, version: str = "", max_results: int = 5
     else:
         cached = CpeCveCache(cache_key=cache_key, lookup_type="keyword", cve_data=json.dumps(cves))
         db.session.add(cached)
-    db.session.commit()
+    winner = _commit_cache_row(db, CpeCveCache, {"cache_key": cache_key}, cached)
+    if winner is not cached and winner is not None:
+        try:
+            return json.loads(winner.cve_data)
+        except Exception:
+            pass
 
     return cves
 
