@@ -302,6 +302,7 @@ def _migrate_columns(app):
             ("is_remediated", "BOOLEAN DEFAULT 0"),
             ("cpe", "VARCHAR(256)"),
             ("match_confidence", "VARCHAR(20) DEFAULT 'none'"),
+            ("verification_status", "VARCHAR(20) DEFAULT 'unconfirmed'"),
         ],
         "threat_configs": [
             ("securitytrails_api_key",  "VARCHAR(512)"),

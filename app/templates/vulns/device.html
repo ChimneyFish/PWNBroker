@@ -151,9 +151,14 @@
           {% if t.cve_id %}
           <a href="https://nvd.nist.gov/vuln/detail/{{ t.cve_id }}" target="_blank"
              class="badge bg-danger text-white no-underline" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
-          {% if t.scan_result and t.scan_result.match_confidence == 'cpe' %}
+          {% if t.scan_result and t.scan_result.verification_status == 'confirmed' %}
           <span class="badge bg-success bg-opacity-20 text-success block mt-1" style="font-size:0.6rem;white-space:nowrap"
-                title="Version-matched via CPE — NVD applied its own version-range check">
+                title="An active probe demonstrated this against the live target">
+            <i class="bi bi-shield-fill-check me-1"></i>Confirmed
+          </span>
+          {% elif t.scan_result and t.scan_result.match_confidence == 'cpe' %}
+          <span class="badge bg-success bg-opacity-20 text-success block mt-1" style="font-size:0.6rem;white-space:nowrap"
+                title="Version-matched via CPE — NVD applied its own version-range check, not independently verified against this host">
             <i class="bi bi-patch-check-fill me-1"></i>CPE-matched
           </span>
           {% elif t.scan_result and t.scan_result.match_confidence == 'keyword' %}

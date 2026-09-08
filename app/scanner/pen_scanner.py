@@ -94,6 +94,7 @@ def _parse_output(raw: str, host: str, truncated: bool) -> List[Dict]:
                 "title": text[:200],
                 "description": text,
                 "raw_data": line,
+                "verification_status": "confirmed",  # PEN's own signal for a confirmed exploit
             })
         elif line.startswith("[+]"):
             text = line[3:].strip()

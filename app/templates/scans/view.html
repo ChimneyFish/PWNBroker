@@ -407,7 +407,7 @@
 </div>
 {% endif %}
 
-{% for rtype, rlist in [('vulnerability', 'Vulnerabilities'), ('web_check', 'Web Checks'), ('port', 'Open Ports'), ('info', 'Info')] %}
+{% for rtype, rlist in [('vulnerability', 'Vulnerabilities'), ('port', 'Open Ports'), ('info', 'Info')] %}
 {% set items = results | selectattr('result_type', 'equalto', rtype) | list %}
 {% if items %}
 <div class="section-header mt-6" {% if loop.first %}id="results"{% endif %}><span class="section-title">{{ rlist }} ({{ items|length }})</span></div>
@@ -433,9 +433,14 @@
         {% elif rtype == 'vulnerability' %}
           <td>{% if r.cve_id %}<a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank" class="text-primary small">{{ r.cve_id }}</a>{% else %}—{% endif %}</td>
           <td>
-            {% if r.match_confidence == 'cpe' %}
+            {% if r.verification_status == 'confirmed' %}
             <span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.65rem"
-                  title="Version-matched via CPE — NVD applied its own version-range check">
+                  title="An active probe (nmap NSE vuln script or PEN exploit check) demonstrated this against the live target">
+              <i class="bi bi-shield-fill-check me-1"></i>Confirmed
+            </span>
+            {% elif r.match_confidence == 'cpe' %}
+            <span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.65rem"
+                  title="Version-matched via CPE — NVD applied its own version-range check, not independently verified against this host">
               <i class="bi bi-patch-check-fill me-1"></i>CPE-matched
             </span>
             {% elif r.match_confidence == 'keyword' %}

@@ -31,17 +31,79 @@ def _cvss_to_severity(score):
     return "low"
 
 
+# CVSS v3.0/v3.1 base-score metric weights (identical formula for both
+# versions — https://www.first.org/cvss/v3.1/specification-document #7.4).
+_CVSS3_AV = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
+_CVSS3_AC = {"L": 0.77, "H": 0.44}
+_CVSS3_PR_UNCHANGED = {"N": 0.85, "L": 0.62, "H": 0.27}
+_CVSS3_PR_CHANGED   = {"N": 0.85, "L": 0.68, "H": 0.5}
+_CVSS3_UI = {"N": 0.85, "R": 0.62}
+_CVSS3_CIA = {"H": 0.56, "L": 0.22, "N": 0.0}
+
+
+def _cvss3_base_score(vector: str):
+    """Compute the CVSS v3.x base score from a full vector string.
+
+    OSV's schema stores severity[].score as the vector string itself for
+    type CVSS_V3 (not a plain number) — https://ossf.github.io/osv-schema/
+    #severitytype-field — so a naive "find a decimal number in this string"
+    grabs the "3.1" version prefix out of "CVSS:3.1/AV:N/AC:L/..." instead of
+    an actual score. Returns None if the vector is missing required metrics
+    or isn't a v3 vector (e.g. CVSS v4, which uses an entirely different
+    MacroVector-based formula this doesn't implement)."""
+    if not vector or not vector.startswith("CVSS:3."):
+        return None
+    metrics = {}
+    for part in vector.split("/"):
+        if ":" in part:
+            k, _, v = part.partition(":")
+            metrics[k] = v
+
+    try:
+        av = _CVSS3_AV[metrics["AV"]]
+        ac = _CVSS3_AC[metrics["AC"]]
+        ui = _CVSS3_UI[metrics["UI"]]
+        scope_changed = metrics["S"] == "C"
+        pr = (_CVSS3_PR_CHANGED if scope_changed else _CVSS3_PR_UNCHANGED)[metrics["PR"]]
+        c = _CVSS3_CIA[metrics["C"]]
+        i = _CVSS3_CIA[metrics["I"]]
+        a = _CVSS3_CIA[metrics["A"]]
+    except KeyError:
+        return None
+
+    isc_base = 1 - ((1 - c) * (1 - i) * (1 - a))
+    if scope_changed:
+        impact = 7.52 * (isc_base - 0.029) - 3.25 * (isc_base - 0.02) ** 15
+    else:
+        impact = 6.42 * isc_base
+    if impact <= 0:
+        return 0.0
+
+    exploitability = 8.22 * av * ac * pr * ui
+    raw = (1.08 * (impact + exploitability)) if scope_changed else (impact + exploitability)
+    raw = min(raw, 10)
+
+    # CVSS's "Roundup" — round UP to one decimal place, not standard rounding.
+    int_input = round(raw * 100000)
+    if int_input % 10000 == 0:
+        return int_input / 100000
+    return (int_input // 10000 + 1) / 10
+
+
 def _osv_severity(vuln):
     """Extract the highest CVSS score from an OSV vuln record."""
     best = None
     for sev in vuln.get("severity", []):
         raw = sev.get("score", "")
-        # CVSS v3 vector or numeric
-        m = re.search(r"(\d+\.\d+)", raw)
-        if m:
-            val = float(m.group(1))
-            if best is None or val > best:
-                best = val
+        val = _cvss3_base_score(raw)
+        if val is None:
+            # Not a v3 vector — could already be a plain numeric score
+            # (some ecosystems report it that way despite the schema).
+            m = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*", raw or "")
+            if m:
+                val = float(m.group(1))
+        if val is not None and (best is None or val > best):
+            best = val
     return best
 
 
@@ -263,10 +325,30 @@ def _collect_packages(scan_path):
 
 # ── OSV API query ──────────────────────────────────────────────────────────────
 
+def _fetch_full_vulns(vuln_ids):
+    """`/v1/querybatch` deliberately returns minimal {id, modified} records —
+    no severity, aliases, summary, or affected ranges. Used as-is, every
+    batch-path finding would get a generic "medium" severity default, no CVE
+    ID (breaking KEV/EPSS enrichment and threat correlation, which key off
+    cve_id), and a blank description. Fetch the full record per unique ID via
+    the single-vuln endpoint and cache it, so this only costs one request per
+    distinct vulnerability actually found, not per package queried."""
+    full = {}
+    for vid in vuln_ids:
+        try:
+            resp = requests.get(f"{OSV_API}/vulns/{vid}", timeout=15)
+            if resp.ok:
+                full[vid] = resp.json()
+        except requests.RequestException:
+            pass
+    return full
+
+
 def _query_osv_api(packages):
     """
     Query OSV batch API for a list of (name, version, ecosystem) tuples.
-    Returns a list of (pkg_tuple, [vuln_dict, ...]).
+    Returns a list of (pkg_tuple, [vuln_dict, ...]) with each vuln_dict
+    resolved to its full record (see _fetch_full_vulns).
     """
     BATCH = 1000
     all_results = []
@@ -289,7 +371,13 @@ def _query_osv_api(packages):
                         all_results.append((pkg, vulns))
         except requests.RequestException:
             pass
-    return all_results
+
+    unique_ids = {v["id"] for _, vulns in all_results for v in vulns if v.get("id")}
+    full_vulns = _fetch_full_vulns(unique_ids)
+    return [
+        (pkg, [full_vulns.get(v["id"], v) for v in vulns])
+        for pkg, vulns in all_results
+    ]
 
 
 # ── CLI mode ───────────────────────────────────────────────────────────────────

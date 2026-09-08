@@ -55,11 +55,18 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     nm = nmap.PortScanner()
     is_subnet = bool(_CIDR_RE.match(host.strip()))
 
-    # Subnet scans skip OS detection and heavy NSE scripts — far too slow across many hosts
+    # Subnet scans skip OS detection and heavy NSE scripts — far too slow across many hosts.
+    # Single-host scans add the "vuln" NSE category alongside the "default" one: those
+    # scripts actively probe the live service (e.g. ssl-heartbleed, smb-vuln-ms17-010)
+    # and report a real VULNERABLE/NOT VULNERABLE verdict, instead of just a version
+    # string to correlate against NVD — this is the closest thing to a safe, live
+    # exploit-confirmation available without shelling out to an actual exploit
+    # framework, and _append_port_results() promotes a positive hit to a confirmed
+    # vulnerability rather than the "maybe, based on the banner" CVE matches.
     if is_subnet:
         args = "-sV --open -T4"
     else:
-        args = "-sV -sC -O --osscan-guess --open -T4"
+        args = "-sV --script default,vuln -O --osscan-guess --open -T4"
 
     try:
         nm.scan(hosts=host, ports=port_range, arguments=args)

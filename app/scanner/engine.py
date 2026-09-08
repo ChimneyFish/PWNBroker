@@ -15,6 +15,38 @@ _MAX_TRIAGE_HOSTS = 10
 # Maximum subdomains actively scanned per domain scan
 _MAX_SUBDOMAIN_SCAN = 30
 
+# nmap's "vulns" NSE library (shared by most --script vuln modules, e.g.
+# ssl-heartbleed, smb-vuln-ms17-010) prints a "State: VULNERABLE" line when a
+# script's live probe positively confirms the issue, vs "NOT VULNERABLE" or no
+# State line at all otherwise — this is what promotes a hit to "confirmed"
+# rather than the version-correlation guess every CVE/CPE match otherwise is.
+_NSE_VULNERABLE_RE = re.compile(r'State:\s*(?:LIKELY )?VULNERABLE', re.I)
+_NSE_CVE_RE        = re.compile(r'CVE-\d{4}-\d{4,7}')
+_NSE_RISK_RE       = re.compile(r'Risk factor:\s*(\w+)', re.I)
+_NSE_RISK_TO_SEVERITY = {"critical": "critical", "high": "high", "medium": "medium", "low": "low"}
+
+
+def _parse_nse_vuln_scripts(scripts: dict, host: str, port, protocol: str) -> list:
+    """Turn positive nmap NSE vuln-category script output into confirmed
+    vulnerability ScanResult dicts. `scripts` is nmap-python's {script_name:
+    output_text} dict for one port — everything not from the vulns.lua
+    library (most of "default") won't match and is silently skipped."""
+    findings = []
+    for script_name, output in (scripts or {}).items():
+        if not output or not _NSE_VULNERABLE_RE.search(output):
+            continue
+        cve_ids = _NSE_CVE_RE.findall(output)
+        risk_match = _NSE_RISK_RE.search(output)
+        severity = _NSE_RISK_TO_SEVERITY.get(
+            (risk_match.group(1).lower() if risk_match else ""), "high")
+        findings.append({
+            "cve_id": cve_ids[0] if cve_ids else None,
+            "severity": severity,
+            "title": f"{script_name}: confirmed vulnerable — {host}:{port}/{protocol}",
+            "description": output.strip(),
+        })
+    return findings
+
 # Every call site (scheduled tag/manual group scans, the eol/secrets/dependency/
 # backdoor routes, manual re-scans) launches run_scan on its own daemon thread
 # with no cap of its own — a scheduled scan against a group of N assets starts
@@ -87,6 +119,24 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
             cpe=p.get("cpe", ""),
             raw_data=str(p),
         ))
+
+        # NSE vuln-category scripts actively probed this port and reported a
+        # real verdict — promote a positive hit ahead of (and independent of)
+        # do_cve, since it's a live confirmation rather than a version guess.
+        for nse_hit in _parse_nse_vuln_scripts(p.get("scripts"), p["host"], p["port"], p["protocol"]):
+            results.append(ScanResult(
+                scan_id=scan_id,
+                result_type="vulnerability",
+                host=p["host"],
+                port=p["port"],
+                service=p.get("service"),
+                severity=nse_hit["severity"],
+                title=nse_hit["title"],
+                description=nse_hit["description"],
+                cve_id=nse_hit["cve_id"],
+                verification_status="confirmed",
+            ))
+
         if do_cve:
             cves = lookup_cves_for_service(
                 p.get("product", p.get("service", "")),
@@ -107,6 +157,13 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
                     cvss_score=cve["cvss_score"],
                     cpe=cve.get("cpe", ""),
                     match_confidence=cve.get("match_confidence", "none"),
+                    # A CPE/keyword-correlated CVE match: NVD says this
+                    # product+version *can* be vulnerable, not that this
+                    # specific host demonstrably is — the banner could be
+                    # stale, backported-patched, or simply wrong. Left as the
+                    # column's "unconfirmed" default explicitly, so it reads
+                    # clearly here rather than relying on a schema default.
+                    verification_status="unconfirmed",
                 ))
 
 
@@ -161,6 +218,7 @@ def run_scan(scan_id: int, app=None):
                             title=r.get("title", ""),
                             description=r.get("description", ""),
                             raw_data=r.get("raw_data"),
+                            verification_status=r.get("verification_status", "unconfirmed"),
                         ))
 
                 # ── REAPER GitHub secret scan ─────────────────────────────────────

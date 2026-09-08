@@ -40,27 +40,27 @@ def _check_headers(url: str) -> List[Dict]:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             resp = requests.get(url, timeout=10, verify=False, allow_redirects=True)
     except Exception as e:
-        return [_finding("web_check", url, "low", "Connection Failed",
+        return [_finding(url, "low", "Connection Failed",
                          f"Could not connect to {url}: {e}")]
 
     for header, message in SECURITY_HEADERS:
         if header not in resp.headers:
-            findings.append(_finding("web_check", url, "medium", f"Missing Header: {header}", message))
+            findings.append(_finding(url, "medium", f"Missing Header: {header}", message))
 
     server = resp.headers.get("Server", "")
     if server:
-        findings.append(_finding("web_check", url, "low", "Server Header Exposed",
+        findings.append(_finding(url, "low", "Server Header Exposed",
                                  f"Server header reveals: {server}. Consider removing to reduce fingerprinting."))
 
     x_powered = resp.headers.get("X-Powered-By", "")
     if x_powered:
-        findings.append(_finding("web_check", url, "low", "X-Powered-By Header Exposed",
+        findings.append(_finding(url, "low", "X-Powered-By Header Exposed",
                                  f"X-Powered-By reveals: {x_powered}."))
 
     if resp.status_code in (401, 403) and url.endswith("/"):
         pass
     elif resp.status_code >= 500:
-        findings.append(_finding("web_check", url, "low", f"HTTP {resp.status_code} Response",
+        findings.append(_finding(url, "low", f"HTTP {resp.status_code} Response",
                                  "Server returned a 5xx error — possible instability or misconfiguration."))
 
     return findings
@@ -86,28 +86,35 @@ def _check_ssl(url: str) -> List[Dict]:
         days_left = (not_after - datetime.now(timezone.utc)).days
 
         if days_left < 0:
-            findings.append(_finding("web_check", url, "critical", "SSL Certificate Expired",
+            findings.append(_finding(url, "critical", "SSL Certificate Expired",
                                      f"Certificate expired {abs(days_left)} days ago."))
         elif days_left < 14:
-            findings.append(_finding("web_check", url, "high", "SSL Certificate Expiring Soon",
+            findings.append(_finding(url, "high", "SSL Certificate Expiring Soon",
                                      f"Certificate expires in {days_left} days."))
         elif days_left < 30:
-            findings.append(_finding("web_check", url, "medium", "SSL Certificate Expiring",
+            findings.append(_finding(url, "medium", "SSL Certificate Expiring",
                                      f"Certificate expires in {days_left} days."))
 
         if protocol in ("TLSv1", "TLSv1.1", "SSLv2", "SSLv3"):
-            findings.append(_finding("web_check", url, "high", f"Weak TLS Protocol: {protocol}",
+            findings.append(_finding(url, "high", f"Weak TLS Protocol: {protocol}",
                                      "Use TLS 1.2 or 1.3 only."))
 
     except ssl.SSLCertVerificationError as e:
-        findings.append(_finding("web_check", url, "high", "SSL Certificate Invalid", str(e)))
+        findings.append(_finding(url, "high", "SSL Certificate Invalid", str(e)))
     except Exception:
         pass
 
     return findings
 
 
-def _finding(result_type, host, severity, title, description, remediation="") -> Dict:
+# Directly observed facts about the live target (header genuinely absent,
+# cert genuinely expired) — not a version/CPE guess, so medium+ severity is
+# promoted to "vulnerability" (previously these all used a "web_check"
+# result_type that no vuln-tracking query anywhere in the app recognizes,
+# which silently excluded real findings like an expired cert from the
+# dashboard, /vulns, VulnTicket creation, and threat correlation entirely).
+def _finding(host, severity, title, description, remediation="") -> Dict:
+    result_type = "vulnerability" if severity in ("critical", "high", "medium") else "info"
     return {
         "result_type": result_type,
         "host": host,

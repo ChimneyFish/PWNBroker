@@ -175,6 +175,12 @@ class ScanResult(db.Model):
     is_remediated = db.Column(db.Boolean, default=False)
     cpe = db.Column(db.String(256))                 # CPE 2.3 string the CVE match was resolved against, if any
     match_confidence = db.Column(db.String(20), default="none")  # cpe | keyword | none
+    # "confirmed" only for findings an active check actually demonstrated on the
+    # live target (an nmap NSE vuln-category script reporting VULNERABLE, or
+    # PEN's own [!] exploit-confirmation marker) — everything else (CVE/CPE
+    # version correlation, OSV manifest matches, YARA/secret pattern hits,
+    # header/cert checks) is a real finding but not an exploit confirmation.
+    verification_status = db.Column(db.String(20), default="unconfirmed")  # unconfirmed | confirmed
     raw_data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
