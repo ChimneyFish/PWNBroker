@@ -1,13 +1,15 @@
+import io
 import os
 import re
 import ssl
 import subprocess
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, available_timezones
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file
 from flask_login import login_required, current_user
 from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig, SSOConfig, O365Config
 from ..extensions import db
+from .. import config_backup
 from .decorators import admin_required
 
 
@@ -765,3 +767,65 @@ def user_delete(user_id):
     db.session.commit()
     flash("User deleted.", "success")
     return redirect(url_for("settings.index"))
+
+
+@settings_bp.route("/backup/export", methods=["POST"])
+@login_required
+@admin_required
+def backup_export():
+    passphrase = request.form.get("export_passphrase", "")
+    confirm = request.form.get("export_passphrase_confirm", "")
+
+    if len(passphrase) < 8:
+        flash("Backup passphrase must be at least 8 characters.", "danger")
+        return redirect(url_for("settings.index") + "#backup")
+    if passphrase != confirm:
+        flash("Passphrases do not match.", "danger")
+        return redirect(url_for("settings.index") + "#backup")
+
+    blob = config_backup.export_backup(passphrase)
+
+    from ..audit import log_action
+    log_action("settings.backup_export",
+                detail="Configuration backup exported (includes API keys/credentials)")
+
+    filename = f"pwnbroker-config-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.json"
+    return send_file(io.BytesIO(blob), mimetype="application/json",
+                     download_name=filename, as_attachment=True)
+
+
+@settings_bp.route("/backup/import", methods=["POST"])
+@login_required
+@admin_required
+def backup_import():
+    backup_file = request.files.get("backup_file")
+    passphrase = request.form.get("import_passphrase", "")
+
+    if not backup_file or not backup_file.filename:
+        flash("Choose a backup file to restore.", "danger")
+        return redirect(url_for("settings.index") + "#backup")
+    if not passphrase:
+        flash("Enter the passphrase this backup was exported with.", "danger")
+        return redirect(url_for("settings.index") + "#backup")
+
+    try:
+        file_bytes = backup_file.read()
+        payload = config_backup.decrypt_backup(file_bytes, passphrase)
+        summary = config_backup.restore_backup(payload)
+    except config_backup.BackupError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("settings.index") + "#backup")
+
+    from ..audit import log_action
+    log_action("settings.backup_import",
+                detail=f"Configuration backup restored: {summary}")
+
+    flash(
+        "Configuration restored — "
+        f"{summary['configs_restored']} setting section(s), "
+        f"{summary['firewalls_created']} firewall(s) added / {summary['firewalls_updated']} updated, "
+        f"{summary['targets_created']} target(s) added / {summary['targets_updated']} updated. "
+        "Restart PwnBroker for all changes to take effect.",
+        "success",
+    )
+    return redirect(url_for("settings.index") + "#backup")

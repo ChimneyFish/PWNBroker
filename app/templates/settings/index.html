@@ -915,6 +915,71 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
         </div>
       </div>
     </div>
+
+    <div class="form-card" id="backup">
+      <h5 class="font-bold mb-1"><i class="bi bi-database-down me-2 text-primary"></i>Configuration Backup &amp; Restore</h5>
+      <p class="text-muted small mb-6">
+        Snapshot the settings on this page, Palo Alto firewall credentials, and Target SSH
+        credentials — API keys and passwords included — to a single encrypted file. Use it to
+        restore this configuration after rebuilding the server. This does <strong>not</strong>
+        back up user accounts, scan history, or findings.
+      </p>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+            <div class="font-semibold small mb-2"><i class="bi bi-download me-1"></i>Export Backup</div>
+            <form method="POST" action="{{ url_for('settings.backup_export') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-2">
+                <label class="form-label small">Encryption Passphrase</label>
+                <input type="password" name="export_passphrase" class="form-control form-control-sm"
+                       minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small">Confirm Passphrase</label>
+                <input type="password" name="export_passphrase_confirm" class="form-control form-control-sm"
+                       minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="form-text text-muted mb-3">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Store this passphrase somewhere safe — it's the <strong>only</strong> way to
+                decrypt this file, and it is not recoverable if lost.
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-download me-1"></i>Export Configuration
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+            <div class="font-semibold small mb-2"><i class="bi bi-upload me-1"></i>Restore Backup</div>
+            <form method="POST" action="{{ url_for('settings.backup_import') }}" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-2">
+                <label class="form-label small">Backup File</label>
+                <input type="file" name="backup_file" class="form-control form-control-sm" accept=".json" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small">Passphrase</label>
+                <input type="password" name="import_passphrase" class="form-control form-control-sm"
+                       required autocomplete="current-password">
+              </div>
+              <div class="form-text text-muted mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Restoring updates existing settings/firewalls/targets in place (matched by name/host)
+                and adds anything missing — it does not delete records absent from the backup.
+              </div>
+              <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-upload me-1"></i>Restore Configuration
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Right column: User management -->
