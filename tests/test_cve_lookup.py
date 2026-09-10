@@ -43,6 +43,45 @@ def _cve_item(cve_id, configurations=None):
     return {"cve": item}
 
 
+class TestCpe22To23:
+    """Real cpe values nmap returned in the wild (from a subnet scan that
+    silently produced zero vulnerabilities despite fingerprinting real,
+    identifiable services with known version numbers) — nmap emits CPE 2.2
+    URI-binding format, but NVD's cpeName API parameter requires CPE 2.3
+    formatted strings. Passed through unconverted, cpeName matches nothing
+    and NVD silently returns zero results — no error, no vulnerabilities."""
+
+    def test_converts_real_nmap_cpe_values(self):
+        cases = {
+            "cpe:/o:linux:linux_kernel": "cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*",
+            "cpe:/a:lighttpd:lighttpd:1.4.54": "cpe:2.3:a:lighttpd:lighttpd:1.4.54:*:*:*:*:*:*:*",
+            "cpe:/a:gunicorn:gunicorn": "cpe:2.3:a:gunicorn:gunicorn:*:*:*:*:*:*:*:*",
+            "cpe:/a:jesse_smith:bftpd:4.4": "cpe:2.3:a:jesse_smith:bftpd:4.4:*:*:*:*:*:*:*",
+            "cpe:/a:thekelleys:dnsmasq:2.75": "cpe:2.3:a:thekelleys:dnsmasq:2.75:*:*:*:*:*:*:*",
+            "cpe:/a:netatalk:netatalk:3.1.8": "cpe:2.3:a:netatalk:netatalk:3.1.8:*:*:*:*:*:*:*",
+            "cpe:/a:cesanta:mongoose": "cpe:2.3:a:cesanta:mongoose:*:*:*:*:*:*:*:*",
+            "cpe:/a:haproxy:haproxy": "cpe:2.3:a:haproxy:haproxy:*:*:*:*:*:*:*:*",
+        }
+        for cpe22, expected in cases.items():
+            assert cl._cpe22_to_23(cpe22) == expected, cpe22
+
+    def test_output_always_has_eleven_fields(self):
+        result = cl._cpe22_to_23("cpe:/a:vendor:product:1.0")
+        fields = result[len("cpe:2.3:"):].split(":")
+        assert len(fields) == 11
+
+    def test_non_cpe_input_returns_none(self):
+        assert cl._cpe22_to_23("not-a-cpe-string") is None
+        assert cl._cpe22_to_23("") is None
+        assert cl._cpe22_to_23(None) is None
+
+    def test_already_2_3_format_returns_none_rather_than_mangle_it(self):
+        # This function only ever handles 2.2 URI input in practice (callers
+        # only invoke it on nmap's raw `cpe` field, always 2.2 format) — but
+        # it must fail safe rather than corrupt an already-valid string.
+        assert cl._cpe22_to_23("cpe:2.3:a:apache:tomcat:9.0.1:*:*:*:*:*:*:*") is None
+
+
 class TestResolveCpe:
     def test_disambiguates_by_product_token_and_version(self, app):
         with app.app_context():
@@ -108,16 +147,33 @@ class TestLookupCvesByCpe:
 
 class TestLookupCvesForService:
     def test_uses_supplied_cpe_without_resolving(self, app):
-        cpe = "cpe:2.3:a:apache:http_server:2.4.41:*:*:*:*:*:*:*"
+        # Real callers (engine.py's _append_port_results) always pass
+        # nmap's own `cpe` field here, which is CPE 2.2 URI-binding format
+        # ("cpe:/a:vendor:product:version"), not the CPE 2.3 formatted
+        # string NVD's API requires — this must get converted internally.
+        nmap_cpe = "cpe:/a:apache:http_server:2.4.41"
+        expected_23 = "cpe:2.3:a:apache:http_server:2.4.41:*:*:*:*:*:*:*"
         data = {"vulnerabilities": [_cve_item("CVE-2021-0001")]}
         with app.app_context():
             with patch.object(cl, "resolve_cpe") as mock_resolve:
                 with patch.object(cl.requests, "get", return_value=_resp(json_data=data)):
-                    results = cl.lookup_cves_for_service("Apache httpd", "2.4.41", cpe=cpe)
+                    results = cl.lookup_cves_for_service("Apache httpd", "2.4.41", cpe=nmap_cpe)
 
             mock_resolve.assert_not_called()
             assert results[0]["cve_id"] == "CVE-2021-0001"
-            assert results[0]["cpe"] == cpe
+            assert results[0]["cpe"] == expected_23
+
+    def test_falls_back_to_cpe_dictionary_when_nmap_cpe_unparsable(self, app):
+        """A malformed/empty nmap `cpe` field must not silently produce zero
+        results — it should fall back to resolve_cpe() same as no CPE at all."""
+        data = {"vulnerabilities": [_cve_item("CVE-2021-0003")]}
+        with app.app_context():
+            with patch.object(cl, "resolve_cpe", return_value="cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*") as mock_resolve:
+                with patch.object(cl.requests, "get", return_value=_resp(json_data=data)):
+                    results = cl.lookup_cves_for_service("product", "1.0", cpe="not-a-real-cpe")
+
+            mock_resolve.assert_called_once_with("product", "1.0")
+            assert results[0]["cve_id"] == "CVE-2021-0003"
 
     def test_falls_back_to_keyword_when_no_cpe_resolvable(self, app):
         data = {"vulnerabilities": [_cve_item("CVE-2021-0002")]}

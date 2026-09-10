@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import threading
 import time
@@ -8,6 +9,8 @@ from typing import List, Dict, Optional
 
 import requests
 from sqlalchemy.exc import IntegrityError
+
+log = logging.getLogger(__name__)
 
 # NVD's rate limit (5 req/30s unauthenticated, 50 req/30s with a key) is
 # global, not per-thread — a scan against a group of hosts spawns one thread
@@ -47,23 +50,31 @@ def _nvd_get(url: str, params: dict, api_key: str, max_retries: int = 5) -> Opti
         for attempt in range(max_retries):
             try:
                 resp = requests.get(url, params=params, headers=headers, timeout=15)
-            except requests.RequestException:
+            except requests.RequestException as e:
+                log.warning("NVD request failed (attempt %d/%d) for %s %r: %s",
+                            attempt + 1, max_retries, url, params, e)
                 time.sleep(delay * (2 ** attempt))
                 continue
 
             if resp.status_code in (403, 429):
+                log.warning("NVD returned %d (attempt %d/%d) for %s %r%s",
+                            resp.status_code, attempt + 1, max_retries, url, params,
+                            "" if api_key else " — no API key configured, using the unauthenticated rate limit")
                 time.sleep(delay * (2 ** attempt))
                 continue
 
             try:
                 resp.raise_for_status()
                 data = resp.json()
-            except Exception:
+            except Exception as e:
+                log.warning("NVD returned an unusable response for %s %r: HTTP %d: %s",
+                            url, params, resp.status_code, e)
                 return None
 
             time.sleep(delay)
             return data
 
+    log.warning("NVD request exhausted all %d retries for %s %r — giving up", max_retries, url, params)
     return None
 
 
@@ -135,6 +146,38 @@ def _cpe_is_vulnerable(cve: dict, cpe: str) -> bool:
                 if m.get("criteria") == cpe:
                     return m.get("vulnerable", True)
     return True
+
+
+_CPE23_FIELD_COUNT = 11  # part,vendor,product,version,update,edition,language,sw_edition,target_sw,target_hw,other
+
+
+def _cpe22_to_23(cpe22: str) -> Optional[str]:
+    """Convert a CPE 2.2 URI-binding string (nmap's native `cpe` field
+    format, e.g. "cpe:/a:lighttpd:lighttpd:1.4.54") to a CPE 2.3 formatted
+    string (e.g. "cpe:2.3:a:lighttpd:lighttpd:1.4.54:*:*:*:*:*:*:*").
+
+    NVD's CVE API's `cpeName` parameter validates strictly against the CPE
+    2.3 schema — passing a 2.2 URI through unconverted doesn't raise an
+    error, it just matches nothing, so every port nmap fingerprinted well
+    enough to supply its own CPE for (which is most of them — nmap embeds a
+    CPE in its service-detection output for most well-known software)
+    silently produced zero CVEs. Returns None if the input isn't a
+    recognizable CPE 2.2 URI.
+    """
+    if not cpe22 or not cpe22.startswith("cpe:/"):
+        return None
+    body = cpe22[len("cpe:/"):]
+    parts = body.split(":")
+    if not parts or not parts[0]:
+        return None
+    # CPE 2.2 fields (in order): part, vendor, product, version, update,
+    # edition, language — each optional/omittable from the right.
+    fields = (parts + ["*"] * 7)[:7]
+    fields = [f if f else "*" for f in fields]
+    # 2.3 adds 4 trailing fields (sw_edition, target_sw, target_hw, other)
+    # that 2.2 has no equivalent for.
+    fields += ["*"] * (_CPE23_FIELD_COUNT - len(fields))
+    return "cpe:2.3:" + ":".join(fields)
 
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -311,7 +354,17 @@ def lookup_cves_for_service(product: str, version: str = "", max_results: int = 
     if not product or product in ("unknown", ""):
         return []
 
-    resolved_cpe = cpe or resolve_cpe(product, version)
+    # nmap reports its own `cpe` field in CPE 2.2 URI-binding format
+    # ("cpe:/a:vendor:product:version"), but NVD's `cpeName` query parameter
+    # requires the CPE 2.3 formatted string — passed through unconverted it
+    # doesn't error, it just matches nothing, silently producing zero CVEs
+    # for every service nmap fingerprinted well enough to supply a CPE for.
+    nmap_cpe_23 = _cpe22_to_23(cpe) if cpe else None
+    if cpe and not nmap_cpe_23:
+        log.warning("Could not parse nmap-supplied CPE %r for %s %s; falling back to CPE dictionary resolution",
+                    cpe, product, version)
+
+    resolved_cpe = nmap_cpe_23 or resolve_cpe(product, version)
 
     if resolved_cpe:
         results = lookup_cves_by_cpe(resolved_cpe, max_results)
