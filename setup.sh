@@ -248,9 +248,24 @@ step "8 / 14 — BloodHound CE (Active Directory attack-path analysis)"
 # (Postgres + Neo4j + its own API/UI binary) — this is the first Docker
 # dependency in an otherwise bare-metal/systemd app. Deliberately NOT adding
 # the service user to the docker group: Docker group membership is
-# root-equivalent, and the app only ever needs plain HTTPS to localhost:8080,
-# never the Docker socket. Docker's own daemon/restart-policy owns this
-# stack's lifecycle independently of the pwnbroker systemd unit.
+# root-equivalent, and PwnBroker's own backend only ever needs plain HTTP to
+# localhost:8080 for its API calls, never the Docker socket. Docker's own
+# daemon/restart-policy owns this stack's lifecycle independently of the
+# pwnbroker systemd unit.
+#
+# PwnBroker itself is meant to run on a VM reached remotely, not on localhost
+# — so BloodHound's own web UI (which an admin needs to reach at least once,
+# to create the API token PwnBroker's backend uses) has to be reachable the
+# same way, not just from the host it runs on. The official compose file
+# ships BLOODHOUND_HOST=127.0.0.1 by default specifically to prevent
+# "accidental" exposure (its own comment says so) — overridden below via the
+# supported .env mechanism, deliberately for *only* the bloodhound app
+# service. Neo4j's bolt/web ports (7687/7474) stay bound to 127.0.0.1 (hard-
+# coded in the compose file, not something .env can override) and Postgres
+# isn't published at all — neither has any auth boundary of its own besides
+# "not reachable from the network," unlike the bloodhound app itself (own
+# login + the HMAC-signed API token), so those two are deliberately left as
+# loopback-only rather than opened up alongside it.
 DOCKER_AVAILABLE=false
 if command -v docker &>/dev/null; then
     ok "Docker already installed"
@@ -288,14 +303,39 @@ if [[ "$DOCKER_AVAILABLE" == true ]]; then
         fi
     fi
 
+    if [[ ! -f "$BLOODHOUND_DIR/.env" ]]; then
+        info "Generating BloodHound CE .env (binds its UI to all interfaces, randomizes DB passwords)..."
+        PG_PASS=$("$INSTALL_DIR/venv/bin/python3" -c "import secrets; print(secrets.token_hex(32))")
+        NEO4J_PASS=$("$INSTALL_DIR/venv/bin/python3" -c "import secrets; print(secrets.token_hex(32))")
+        cat > "$BLOODHOUND_DIR/.env" << EOF
+# Binds the bloodhound app's UI/API to all interfaces — PwnBroker itself runs
+# remotely (not on localhost), and an admin needs to reach this at least once
+# to create the API token PwnBroker's backend uses. Neo4j/Postgres are
+# deliberately NOT overridden here — see the comment above this block in
+# setup.sh for why they stay loopback-only.
+BLOODHOUND_HOST=0.0.0.0
+POSTGRES_PASSWORD=$PG_PASS
+NEO4J_SECRET=$NEO4J_PASS
+EOF
+        ok "$BLOODHOUND_DIR/.env created"
+    else
+        ok "BloodHound CE .env already exists — existing config preserved"
+    fi
+    # root:root 600, not the app's own root:pwnbroker 640 convention — this
+    # .env is only ever read by `docker compose` (run as root, here and by
+    # hand), never by the pwnbroker service user's own process, which has no
+    # reason to see these DB passwords.
+    chmod 600 "$BLOODHOUND_DIR/.env"
+    chown root:root "$BLOODHOUND_DIR/.env"
+
     if [[ -f "$BLOODHOUND_DIR/docker-compose.yml" ]]; then
         info "Starting BloodHound CE (Postgres + Neo4j + API/UI)..."
         if (cd "$BLOODHOUND_DIR" && docker compose pull -q && docker compose up -d); then
-            ok "BloodHound CE containers started — binds to localhost:8080 by default"
+            ok "BloodHound CE containers started — UI/API on port 8080 on all interfaces"
             warn "One-time manual step required: BloodHound prints a randomly-generated"
             warn "initial admin password to its logs on first boot. Run:"
             warn "  cd $BLOODHOUND_DIR && docker compose logs bloodhound | grep -i 'initial password'"
-            warn "Log into https://<this-host>:8080, change that password, then go to"
+            warn "Log into http://<this-host>:8080, change that password, then go to"
             warn "My Profile -> API Tokens -> Create Token and paste the Token ID/Key into"
             warn "PwnBroker's Settings -> BloodHound CE. This can't be scripted — it needs"
             warn "an authenticated UI session. See docs/deployment.md for details."
