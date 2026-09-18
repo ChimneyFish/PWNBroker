@@ -339,7 +339,7 @@ def index():
 
         if form == "bloodhound":
             bloodhound_cfg.enabled = request.form.get("bloodhound_enabled") == "on"
-            bloodhound_cfg.api_url = request.form.get("api_url", "").strip() or "https://localhost:8080"
+            bloodhound_cfg.api_url = request.form.get("api_url", "").strip() or "http://localhost:8080"
             bloodhound_cfg.token_id = request.form.get("token_id", "").strip()
             token_key = request.form.get("token_key", "")
             if token_key:
@@ -622,7 +622,7 @@ def test_bloodhound():
         v = (body.get(field) or "").strip()
         return v if v else (getattr(cfg, field, None) or default)
 
-    api_url = _val("api_url", "https://localhost:8080")
+    api_url = _val("api_url", "http://localhost:8080")
     token_id = _val("token_id")
     token_key = _val("token_key")
     verify_ssl = body.get("verify_ssl", cfg.verify_ssl)

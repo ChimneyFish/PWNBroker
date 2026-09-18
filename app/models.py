@@ -651,7 +651,7 @@ class BloodHoundConfig(db.Model):
     __tablename__  = "bloodhound_config"
     id             = db.Column(db.Integer, primary_key=True)
     enabled        = db.Column(db.Boolean, default=False)
-    api_url        = db.Column(db.String(512), default="https://localhost:8080")
+    api_url        = db.Column(db.String(512), default="http://localhost:8080")
     token_id       = db.Column(db.String(128))
     token_key      = db.Column(EncryptedString)
     verify_ssl     = db.Column(db.Boolean, default=False)  # BH's own container ships a self-signed cert by default
