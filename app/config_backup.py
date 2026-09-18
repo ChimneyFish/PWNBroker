@@ -14,7 +14,7 @@ passphrase (PBKDF2-HMAC-SHA256, per-export random salt), so the file is
 self-contained and portable to any PwnBroker instance that knows the
 passphrase.
 
-Scope: the 7 Settings-page config singletons, all PaloAltoFirewall rows, and
+Scope: the 8 Settings-page config singletons, all PaloAltoFirewall rows, and
 all Target rows (SSH-credential-bearing target settings only make sense
 alongside the Target they belong to, so the whole row is included, not just
 the credential fields). Does NOT include: users/passwords, scan history,
@@ -39,7 +39,7 @@ FORMAT_VERSION = 1
 PBKDF2_ITERATIONS = 600_000
 _SALT_BYTES = 16
 
-# (model_attr_on_module, human label) — the 7 Settings-page singletons.
+# (model_attr_on_module, human label) — the 8 Settings-page singletons.
 # Every column except id/updated_at is captured; EncryptedString columns
 # decrypt transparently through the ORM, so this reads plaintext without
 # touching crypto.py directly.
@@ -51,6 +51,7 @@ _SINGLETON_CONFIGS = [
     ("TimeConfig", "time"),
     ("SSOConfig", "sso"),
     ("O365Config", "o365"),
+    ("BloodHoundConfig", "bloodhound"),
 ]
 
 _SKIP_COLUMNS = {"id", "updated_at", "created_at"}
@@ -212,7 +213,7 @@ def _apply_row(model, existing, fields: dict):
 
 def restore_backup(payload: dict) -> dict:
     """Apply a decrypted backup payload to the database. Upserts:
-    - Each of the 7 singleton configs (create if none exists, else overwrite
+    - Each of the 8 singleton configs (create if none exists, else overwrite
       every field on the existing row).
     - PaloAltoFirewall rows, matched by `name` (create if no firewall with
       that name exists, else overwrite).

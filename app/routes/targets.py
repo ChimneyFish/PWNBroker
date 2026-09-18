@@ -34,11 +34,19 @@ def new():
             valid, err = is_valid_github_repo(host), f"'{host}' isn't a valid GitHub repository (expected owner/repo)."
         elif target_type == "local_path":
             valid, err = is_valid_local_path(host), f"'{host}' isn't a valid absolute path (must start with /)."
+        elif target_type == "ad_domain":
+            valid, err = is_valid_host(host), f"'{host}' isn't a valid domain name."
         else:
             valid, err = is_valid_host(host), f"'{host}' isn't a valid IP address, CIDR range, or hostname."
         if not valid:
             flash(err, "danger")
             return render_template("targets/new.html")
+
+        if target_type == "ad_domain":
+            ad_dc_host = request.form.get("ad_dc_host", "").strip()
+            if not ad_dc_host or not is_valid_host(ad_dc_host):
+                flash(f"'{ad_dc_host}' isn't a valid domain controller hostname or IP.", "danger")
+                return render_template("targets/new.html")
 
         t = Target(
             name=name, host=host, description=description,
@@ -51,6 +59,11 @@ def new():
         t.ssh_password = request.form.get("ssh_password", "").strip() or None
         t.ssh_private_key = request.form.get("ssh_private_key", "").strip() or None
         t.ssh_key_passphrase = request.form.get("ssh_key_passphrase", "").strip() or None
+        t.ad_dc_host = request.form.get("ad_dc_host", "").strip() or None
+        t.ad_username = request.form.get("ad_username", "").strip() or None
+        t.ad_auth_type = request.form.get("ad_auth_type", "password")
+        t.ad_password = request.form.get("ad_password", "").strip() or None
+        t.ad_nt_hash = request.form.get("ad_nt_hash", "").strip() or None
         db.session.add(t)
         db.session.commit()
 
@@ -58,6 +71,9 @@ def new():
             app = current_app._get_current_object()
             threading.Thread(target=_run_domain_enum, args=(t.id, app), daemon=True).start()
             flash(f"Target '{name}' created. DNS enumeration started in the background.", "success")
+        elif t.target_type == "ad_domain":
+            flash(f"Target '{name}' created. Launch a BloodHound scan from the AD Attack Paths "
+                  "section to start collection.", "success")
         else:
             flash(f"Target '{name}' created.", "success")
 

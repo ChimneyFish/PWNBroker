@@ -289,6 +289,12 @@ def _migrate_columns(app):
             ("ssh_key_passphrase","VARCHAR(512)"),
             ("target_type",      "VARCHAR(20) DEFAULT 'host'"),
             ("last_enum_at",     "DATETIME"),
+            ("ad_dc_host",       "VARCHAR(256)"),
+            ("ad_username",      "VARCHAR(150)"),
+            ("ad_auth_type",     "VARCHAR(20) DEFAULT 'password'"),
+            ("ad_password",      "VARCHAR(512)"),
+            ("ad_nt_hash",       "VARCHAR(512)"),
+            ("last_bloodhound_ingest_at", "DATETIME"),
         ],
         "scans": [
             ("scan_path", "VARCHAR(512)"),

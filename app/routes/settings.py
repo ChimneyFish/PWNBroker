@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, available_timezones
 from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file
 from flask_login import login_required, current_user
-from ..models import EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig, SSOConfig, O365Config
+from ..models import (EmailConfig, User, CloudConfig, AtlassianConfig, ThreatConfig, TimeConfig,
+                      SSOConfig, O365Config, BloodHoundConfig)
 from ..extensions import db
 from .. import config_backup
 from .decorators import admin_required
@@ -149,6 +150,7 @@ def index():
     time_cfg     = TimeConfig.query.first()     or TimeConfig()
     sso_cfg      = SSOConfig.query.first()      or SSOConfig()
     o365_cfg     = O365Config.query.first()     or O365Config()
+    bloodhound_cfg = BloodHoundConfig.query.first() or BloodHoundConfig()
     users        = User.query.order_by(User.created_at.desc()).all()
 
     if request.method == "POST":
@@ -335,6 +337,22 @@ def index():
             flash("O365 email security settings saved.", "success")
             return redirect(url_for("settings.index") + "#o365")
 
+        if form == "bloodhound":
+            bloodhound_cfg.enabled = request.form.get("bloodhound_enabled") == "on"
+            bloodhound_cfg.api_url = request.form.get("api_url", "").strip() or "https://localhost:8080"
+            bloodhound_cfg.token_id = request.form.get("token_id", "").strip()
+            token_key = request.form.get("token_key", "")
+            if token_key:
+                bloodhound_cfg.token_key = token_key
+            bloodhound_cfg.verify_ssl = request.form.get("verify_ssl") == "on"
+            bloodhound_cfg.updated_at = datetime.now(timezone.utc)
+            db.session.add(bloodhound_cfg)
+            db.session.commit()
+            from ..audit import log_action
+            log_action("settings.bloodhound_save", detail="BloodHound CE settings updated")
+            flash("BloodHound CE settings saved.", "success")
+            return redirect(url_for("settings.index") + "#bloodhound")
+
         if form == "saml":
             sso_cfg.saml_enabled = request.form.get("saml_enabled") == "on"
             sso_cfg.saml_sp_entity_id = request.form.get("saml_sp_entity_id", "").strip() or None
@@ -347,7 +365,8 @@ def index():
     return render_template(
         "settings/index.html",
         cfg=cfg, cloud_cfg=cloud_cfg, atlassian_cfg=atlassian_cfg,
-        threat_cfg=threat_cfg, time_cfg=time_cfg, sso_cfg=sso_cfg, o365_cfg=o365_cfg, users=users,
+        threat_cfg=threat_cfg, time_cfg=time_cfg, sso_cfg=sso_cfg, o365_cfg=o365_cfg,
+        bloodhound_cfg=bloodhound_cfg, users=users,
         cert_info=_read_cert_info(),
         ntp_status=_ntp_status(),
         ntp_server_current=_read_ntp_server(),
@@ -586,6 +605,33 @@ def test_o365():
 
     from ..email_security.graph_client import test_connection
     return test_connection(tenant_id, client_id, client_secret)
+
+
+@settings_bp.route("/test-bloodhound", methods=["POST"])
+@login_required
+@admin_required
+def test_bloodhound():
+    """Calls GET /api/v2/available-domains as a connectivity/auth check.
+    Accepts an optional JSON body with api_url/token_id/token_key typed
+    into the form but not yet saved, same fallback-to-DB pattern as
+    /test-o365 and /test-keys."""
+    cfg = BloodHoundConfig.query.first() or BloodHoundConfig()
+    body = request.get_json(silent=True) or {}
+
+    def _val(field, default=None):
+        v = (body.get(field) or "").strip()
+        return v if v else (getattr(cfg, field, None) or default)
+
+    api_url = _val("api_url", "https://localhost:8080")
+    token_id = _val("token_id")
+    token_key = _val("token_key")
+    verify_ssl = body.get("verify_ssl", cfg.verify_ssl)
+    if not (token_id and token_key):
+        return {"error": "Token ID and Token Key are both required."}
+
+    from ..bloodhound.api_client import BHClient
+    client = BHClient(api_url, token_id, token_key, verify_ssl=bool(verify_ssl))
+    return client.test_connection()
 
 
 @settings_bp.route("/users/add", methods=["POST"])

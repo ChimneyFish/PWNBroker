@@ -54,7 +54,7 @@ info "Service user: $SERVICE_USER"
 echo ""
 
 # =============================================================================
-step "1 / 13 — System Packages"
+step "1 / 14 — System Packages"
 # =============================================================================
 info "Updating package lists..."
 apt-get update -qq
@@ -72,7 +72,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKG
 ok "System packages installed"
 
 # =============================================================================
-step "2 / 13 — Service User"
+step "2 / 14 — Service User"
 # =============================================================================
 if ! id "$SERVICE_USER" &>/dev/null; then
     useradd --system --no-create-home --shell /bin/false \
@@ -83,7 +83,7 @@ else
 fi
 
 # =============================================================================
-step "3 / 13 — Application Files"
+step "3 / 14 — Application Files"
 # =============================================================================
 # $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
 # deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
@@ -124,7 +124,7 @@ chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================
-step "4 / 13 — Python Virtual Environment"
+step "4 / 14 — Python Virtual Environment"
 # =============================================================================
 PY_VER=$(python3 --version 2>&1)
 info "Using $PY_VER"
@@ -145,7 +145,7 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
 # =============================================================================
-step "5 / 13 — PEN Operational Scanner"
+step "5 / 14 — PEN Operational Scanner"
 # =============================================================================
 # PEN (github.com/ekomsSavior/PEN) has no releases/module path to `go install`
 # directly — it has to be cloned and built from source, per its own README.
@@ -172,7 +172,7 @@ fi
 warn "PEN's exploitation module can optionally crack hashes with john (installed above) and dump exposed git repos with git-dumper (pip install git-dumper, not installed automatically) — both are optional, PEN skips them gracefully if missing"
 
 # =============================================================================
-step "6 / 13 — REAPER Secret Scanner"
+step "6 / 14 — REAPER Secret Scanner"
 # =============================================================================
 # REAPER (github.com/ekomsSavior/REAPER) ships its own go.mod/go.sum, so no
 # `go mod init` step is needed here (unlike PEN). Note the build command is
@@ -200,7 +200,7 @@ fi
 warn "REAPER requires a GitHub token (Settings → Threat Intel APIs, repo + public_repo scopes) — scans return a 'token required' result until one is configured"
 
 # =============================================================================
-step "7 / 13 — Backdoor Detector"
+step "7 / 14 — Backdoor Detector"
 # =============================================================================
 # Backdoor Detector (github.com/ekomsSavior/backdoor_detector) is pure Python
 # — no build step, just a clone-if-missing like PEN/REAPER's source checkout,
@@ -242,7 +242,71 @@ fi
 warn "Backdoor Detector's npm-audit sub-scan needs Node.js/npm — not installed automatically (this project's stack doesn't otherwise need Node); install from nodejs.org if you want that sub-scan to run. Safety and pip-audit are already installed via requirements.txt."
 
 # =============================================================================
-step "8 / 13 — nmap Raw-Socket Capability"
+step "8 / 14 — BloodHound CE (Active Directory attack-path analysis)"
+# =============================================================================
+# BloodHound CE's only supported self-hosted deployment is Docker Compose
+# (Postgres + Neo4j + its own API/UI binary) — this is the first Docker
+# dependency in an otherwise bare-metal/systemd app. Deliberately NOT adding
+# the service user to the docker group: Docker group membership is
+# root-equivalent, and the app only ever needs plain HTTPS to localhost:8080,
+# never the Docker socket. Docker's own daemon/restart-policy owns this
+# stack's lifecycle independently of the pwnbroker systemd unit.
+DOCKER_AVAILABLE=false
+if command -v docker &>/dev/null; then
+    ok "Docker already installed"
+    DOCKER_AVAILABLE=true
+else
+    info "Installing Docker..."
+    if apt-get install -y -qq docker.io docker-compose-plugin && systemctl enable --now docker; then
+        ok "Docker installed and started"
+        DOCKER_AVAILABLE=true
+    else
+        warn "Docker install failed — BloodHound CE won't be set up; the 'bloodhound' scan type"
+        warn "will report itself unconfigured until this is fixed. Retry manually:"
+        warn "  apt-get install -y docker.io docker-compose-plugin && systemctl enable --now docker"
+    fi
+fi
+
+if [[ "$DOCKER_AVAILABLE" == true ]]; then
+    BLOODHOUND_DIR="$INSTALL_DIR/docker/bloodhound"
+    mkdir -p "$BLOODHOUND_DIR"
+    if [[ -f "$BLOODHOUND_DIR/docker-compose.yml" ]]; then
+        ok "BloodHound CE docker-compose.yml already present"
+    else
+        # Fetched fresh from SpecterOps rather than vendored in this repo — a
+        # hand-copied version here would silently drift from whatever
+        # image tags/env vars a future BloodHound CE release actually needs.
+        # This is the same file their own quickstart's one-liner
+        # (curl -L https://ghst.ly/getbhce | docker compose -f - up) uses.
+        info "Fetching BloodHound CE's official docker-compose.yml..."
+        if curl -sfL -o "$BLOODHOUND_DIR/docker-compose.yml" \
+            https://raw.githubusercontent.com/SpecterOps/BloodHound/main/examples/docker-compose/docker-compose.yml; then
+            ok "Saved to $BLOODHOUND_DIR/docker-compose.yml"
+        else
+            warn "Could not fetch BloodHound CE's docker-compose.yml — the 'bloodhound' scan type"
+            warn "will report itself unconfigured until this is set up manually. See docs/deployment.md."
+        fi
+    fi
+
+    if [[ -f "$BLOODHOUND_DIR/docker-compose.yml" ]]; then
+        info "Starting BloodHound CE (Postgres + Neo4j + API/UI)..."
+        if (cd "$BLOODHOUND_DIR" && docker compose pull -q && docker compose up -d); then
+            ok "BloodHound CE containers started — binds to localhost:8080 by default"
+            warn "One-time manual step required: BloodHound prints a randomly-generated"
+            warn "initial admin password to its logs on first boot. Run:"
+            warn "  cd $BLOODHOUND_DIR && docker compose logs bloodhound | grep -i 'initial password'"
+            warn "Log into https://<this-host>:8080, change that password, then go to"
+            warn "My Profile -> API Tokens -> Create Token and paste the Token ID/Key into"
+            warn "PwnBroker's Settings -> BloodHound CE. This can't be scripted — it needs"
+            warn "an authenticated UI session. See docs/deployment.md for details."
+        else
+            warn "BloodHound CE containers failed to start — check 'docker compose logs' in $BLOODHOUND_DIR"
+        fi
+    fi
+fi
+
+# =============================================================================
+step "9 / 14 — nmap Raw-Socket Capability"
 # =============================================================================
 # nmap needs CAP_NET_RAW for OS fingerprinting (-O) and CAP_NET_ADMIN for some
 # scan types.  setcap grants these to the nmap binary so the service user
@@ -257,7 +321,7 @@ else
 fi
 
 # =============================================================================
-step "9 / 13 — TLS Certificate"
+step "10 / 14 — TLS Certificate"
 # =============================================================================
 CERT="$INSTALL_DIR/data/ssl/cert.pem"
 KEY="$INSTALL_DIR/data/ssl/key.pem"
@@ -280,7 +344,7 @@ else
 fi
 
 # =============================================================================
-step "10 / 13 — Environment File"
+step "11 / 14 — Environment File"
 # =============================================================================
 ENV_FILE="$INSTALL_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -322,7 +386,7 @@ chmod 640 "$ENV_FILE"
 chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
-step "11 / 13 — Systemd Service"
+step "12 / 14 — Systemd Service"
 # =============================================================================
 # One worker, multiple threads — not scaled by CPU count. APScheduler's
 # background jobs (scan checks, report sends, the Palo Alto poller) and the
@@ -398,7 +462,7 @@ ok "Unit file written: $SERVICE_FILE"
 ok "Service enabled for autostart on boot"
 
 # =============================================================================
-step "12 / 13 — Log Rotation"
+step "13 / 14 — Log Rotation"
 # =============================================================================
 cat > /etc/logrotate.d/pwnbroker << EOF
 $INSTALL_DIR/logs/*.log {
@@ -417,7 +481,7 @@ EOF
 ok "Logrotate config installed (/etc/logrotate.d/pwnbroker)"
 
 # =============================================================================
-step "13 / 13 — Firewall & Service Start"
+step "14 / 14 — Firewall & Service Start"
 # =============================================================================
 # Firewall
 if command -v ufw &>/dev/null; then

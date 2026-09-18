@@ -857,6 +857,72 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
     </div>
   </div>
 
+  <!-- BloodHound CE (Active Directory attack-path analysis) -->
+  <div class="col-12">
+    <div class="form-card" id="bloodhound">
+      <h5 class="font-bold mb-1"><i class="bi bi-diagram-3 me-2 text-primary"></i>BloodHound CE</h5>
+      <p class="text-muted small mb-6">
+        Connects to the BloodHound CE instance deployed alongside PWNBroker (Docker Compose — see
+        <code>docs/deployment.md</code>). Auth is a Token ID + Token Key pair, not a password —
+        create one in the BloodHound UI under <strong>My Profile → API Tokens</strong> after the
+        one-time setup described in the deployment docs, then paste it below.
+      </p>
+
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form" value="bloodhound">
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" name="bloodhound_enabled" id="bloodhound_enabled"
+                     {% if bloodhound_cfg and bloodhound_cfg.enabled %}checked{% endif %}>
+              <label class="form-check-label font-semibold" for="bloodhound_enabled">Enable BloodHound CE</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">API URL</label>
+            <input type="text" name="api_url" class="form-control font-monospace"
+                   value="{{ bloodhound_cfg.api_url or '' if bloodhound_cfg else '' }}"
+                   placeholder="https://localhost:8080">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Token ID</label>
+            <input type="text" name="token_id" class="form-control font-monospace"
+                   value="{{ bloodhound_cfg.token_id or '' if bloodhound_cfg else '' }}"
+                   placeholder="00000000-0000-0000-0000-000000000000">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label flex items-center gap-2">
+              Token Key
+              <span class="key-pill">
+                {% if bloodhound_cfg and bloodhound_cfg.token_key %}<span class="badge bg-secondary bg-opacity-30 text-info" style="font-size:0.6rem">● SET</span>{% else %}<span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.6rem">○ NOT SET</span>{% endif %}
+              </span>
+            </label>
+            <input type="password" name="token_key" class="form-control font-monospace"
+                   placeholder="Leave blank to keep current" autocomplete="new-password">
+          </div>
+          <div class="col-md-6 flex items-end">
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" name="verify_ssl" id="bh_verify_ssl"
+                     {% if bloodhound_cfg and bloodhound_cfg.verify_ssl %}checked{% endif %}>
+              <label class="form-check-label" for="bh_verify_ssl">Verify TLS certificate</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 flex-wrap">
+          <button type="submit" class="btn btn-primary">Save BloodHound CE Settings</button>
+          <button type="button" class="btn btn-outline-secondary" id="test-bloodhound-btn" onclick="testBloodHound()">Test Connection</button>
+          <span id="bloodhound-test-status" class="small text-muted"></span>
+        </div>
+      </form>
+      {% if bloodhound_cfg and bloodhound_cfg.status == 'error' and bloodhound_cfg.last_error %}
+      <div class="text-danger small mt-3">Last error: {{ bloodhound_cfg.last_error }}</div>
+      {% endif %}
+    </div>
+  </div>
+
   <!-- TLS / HTTPS Certificate -->
   <div class="col-12">
     <div class="form-card" id="tls">
@@ -1252,6 +1318,44 @@ async function testO365() {
 
   try {
     const res = await fetch('/settings/test-o365', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      status.innerHTML = `<span class="text-success">${data.detail}</span>`;
+    } else {
+      status.innerHTML = `<span class="text-danger">${data.error}</span>`;
+    }
+  } catch (e) {
+    status.textContent = 'Test failed — check console.';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Test Connection';
+}
+
+async function testBloodHound() {
+  const btn = document.getElementById('test-bloodhound-btn');
+  const status = document.getElementById('bloodhound-test-status');
+  const form = document.querySelector('input[name="form"][value="bloodhound"]')?.closest('form');
+  if (!form) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:.75rem;height:.75rem;border-width:1.5px"></span>Testing…';
+  status.textContent = '';
+
+  const payload = {
+    api_url: form.querySelector('[name="api_url"]')?.value?.trim() || '',
+    token_id: form.querySelector('[name="token_id"]')?.value?.trim() || '',
+    token_key: form.querySelector('[name="token_key"]')?.value?.trim() || '',
+    verify_ssl: form.querySelector('[name="verify_ssl"]')?.checked || false,
+  };
+
+  try {
+    const res = await fetch('/settings/test-bloodhound', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content},
       body: JSON.stringify(payload),

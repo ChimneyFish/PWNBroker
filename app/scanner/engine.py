@@ -306,6 +306,23 @@ def run_scan(scan_id: int, app=None):
                             raw_data=r.get("raw_data"),
                         ))
 
+                # ── BloodHound CE Active Directory attack-path analysis ────────────
+                if scan_type == "bloodhound":
+                    from .bloodhound_scanner import run_bloodhound_scan
+                    bloodhound_results = run_bloodhound_scan(scan, scan.target)
+
+                    for r in bloodhound_results:
+                        results.append(ScanResult(
+                            scan_id=scan_id,
+                            result_type=r.get("result_type", "info"),
+                            host=r.get("host", host),
+                            severity=r.get("severity", "info"),
+                            title=r.get("title", ""),
+                            description=r.get("description", ""),
+                            raw_data=r.get("raw_data"),
+                            verification_status=r.get("verification_status", "unconfirmed"),
+                        ))
+
                 # ── OSV dependency scan ───────────────────────────────────────────
                 if scan_type == "osv":
                     from ..models import ThreatConfig

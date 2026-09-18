@@ -91,7 +91,7 @@ class Target(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     # SSH credentials for dependency (OSV) scanning
-    target_type = db.Column(db.String(20), default="host")  # host | domain | ip
+    target_type = db.Column(db.String(20), default="host")  # host | domain | ip | github_repo | local_path | ad_domain
     last_enum_at = db.Column(db.DateTime)
     ssh_port = db.Column(db.Integer, default=22)
     ssh_username = db.Column(db.String(100))
@@ -99,6 +99,14 @@ class Target(db.Model):
     ssh_password = db.Column(EncryptedString)
     ssh_private_key = db.Column(EncryptedString)
     ssh_key_passphrase = db.Column(EncryptedString)
+    # AD domain collection credentials (ad_domain targets; `host` holds the
+    # domain FQDN, matching how the `domain` target type already uses `host`)
+    ad_dc_host   = db.Column(db.String(256))            # domain controller to query directly
+    ad_username  = db.Column(db.String(150))
+    ad_auth_type = db.Column(db.String(20), default="password")  # password | hash
+    ad_password  = db.Column(EncryptedString)
+    ad_nt_hash   = db.Column(EncryptedString)           # NTLM hash, used instead of a password
+    last_bloodhound_ingest_at = db.Column(db.DateTime)
     scans = db.relationship("Scan", backref="target", lazy="dynamic",
                             cascade="all, delete-orphan")
     domain_records = db.relationship("DomainRecord", backref="target", lazy="dynamic",
@@ -630,6 +638,27 @@ class VulnTicket(db.Model):
         now = datetime.now(timezone.utc)
         due = self.due_date if self.due_date.tzinfo else self.due_date.replace(tzinfo=timezone.utc)
         return max(0, (now - due).days)
+
+
+# ── BloodHound CE (Active Directory attack-path analysis) ────────────────────
+
+class BloodHoundConfig(db.Model):
+    """Connection settings for a BloodHound CE instance PWNBroker manages
+    (see docs/deployment.md) — a Docker Compose stack (Postgres + Neo4j +
+    the BloodHound API/UI binary) running alongside the app. Auth is a
+    Token ID + Token Key pair (HMAC-signed requests, not a bearer token),
+    created once via the BloodHound UI — see app/bloodhound/api_client.py."""
+    __tablename__  = "bloodhound_config"
+    id             = db.Column(db.Integer, primary_key=True)
+    enabled        = db.Column(db.Boolean, default=False)
+    api_url        = db.Column(db.String(512), default="https://localhost:8080")
+    token_id       = db.Column(db.String(128))
+    token_key      = db.Column(EncryptedString)
+    verify_ssl     = db.Column(db.Boolean, default=False)  # BH's own container ships a self-signed cert by default
+    status         = db.Column(db.String(20), default="unknown")  # unknown | ok | error
+    last_error     = db.Column(db.Text)
+    last_tested_at = db.Column(db.DateTime)
+    updated_at     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # ── Assets ────────────────────────────────────────────────────────────────────

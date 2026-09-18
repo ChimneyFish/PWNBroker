@@ -21,6 +21,7 @@
             <option value="domain">Domain</option>
             <option value="github_repo">GitHub Repository</option>
             <option value="local_path">Local Path (this server)</option>
+            <option value="ad_domain">AD Domain</option>
           </select>
           <div class="form-text text-muted" id="type_hint">Hostname or IP address for scanning.</div>
         </div>
@@ -83,6 +84,39 @@
           </div>
         </div>
 
+        <!-- AD Domain credentials (only relevant to ad_domain targets) -->
+        <div class="mb-6" id="ad_fields" style="display:none">
+          <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+            <div class="font-semibold small mb-3"><i class="bi bi-diagram-3 me-1"></i>AD Collection Credentials</div>
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label">Domain Controller</label>
+                <input type="text" name="ad_dc_host" class="form-control" placeholder="10.0.0.1 or dc01.corp.local">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Username</label>
+                <input type="text" name="ad_username" class="form-control" placeholder="svc_bloodhound">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Auth Type</label>
+                <select name="ad_auth_type" class="form-select" id="ad_auth_type">
+                  <option value="password">Password</option>
+                  <option value="hash">NTLM Hash</option>
+                </select>
+              </div>
+              <div class="col-12" id="ad_password_field">
+                <label class="form-label">Password</label>
+                <input type="password" name="ad_password" class="form-control" autocomplete="new-password">
+              </div>
+              <div class="col-12" id="ad_hash_field" style="display:none">
+                <label class="form-label">NTLM Hash</label>
+                <input type="text" name="ad_nt_hash" class="form-control font-monospace"
+                       placeholder="aabbccddeeff00112233445566778899">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="flex gap-2">
           <button type="submit" class="btn btn-primary">Add Target</button>
           <a href="{{ url_for('targets.index') }}" class="btn btn-outline-secondary">Cancel</a>
@@ -109,22 +143,31 @@ toggleBtn.addEventListener('click', () => {
   chevron.className = open ? 'bi bi-chevron-down ms-1' : 'bi bi-chevron-up ms-1';
 });
 
+const adFields    = document.getElementById('ad_fields');
+const adAuthSelect = document.getElementById('ad_auth_type');
+const adPwField   = document.getElementById('ad_password_field');
+const adHashField = document.getElementById('ad_hash_field');
+
 document.getElementById('target_type').addEventListener('change', function() {
   const hints = {
     host: 'Hostname or IP address for scanning.',
     domain: 'Apex domain — subdomains, MX, and CNAME records will be automatically enumerated and monitored.',
     github_repo: 'GitHub repository in owner/repo format (e.g. octocat/Hello-World). Used for dependency scanning via the GitHub API.',
     local_path: 'Absolute path to a directory already on this server (e.g. /opt/some-project). Used for static analysis — nothing in the directory is ever executed.',
+    ad_domain: 'Active Directory domain FQDN (e.g. corp.local). Collected via BloodHound CE — see the AD Attack Paths section to launch a scan after creating this target.',
   };
   const labels = {
     local_path: 'Absolute Path',
+    ad_domain: 'Domain FQDN',
   };
   const placeholders = {
     local_path: '/opt/my-project',
+    ad_domain: 'corp.local',
   };
   document.getElementById('type_hint').textContent = hints[this.value] || '';
   document.getElementById('host_label').textContent = labels[this.value] || 'Host / IP / Domain';
   document.getElementById('host_input').placeholder = placeholders[this.value] || '192.168.1.1 or example.com';
+  adFields.style.display = this.value === 'ad_domain' ? '' : 'none';
 });
 
 authSelect.addEventListener('change', function() {
@@ -132,6 +175,12 @@ authSelect.addEventListener('change', function() {
   pwField.style.display  = isKey ? 'none' : '';
   keyField.style.display = isKey ? '' : 'none';
   ppField.style.display  = isKey ? '' : 'none';
+});
+
+adAuthSelect.addEventListener('change', function() {
+  const isHash = this.value === 'hash';
+  adPwField.style.display   = isHash ? 'none' : '';
+  adHashField.style.display = isHash ? '' : 'none';
 });
 </script>
 {% endblock %}

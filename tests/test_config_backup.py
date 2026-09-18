@@ -1,7 +1,7 @@
 """Tests for app/config_backup.py (export/decrypt/restore logic) and the
 /settings/backup/export|import routes it's wired into.
 
-Scope: the 7 Settings-page config singletons, PaloAltoFirewall, and Target
+Scope: the 8 Settings-page config singletons, PaloAltoFirewall, and Target
 (SSH credentials) — see config_backup.py's module docstring for why each is
 included and why users/scan data are deliberately excluded.
 """
@@ -67,12 +67,34 @@ class TestExportDecryptRoundTrip:
 
 
 class TestBuildBackupPayload:
-    def test_captures_all_seven_singleton_sections(self, app):
+    def test_singleton_configs_registry_matches_expected_membership(self):
+        """Assert on _SINGLETON_CONFIGS directly, not just per-model tests —
+        this is what actually catches a future secret-holding config
+        singleton (like BloodHoundConfig was) getting added to the app
+        without a corresponding registration here, which is exactly the
+        kind of drift this backup feature exists to prevent."""
+        keys = {key for _, key in cb._SINGLETON_CONFIGS}
+        assert keys == {"email", "cloud", "atlassian", "threat", "time", "sso", "o365", "bloodhound"}
+        assert len(cb._SINGLETON_CONFIGS) == 8
+
+    def test_captures_all_eight_singleton_sections(self, app):
         with app.app_context():
             payload = cb.build_backup_payload()
         assert set(payload["configs"].keys()) == {
-            "email", "cloud", "atlassian", "threat", "time", "sso", "o365",
+            "email", "cloud", "atlassian", "threat", "time", "sso", "o365", "bloodhound",
         }
+
+    def test_captures_bloodhound_config_secret(self, app):
+        with app.app_context():
+            from app.extensions import db
+            from app.models import BloodHoundConfig
+
+            db.session.add(BloodHoundConfig(token_id="tok-1", token_key="bh-secret-key"))
+            db.session.commit()
+
+            payload = cb.build_backup_payload()
+
+        assert payload["configs"]["bloodhound"]["token_key"] == "bh-secret-key"
 
     def test_missing_singleton_is_none_not_an_error(self, app):
         with app.app_context():
