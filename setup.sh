@@ -269,16 +269,59 @@ step "8 / 14 — BloodHound CE (Active Directory attack-path analysis)"
 DOCKER_AVAILABLE=false
 if command -v docker &>/dev/null; then
     ok "Docker already installed"
-    DOCKER_AVAILABLE=true
 else
     info "Installing Docker..."
-    if apt-get install -y -qq docker.io docker-compose-plugin && systemctl enable --now docker; then
+    if apt-get install -y -qq docker.io && systemctl enable --now docker; then
         ok "Docker installed and started"
-        DOCKER_AVAILABLE=true
     else
         warn "Docker install failed — BloodHound CE won't be set up; the 'bloodhound' scan type"
         warn "will report itself unconfigured until this is fixed. Retry manually:"
-        warn "  apt-get install -y docker.io docker-compose-plugin && systemctl enable --now docker"
+        warn "  apt-get install -y docker.io && systemctl enable --now docker"
+    fi
+fi
+
+if command -v docker &>/dev/null; then
+    if docker compose version &>/dev/null; then
+        ok "Docker Compose plugin already available"
+        DOCKER_AVAILABLE=true
+    else
+        # docker-compose-plugin is NOT reliably packaged in every Debian-based
+        # distro's default repos — confirmed missing outright on at least one
+        # real target (apt-get errors "unable to locate package", which used
+        # to fail this entire step, including the docker.io install bundled
+        # in the same apt-get call). It's only guaranteed to exist via
+        # Docker's own apt repository, which this script deliberately doesn't
+        # add just for this one integration. Installed the same way as
+        # BloodHound's own docker-compose.yml above: fetched directly from
+        # the upstream project (with checksum verification, since this one's
+        # an executable binary) rather than assumed to exist as a distro
+        # package.
+        COMPOSE_VERSION="v5.5.1"
+        ARCH=$(uname -m)
+        PLUGIN_DIR=/usr/local/lib/docker/cli-plugins
+        COMPOSE_URL="https://github.com/docker/compose/releases/download/$COMPOSE_VERSION/docker-compose-linux-$ARCH"
+        info "Installing Docker Compose plugin $COMPOSE_VERSION ($ARCH)..."
+        mkdir -p "$PLUGIN_DIR"
+        TMP_COMPOSE=$(mktemp)
+        if curl -sfL -o "$TMP_COMPOSE" "$COMPOSE_URL"; then
+            EXPECTED_SHA=$(curl -sfL "$COMPOSE_URL.sha256" | awk '{print $1}')
+            ACTUAL_SHA=$(sha256sum "$TMP_COMPOSE" | awk '{print $1}')
+            if [[ -n "$EXPECTED_SHA" && "$EXPECTED_SHA" == "$ACTUAL_SHA" ]]; then
+                mv "$TMP_COMPOSE" "$PLUGIN_DIR/docker-compose"
+                chmod +x "$PLUGIN_DIR/docker-compose"
+                ok "Docker Compose plugin installed to $PLUGIN_DIR/docker-compose"
+                DOCKER_AVAILABLE=true
+            else
+                rm -f "$TMP_COMPOSE"
+                warn "Docker Compose plugin checksum mismatch (expected $EXPECTED_SHA, got $ACTUAL_SHA)"
+                warn "— not installing an unverified binary. BloodHound CE won't be set up."
+            fi
+        else
+            rm -f "$TMP_COMPOSE"
+            warn "Could not download the Docker Compose plugin — BloodHound CE won't be set up;"
+            warn "the 'bloodhound' scan type will report itself unconfigured until this is fixed."
+            warn "Retry manually: curl -sfL -o $PLUGIN_DIR/docker-compose $COMPOSE_URL && chmod +x $PLUGIN_DIR/docker-compose"
+        fi
     fi
 fi
 
