@@ -93,10 +93,28 @@ step "3 / 14 — Application Files"
 if [[ -d "$INSTALL_DIR/.git" ]]; then
     info "Existing git checkout found — updating to latest $BRANCH..."
     BEFORE=$(git -C "$INSTALL_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    # Hash setup.sh itself before the pull below can overwrite it — bash reads
+    # a running script incrementally from the file it opened at launch, not
+    # all at once, so if this pull changes setup.sh (as it usually does,
+    # since this script lives in the repo it's updating), everything AFTER
+    # this point in the CURRENT run keeps executing the OLD logic even
+    # though the file on disk is now the new one — a real, confusing gotcha
+    # (this is exactly how a previous fix here — replacing a nonexistent
+    # docker-compose-plugin apt package — appeared to "not take effect" on
+    # a run that had, in fact, already pulled it). Re-exec into the updated
+    # file immediately once we detect this, rather than let the rest of an
+    # already-stale run silently continue.
+    BEFORE_SETUP_HASH=$(sha256sum "$INSTALL_DIR/setup.sh" 2>/dev/null | awk '{print $1}')
     git -C "$INSTALL_DIR" fetch --quiet origin "$BRANCH"
     git -C "$INSTALL_DIR" reset --hard --quiet "origin/$BRANCH"
     AFTER=$(git -C "$INSTALL_DIR" rev-parse --short HEAD)
     ok "Updated $BEFORE → $AFTER"
+    AFTER_SETUP_HASH=$(sha256sum "$INSTALL_DIR/setup.sh" 2>/dev/null | awk '{print $1}')
+    if [[ "$BEFORE_SETUP_HASH" != "$AFTER_SETUP_HASH" && -z "${PWNBROKER_SETUP_REEXECED:-}" ]]; then
+        warn "setup.sh itself was updated by that pull — restarting with the new version..."
+        export PWNBROKER_SETUP_REEXECED=1
+        exec bash "$INSTALL_DIR/setup.sh"
+    fi
 elif [[ -e "$INSTALL_DIR" && -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]]; then
     die "$INSTALL_DIR exists and isn't a git checkout of this project — move it aside (or set INSTALL_DIR to a different path) before re-running."
 else
