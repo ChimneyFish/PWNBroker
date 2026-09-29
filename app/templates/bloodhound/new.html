@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}New BloodHound Scan — PwnBroker{% endblock %}
+{% block page_title %}New BloodHound Scan{% endblock %}
+
+{% block content %}
+<div class="row justify-center">
+  <div class="col-lg-7">
+    <div class="form-card">
+      <h5 class="font-bold mb-1">Map Active Directory Attack Paths</h5>
+      <p class="text-muted small mb-6">
+        PwnBroker will collect Active Directory relationship data with <strong>bloodhound-ce-python</strong>,
+        upload it to your BloodHound CE instance, and run a fixed set of attack-path hunting queries
+        against it — Kerberoastable accounts, AS-REP roastable accounts, unconstrained delegation,
+        DCSync rights, and shortest paths to Domain Admins / Enterprise Admins.
+      </p>
+
+      <div class="mb-6 p-4 rounded bg-accent/10 border border-accent/20">
+        <div class="small font-semibold mb-1 text-info"><i class="bi bi-clock-history me-1"></i>This can take a while</div>
+        <div class="small text-muted">
+          Collection alone can take up to 30 minutes against a large domain, and BloodHound CE needs
+          time to ingest and analyze the result afterward. The scan stays "running" the whole time —
+          no partial findings appear until analysis finishes.
+        </div>
+      </div>
+
+      <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+          <label class="form-label">Scan Name</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. CORP.LOCAL — Monthly Attack Path Review" required>
+        </div>
+
+        <div class="mb-6">
+          <label class="form-label">AD Domain</label>
+          <select name="target_id" class="form-select" required>
+            <option value="">— Select an AD Domain target —</option>
+            {% for t in targets %}
+            <option value="{{ t.id }}">{{ t.name }} ({{ t.host }})</option>
+            {% endfor %}
+          </select>
+          <div class="mt-1 small text-muted">
+            Only <strong>AD Domain</strong>-type targets appear here, with domain-collection
+            credentials already configured.
+            <a href="{{ url_for('targets.new') }}">+ Add an AD Domain target</a>
+          </div>
+        </div>
+
+        <div class="p-4 rounded mb-6 bg-accent/10 border border-accent/20">
+          <div class="small font-semibold mb-1 text-info"><i class="bi bi-info-circle me-1"></i>What this scans</div>
+          <ul class="small text-muted mb-0 ps-4">
+            <li>Full AD collection (users, groups, computers, ACLs, sessions, GPOs, trusts) via LDAP/SMB/RPC against the domain controller — no agent needed on domain-joined hosts</li>
+            <li>Kerberoastable and AS-REP roastable accounts, escalated to critical if the account also has DCsync-style admin rights (admincount)</li>
+            <li>Computers trusted for unconstrained delegation, excluding domain controllers themselves</li>
+            <li>Principals with DCSync replication rights outside the expected built-in admin groups</li>
+            <li>Shortest attack paths to Domain Admins and Enterprise Admins across the standard set of abusable AD relationships</li>
+          </ul>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill me-1"></i>Start Scan</button>
+          <a href="{{ url_for('bloodhound.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

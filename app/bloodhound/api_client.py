@@ -14,14 +14,16 @@ both the scanner (running hunting Cypher queries) and the Settings
 already used for app/email_security/graph_client.py (shared by the O365
 mailbox sync job and its own settings test route).
 
-Phase 1 scope: cypher(), available_domains(), and test_connection() are
-implemented and exercised (Settings' test-connection route uses
-available_domains()). The file-upload/ingest methods are present but their
-exact endpoint paths are marked TODO-VERIFY below — two documentation
-sources disagree on the precise upload-start path, and BloodHound CE's own
-live OpenAPI spec (Settings > API Explorer, once the container is running)
-is the actual source of truth. Confirm before Phase 2 wires these into the
-scan pipeline.
+Phase 2 adds the ingest (file-upload) methods below `cypher()`. Their paths
+and response shapes were confirmed against BloodHound CE's actual published
+OpenAPI spec (SpecterOps/bloodhound-docs, docs/openapi.json) rather than
+guessed — see the job-status enum comment on get_job_status() for the
+source of the status codes. The one thing that spec doesn't pin down is the
+exact key casing inside a Cypher query's node/edge objects (node/edge
+envelope vs. their `properties` sub-dict) — app/scanner/bloodhound_scanner.py
+reads those defensively and that should still be spot-checked against a
+live instance's actual JSON before treating hunting-query output as
+gospel.
 """
 import base64
 import hashlib
@@ -126,17 +128,16 @@ class BHClient:
         except BloodHoundAPIError as e:
             return {"error": str(e)}
 
-    # ── Ingest endpoints (Phase 2 — paths need live verification) ────────────
-    # TODO-VERIFY: confirm these paths against the running instance's own
-    # OpenAPI spec (Settings > API Explorer) before wiring them into the scan
-    # pipeline — two documentation sources disagree on the upload-start path
-    # ("/api/v2/file-upload/start" vs "/api/v2/collection-uploads/file-upload").
-    # Kept as named constants specifically so a correction is a one-line change.
+    # ── Ingest endpoints ──────────────────────────────────────────────────────
+    # Paths confirmed against docs/openapi.json in SpecterOps/bloodhound-docs
+    # (CreateFileUploadJob, UploadFileToJob, EndFileUploadJob, ListFileUploadJobs,
+    # GetCompletedTasks operationIds) — not guessed.
 
-    _UPLOAD_START_PATH       = "/api/v2/file-upload/start"
-    _UPLOAD_DATA_PATH_FMT    = "/api/v2/file-upload/{job_id}"
-    _UPLOAD_END_PATH_FMT     = "/api/v2/file-upload/{job_id}/end"
-    _UPLOAD_STATUS_PATH_FMT  = "/api/v2/file-upload/{job_id}/completed-tasks"
+    _UPLOAD_START_PATH        = "/api/v2/file-upload/start"
+    _UPLOAD_DATA_PATH_FMT     = "/api/v2/file-upload/{job_id}"
+    _UPLOAD_END_PATH_FMT      = "/api/v2/file-upload/{job_id}/end"
+    _JOB_LIST_PATH            = "/api/v2/file-upload"
+    _COMPLETED_TASKS_PATH_FMT = "/api/v2/file-upload/{job_id}/completed-tasks"
 
     def start_file_upload(self) -> int:
         resp = self._request("POST", self._UPLOAD_START_PATH)
@@ -146,6 +147,10 @@ class BHClient:
         return resp.json()["data"]["id"]
 
     def upload_file_data(self, job_id: int, data: bytes, content_type: str = "application/zip"):
+        # Content-Type must be one of the enum values BloodHound's OpenAPI spec
+        # declares for this endpoint (application/json, application/zip,
+        # application/zip-compressed, application/x-zip-compressed) — anything
+        # else is rejected before the body is even looked at.
         uri = self._UPLOAD_DATA_PATH_FMT.format(job_id=job_id)
         resp = self._request("POST", uri, raw_body=data, content_type=content_type)
         if not resp.ok:
@@ -159,10 +164,34 @@ class BHClient:
             raise BloodHoundAPIError(
                 f"Finalizing the upload job failed: HTTP {resp.status_code}: {resp.text[:300]}")
 
-    def upload_status(self, job_id: int) -> dict:
-        uri = self._UPLOAD_STATUS_PATH_FMT.format(job_id=job_id)
+    def get_job_status(self, job_id: int) -> dict:
+        """Returns the file-upload-job record ({"id", "status", "status_message",
+        "total_files", "failed_files", ...}). `status` is an integer enum
+        (from BloodHound's own OpenAPI spec, enum.job-status):
+        -1 Invalid, 0 Ready, 1 Running, 2 Complete, 3 Canceled, 4 Timed Out,
+        5 Failed, 6 Ingesting, 7 Analyzing, 8 Partially Complete.
+
+        There's no GET-by-id endpoint for a single job — list jobs filtered
+        by id instead (ListFileUploadJobs' `id` query param, `eq:<id>`
+        predicate syntax), same as every other filterable list endpoint in
+        this API.
+        """
+        resp = self._request("GET", f"{self._JOB_LIST_PATH}?id=eq:{job_id}")
+        if not resp.ok:
+            raise BloodHoundAPIError(
+                f"Checking upload job status failed: HTTP {resp.status_code}: {resp.text[:300]}")
+        rows = resp.json().get("data", [])
+        if not rows:
+            raise BloodHoundAPIError(f"BloodHound has no record of file-upload job {job_id}.")
+        return rows[0]
+
+    def list_completed_tasks(self, job_id: int) -> list:
+        """Per-file detail (name + any errors) for a job — useful to explain
+        *why* a job ended up "Partially Complete" or "Failed", not for
+        polling overall job status (use get_job_status() for that)."""
+        uri = self._COMPLETED_TASKS_PATH_FMT.format(job_id=job_id)
         resp = self._request("GET", uri)
         if not resp.ok:
             raise BloodHoundAPIError(
-                f"Checking upload status failed: HTTP {resp.status_code}: {resp.text[:300]}")
-        return resp.json()
+                f"Checking completed tasks failed: HTTP {resp.status_code}: {resp.text[:300]}")
+        return resp.json().get("data", [])
