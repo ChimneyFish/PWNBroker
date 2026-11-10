@@ -126,7 +126,7 @@
             {{ a.hostname or '<span class="text-muted opacity-50">—</span>' | safe }}
           </span>
           <button class="btn btn-link btn-sm p-0 ms-1 text-muted opacity-50"
-                  onclick="editHostname({{ a.id }}, '{{ a.hostname or '' }}')"
+                  onclick="editHostname({{ a.id }}, {{ (a.hostname or '')|tojson|forceescape }})"
                   title="Edit hostname" style="font-size:0.7rem">
             <i class="bi bi-pencil"></i>
           </button>
@@ -280,7 +280,7 @@
             <span class="text-muted" style="font-size:0.65rem">({{ tag.assets | length }})</span>
             <button type="button" class="btn-close btn-close-white"
                     style="font-size:0.45rem;filter:none;opacity:0.6"
-                    onclick="deleteTag({{ tag.id }}, '{{ tag.label }}', this.closest('span'))"
+                    onclick="deleteTag({{ tag.id }}, {{ (tag.label)|tojson|forceescape }}, this.closest('span'))"
                     title="Delete tag"></button>
           </span>
           {% endfor %}
@@ -357,7 +357,7 @@ async function addTag(assetId, tagId) {
   const span = document.createElement('span');
   span.className = 'badge inline-flex items-center gap-1';
   span.style.cssText = `background:${data.color}20;color:${data.color};border:1px solid ${data.color}40;font-size:0.65rem`;
-  span.innerHTML = `${data.label}
+  span.innerHTML = `${escHtml(data.label)}
     <button type="button" class="btn-close btn-close-white"
             style="font-size:0.4rem;filter:none;opacity:0.7"
             onclick="removeTag(${assetId}, ${data.tag_id}, this)"
@@ -391,7 +391,7 @@ async function saveHostname() {
   const data = await res.json();
   if (!data.ok) return;
   const el = document.getElementById(`hn-display-${id}`);
-  el.innerHTML = data.hostname || '<span class="text-muted opacity-50">—</span>';
+  el.innerHTML = data.hostname ? escHtml(data.hostname) : '<span class="text-muted opacity-50">—</span>';
   hnModal.hide();
 }
 

@@ -132,6 +132,22 @@ def create_app(config_class=Config):
             app.logger.error(f"Health check DB probe failed: {e}")
             return jsonify({"status": "error"}), 503
 
+    @app.after_request
+    def _security_headers(resp):
+        """Baseline browser hardening. No CSP yet — templates rely on inline
+        <script>/onclick handlers, so a CSP would need nonces throughout first."""
+        resp.headers.setdefault("X-Frame-Options", "DENY")
+        resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+        resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if request.is_secure:
+            resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+        return resp
+
+    @app.errorhandler(413)
+    def _too_large(e):
+        return "Upload too large.", 413
+
     @app.errorhandler(404)
     def _not_found(e):
         from flask import render_template
@@ -454,6 +470,9 @@ def _migrate_encrypt_secrets(app):
         ("paloalto_firewalls", "id", ["api_key", "password"]),
         ("targets", "id", ["ssh_password", "ssh_private_key", "ssh_key_passphrase"]),
         ("scans", "id", ["pen_token"]),
+        ("email_config", "id", ["password"]),
+        ("cloud_config", "id", ["auth_token"]),
+        ("atlassian_config", "id", ["api_token"]),
     ]
 
     total = 0

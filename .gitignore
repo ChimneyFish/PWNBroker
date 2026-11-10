@@ -24,3 +24,6 @@ app/static/agent/PwnBrokerAgentSetup.exe
 # from the repo root, so these land here, not under installer/windows/).
 /build/
 /dist/
+
+# Per-user Claude Code permissions — local only
+.claude/settings.local.json

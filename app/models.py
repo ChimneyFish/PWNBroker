@@ -234,7 +234,7 @@ class EmailConfig(db.Model):
     smtp_port = db.Column(db.Integer, default=587)
     use_tls = db.Column(db.Boolean, default=True)
     username = db.Column(db.String(256))
-    password = db.Column(db.String(256))
+    password = db.Column(EncryptedString)
     sender = db.Column(db.String(256))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -279,7 +279,7 @@ class CloudConfig(db.Model):
     enabled = db.Column(db.Boolean, default=False)
     endpoint_url = db.Column(db.String(512))
     auth_type = db.Column(db.String(20), default="bearer")  # none | bearer | api_key
-    auth_token = db.Column(db.String(512))
+    auth_token = db.Column(EncryptedString)
     auth_header = db.Column(db.String(100), default="X-API-Key")
     send_file = db.Column(db.Boolean, default=True)
     file_format = db.Column(db.String(10), default="pdf")  # pdf | html
@@ -307,7 +307,7 @@ class AtlassianConfig(db.Model):
     enabled = db.Column(db.Boolean, default=False)
     base_url = db.Column(db.String(512))           # e.g. https://yourorg.atlassian.net
     email = db.Column(db.String(256))              # Atlassian account email
-    api_token = db.Column(db.String(512))          # Atlassian API token
+    api_token = db.Column(EncryptedString)         # Atlassian API token
     # Confluence
     confluence_enabled = db.Column(db.Boolean, default=False)
     confluence_space_key = db.Column(db.String(50))

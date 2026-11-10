@@ -1,3 +1,4 @@
+import hmac
 import json
 import secrets
 import ipaddress
@@ -31,6 +32,13 @@ def _get_cfg():
     return cfg
 
 
+def _tok_eq(supplied, expected):
+    """Constant-time token comparison (bytes, so non-ASCII input can't raise)."""
+    if not supplied or not expected:
+        return False
+    return hmac.compare_digest(str(supplied).encode(), str(expected).encode())
+
+
 def _download_authorized(cfg):
     """Allow an authenticated browser session, or the pre-shared registration
     token as a query param — needed for non-interactive fetches (curl,
@@ -38,7 +46,7 @@ def _download_authorized(cfg):
     if current_user.is_authenticated:
         return True
     token = request.args.get("token", "")
-    return bool(cfg.registration_token) and token == cfg.registration_token
+    return bool(cfg.registration_token) and _tok_eq(token, cfg.registration_token)
 
 
 def _is_private(ip):
@@ -54,7 +62,7 @@ def _agent_auth():
     if not agent_id or not token:
         return None, (jsonify({"error": "Missing auth headers"}), 401)
     agent = EndpointAgent.query.filter_by(agent_id=agent_id).first()
-    if not agent or agent.token != token:
+    if not agent or not _tok_eq(agent.token, token):
         return None, (jsonify({"error": "Invalid credentials"}), 403)
     return agent, None
 
@@ -375,7 +383,7 @@ def api_register():
     cfg  = _get_cfg()
     data = request.get_json(silent=True) or {}
 
-    if cfg.registration_token and data.get("reg_token") != cfg.registration_token:
+    if cfg.registration_token and not _tok_eq(data.get("reg_token"), cfg.registration_token):
         return jsonify({"error": "Invalid registration token"}), 403
 
     agent_id = secrets.token_urlsafe(16)

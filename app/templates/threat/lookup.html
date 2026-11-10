@@ -304,7 +304,7 @@
         <td class="font-monospace small">
           <button class="btn btn-link btn-sm p-0 text-start font-monospace"
                   style="color:var(--accent)"
-                  onclick="document.querySelector('[name=indicator]').value='{{ rec.indicator }}'; document.querySelector('form').submit()">
+                  onclick="document.querySelector('[name=indicator]').value={{ (rec.indicator)|tojson|forceescape }}; document.querySelector('form').submit()">
             {{ rec.indicator[:50] }}{% if rec.indicator|length > 50 %}…{% endif %}
           </button>
         </td>

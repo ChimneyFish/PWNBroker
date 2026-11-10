@@ -30,9 +30,10 @@ def _get_fernet():
         key = open(path, "rb").read().strip()
     else:
         key = Fernet.generate_key()
-        with open(path, "wb") as f:
+        # 0600 at creation, not chmod'ed afterwards (no world-readable window).
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as f:
             f.write(key)
-        os.chmod(path, 0o600)
 
     _fernet = Fernet(key)
     return _fernet

@@ -237,11 +237,11 @@ function _renderFiles(files) {
       <div class="grow min-w-0">
         <div class="font-semibold small truncate">
           <a href="/grc/evidence/${f.id}/download" class="text-info no-underline">
-            ${f.filename}
+            ${escHtml(f.filename)}
           </a>
         </div>
-        ${f.description ? `<div class="text-muted" style="font-size:0.75rem">${f.description}</div>` : ''}
-        <div class="text-muted" style="font-size:0.7rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at} &nbsp;·&nbsp; ${f.uploader}</div>
+        ${f.description ? `<div class="text-muted" style="font-size:0.75rem">${escHtml(f.description)}</div>` : ''}
+        <div class="text-muted" style="font-size:0.7rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at} &nbsp;·&nbsp; ${escHtml(f.uploader)}</div>
       </div>
       {% if current_user.is_admin %}
       <button class="btn btn-sm btn-outline-danger py-0 px-2 shrink-0"

@@ -239,9 +239,9 @@ async function addMember(assetId) {
     const tr = document.createElement('tr');
     tr.id = `member-row-${assetId}`;
     tr.innerHTML = `
-      <td class="font-monospace font-semibold">${data.ip}</td>
-      <td class="small text-muted">${data.hostname || '—'}</td>
-      <td class="small text-muted">${data.os || '—'}</td>
+      <td class="font-monospace font-semibold">${escHtml(data.ip)}</td>
+      <td class="small text-muted">${escHtml(data.hostname || '—')}</td>
+      <td class="small text-muted">${escHtml(data.os || '—')}</td>
       <td class="small text-muted">—</td>
       <td></td>
       <td class="text-center"><span class="text-success small"><i class="bi bi-check2"></i></span></td>

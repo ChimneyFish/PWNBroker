@@ -23,9 +23,11 @@ def _get_or_create_secret_key():
             return existing
 
     key = secrets.token_hex(32)
-    with open(key_path, "w") as f:
+    # Create with 0600 from the start — writing first and chmod'ing after
+    # leaves a window where the key is readable under the process umask.
+    fd = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
         f.write(key)
-    os.chmod(key_path, 0o600)
     return key
 
 
@@ -41,6 +43,11 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = (
         {"connect_args": {"timeout": 30}} if SQLALCHEMY_DATABASE_URI.startswith("sqlite") else {}
     )
+
+    # Hard cap on request bodies so an oversized upload is rejected before it's
+    # buffered into memory. Largest legitimate upload is a 32 MB GRC evidence
+    # file (routes/grc/routes.py _MAX_MB) plus multipart overhead.
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", 40)) * 1024 * 1024
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

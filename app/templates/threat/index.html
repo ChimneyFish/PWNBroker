@@ -124,7 +124,7 @@
         </thead>
         <tbody>
           {% for rec in recent_lookups %}
-          <tr style="cursor:pointer" onclick="document.getElementById('lookup-form').querySelector('input').value='{{ rec.indicator }}'; document.getElementById('lookup-form').submit()">
+          <tr style="cursor:pointer" onclick="document.getElementById('lookup-form').querySelector('input').value={{ (rec.indicator)|tojson|forceescape }}; document.getElementById('lookup-form').submit()">
             <td class="font-monospace small">{{ rec.indicator[:45] }}{% if rec.indicator|length > 45 %}…{% endif %}</td>
             <td><span class="badge bg-secondary uppercase" style="font-size:0.65rem">{{ rec.ioc_type }}</span></td>
             <td>

@@ -205,7 +205,7 @@
         {% if current_user.is_admin %}
         <td>
           <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                  onclick="openEdit({{ t.id }}, '{{ t.status }}', '{{ t.assigned_to or '' }}')"
+                  onclick="openEdit({{ t.id }}, {{ (t.status)|tojson|forceescape }}, {{ (t.assigned_to or '')|tojson|forceescape }})"
                   title="Edit">
             <i class="bi bi-pencil"></i>
           </button>

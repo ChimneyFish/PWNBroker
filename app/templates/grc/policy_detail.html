@@ -173,9 +173,9 @@ function _renderFiles(files) {
       <i class="bi ${_evIcon(f.mime_type)} mt-1 shrink-0"></i>
       <div class="grow min-w-0">
         <div class="font-semibold small truncate">
-          <a href="/grc/evidence/${f.id}/download" class="text-info no-underline">${f.filename}</a>
+          <a href="/grc/evidence/${f.id}/download" class="text-info no-underline">${escHtml(f.filename)}</a>
         </div>
-        ${f.description ? `<div class="text-muted" style="font-size:0.7rem">${f.description}</div>` : ''}
+        ${f.description ? `<div class="text-muted" style="font-size:0.7rem">${escHtml(f.description)}</div>` : ''}
         <div class="text-muted" style="font-size:0.65rem">${f.size} &nbsp;·&nbsp; ${f.uploaded_at}</div>
       </div>
       {% if current_user.is_admin %}

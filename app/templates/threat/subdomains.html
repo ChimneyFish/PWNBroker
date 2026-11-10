@@ -135,7 +135,7 @@
         <td>
           <a href="{{ url_for('threat.lookup') }}" class="btn btn-link btn-sm p-0 text-muted"
              title="IOC Lookup"
-             onclick="event.preventDefault(); document.querySelector('[name=indicator]') && (document.querySelector('[name=indicator]').value='{{ sub.subdomain }}')">
+             onclick="event.preventDefault(); document.querySelector('[name=indicator]') && (document.querySelector('[name=indicator]').value={{ (sub.subdomain)|tojson|forceescape }})">
             <form method="POST" action="{{ url_for('threat.lookup') }}" style="display:inline">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="indicator" value="{{ sub.subdomain }}">

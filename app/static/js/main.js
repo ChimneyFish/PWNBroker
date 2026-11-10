@@ -1,3 +1,11 @@
+// HTML-escape any value before interpolating it into an innerHTML template.
+// Scan data (hostnames, banners, CT-log subdomains), upload filenames and
+// remote API error text are all attacker-influenced — never insert them raw.
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // Attach the CSRF token to every same-origin state-changing fetch() call, so
 // individual call sites across the app don't each need to set the header.
 (function () {

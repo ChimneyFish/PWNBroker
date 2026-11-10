@@ -146,7 +146,7 @@
         <td>
           {% if current_user.is_admin %}
           <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                  onclick="openEdit({{ t.id }}, '{{ t.status }}', '{{ t.assigned_to or '' }}', `{{ t.notes or '' }}`)"
+                  onclick="openEdit({{ t.id }}, {{ (t.status)|tojson|forceescape }}, {{ (t.assigned_to or '')|tojson|forceescape }}, {{ (t.notes or '')|tojson|forceescape }})"
                   title="Edit ticket">
             <i class="bi bi-pencil"></i>
           </button>

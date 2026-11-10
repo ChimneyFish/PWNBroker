@@ -1226,8 +1226,8 @@ setInterval(updateTzPreview, 1000);
 // ── API key tester ────────────────────────────────────────────────────────────
 const PILL_HTML = {
   testing: '<span class="badge bg-secondary bg-opacity-30 text-warning" style="font-size:0.6rem"><span class="spinner-border spinner-border-sm" style="width:.5rem;height:.5rem;border-width:1px"></span> TESTING</span>',
-  ok:      (detail) => `<span class="badge bg-success bg-opacity-25 text-success" style="font-size:0.6rem" title="${detail}">✓ VALID</span>`,
-  error:   (detail) => `<span class="badge bg-danger bg-opacity-25 text-danger"   style="font-size:0.6rem" title="${detail}">✗ INVALID</span>`,
+  ok:      (detail) => `<span class="badge bg-success bg-opacity-25 text-success" style="font-size:0.6rem" title="${escHtml(detail)}">✓ VALID</span>`,
+  error:   (detail) => `<span class="badge bg-danger bg-opacity-25 text-danger"   style="font-size:0.6rem" title="${escHtml(detail)}">✗ INVALID</span>`,
   not_set: '<span class="badge bg-secondary bg-opacity-20 text-muted"             style="font-size:0.6rem">○ NOT SET</span>',
 };
 
@@ -1324,9 +1324,9 @@ async function testO365() {
     });
     const data = await res.json();
     if (data.ok) {
-      status.innerHTML = `<span class="text-success">${data.detail}</span>`;
+      status.innerHTML = `<span class="text-success">${escHtml(data.detail)}</span>`;
     } else {
-      status.innerHTML = `<span class="text-danger">${data.error}</span>`;
+      status.innerHTML = `<span class="text-danger">${escHtml(data.error)}</span>`;
     }
   } catch (e) {
     status.textContent = 'Test failed — check console.';
@@ -1362,9 +1362,9 @@ async function testBloodHound() {
     });
     const data = await res.json();
     if (data.ok) {
-      status.innerHTML = `<span class="text-success">${data.detail}</span>`;
+      status.innerHTML = `<span class="text-success">${escHtml(data.detail)}</span>`;
     } else {
-      status.innerHTML = `<span class="text-danger">${data.error}</span>`;
+      status.innerHTML = `<span class="text-danger">${escHtml(data.error)}</span>`;
     }
   } catch (e) {
     status.textContent = 'Test failed — check console.';

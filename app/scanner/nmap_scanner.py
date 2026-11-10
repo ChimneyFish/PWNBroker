@@ -3,6 +3,8 @@ import re
 import nmap
 from typing import List, Dict, Tuple
 
+from ..validators import is_valid_host, is_valid_port_range
+
 _CIDR_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$')
 
 # Common web/service ports used when doing a fast secondary scan of subdomains
@@ -20,6 +22,20 @@ WEB_PORTS = "21,22,25,53,80,443,8080,8443,8000,3000,3306,5432,6379,9000,9200"
 # probes gets skipped), traded off against not letting an oversized range
 # hang a scan slot indefinitely.
 _MAX_PN_ADDRESSES = 1024
+
+
+def _check_args(host: str, port_range: str):
+    """Last-line guard before anything reaches nmap's argv. python-nmap
+    shlex-splits `hosts`, so a value containing whitespace or a leading '-'
+    would be parsed as extra nmap options (e.g. --script, -oN <path>).
+    Route-level validation covers user-entered targets, but hosts also arrive
+    from subdomain enumeration (crt.sh / DNSDumpster) and config-backup
+    restores, so this is enforced here too. Returns an error string or None."""
+    if not is_valid_host(host):
+        return f"Refusing to scan invalid host {host!r}"
+    if not is_valid_port_range(port_range):
+        return f"Refusing to scan invalid port range {port_range!r}"
+    return None
 
 
 def _parse_hosts(nm) -> Tuple[List[Dict], Dict]:
@@ -66,6 +82,10 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     For CIDR ranges, uses a faster mode (skips OS detection and NSE scripts).
     Returns (port_results, host_metadata).
     """
+    port_range = port_range or "1-1024"  # legacy rows may have NULL
+    err = _check_args(host, port_range)
+    if err:
+        return [{"error": err}], {}
     nm = nmap.PortScanner()
     is_subnet = bool(_CIDR_RE.match(host.strip()))
 
@@ -116,6 +136,9 @@ def run_web_port_scan(host: str) -> Tuple[List[Dict], Dict]:
     Fast scan of common web/service ports for subdomain secondary scans.
     No OS detection or scripting — just banner-grab the open ports quickly.
     """
+    err = _check_args(host, WEB_PORTS)
+    if err:
+        return [{"error": err}], {}
     nm = nmap.PortScanner()
     try:
         nm.scan(hosts=host, ports=WEB_PORTS, arguments="-sV -Pn --open -T4")
