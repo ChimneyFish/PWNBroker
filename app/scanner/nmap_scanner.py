@@ -33,7 +33,7 @@ def _check_args(host: str, port_range: str):
     restores, so this is enforced here too. Returns an error string or None."""
     if not is_valid_host(host):
         return f"Refusing to scan invalid host {host!r}"
-    if not is_valid_port_range(port_range):
+    if port_range is not None and not is_valid_port_range(port_range):
         return f"Refusing to scan invalid port range {port_range!r}"
     return None
 
@@ -82,7 +82,9 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     For CIDR ranges, uses a faster mode (skips OS detection and NSE scripts).
     Returns (port_results, host_metadata).
     """
-    port_range = port_range or "1-1024"  # legacy rows may have NULL
+    # A NULL port_range (legacy rows) is passed through as before: python-nmap
+    # then omits -p and nmap scans its default top-1000 ports.
+    port_range = port_range or None
     err = _check_args(host, port_range)
     if err:
         return [{"error": err}], {}

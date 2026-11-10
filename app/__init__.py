@@ -57,6 +57,7 @@ def create_app(config_class=Config):
     from .routes.activity import activity_bp
     from .routes.eol import eol_bp
     from .routes.email_security import email_security_bp
+    from .routes.license import license_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -78,6 +79,10 @@ def create_app(config_class=Config):
     app.register_blueprint(activity_bp)
     app.register_blueprint(eol_bp)
     app.register_blueprint(email_security_bp)
+    app.register_blueprint(license_bp)
+
+    from . import licensing
+    licensing.init_app(app)
 
     @app.template_global("now")
     def _now():

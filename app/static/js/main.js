@@ -195,5 +195,19 @@ document.addEventListener('submit', (e) => {
     modal.classList.remove('show');
     document.body.style.overflow = '';
   }
+
+  // Minimal stand-in for Bootstrap's JS Modal API. Several pages (vuln ticket
+  // edit, assets, activity, GRC) still call `new bootstrap.Modal(el).show()`;
+  // without the Bootstrap bundle that threw on load and killed the whole
+  // page script (e.g. the vuln Edit button did nothing).
+  class Modal {
+    constructor(el) { this._el = el; }
+    show() { if (this._el) openModal(this._el); }
+    hide() { closeModal(this._el); }
+    toggle() { this._el?.classList.contains('show') ? this.hide() : this.show(); }
+    static getInstance(el) { return new Modal(el); }
+    static getOrCreateInstance(el) { return new Modal(el); }
+  }
+  window.bootstrap = Object.assign(window.bootstrap || {}, { Modal });
 })();
 

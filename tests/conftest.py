@@ -6,17 +6,25 @@ from config import Config
 from app import create_app
 from app.extensions import db as _db
 
+from license_helpers import TEST_PUBLIC_PEM, make_license
+
 
 class TestConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     RATELIMIT_ENABLED = False
     SESSION_COOKIE_SECURE = False
+    # Throwaway test keypair — the real vendor key never touches tests.
+    LICENSE_PUBLIC_KEY = TEST_PUBLIC_PEM
 
 
 @pytest.fixture()
 def app(tmp_path):
     TestConfig.SQLALCHEMY_DATABASE_URI = f"sqlite:///{tmp_path / 'test.db'}"
+    lic_dir = tmp_path / "license"
+    lic_dir.mkdir()
+    (lic_dir / "license.key").write_text(make_license(days=365))
+    TestConfig.LICENSE_DIR = str(lic_dir)
     application = create_app(TestConfig)
     yield application
 

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}License — PwnBroker{% endblock %}
+{% block page_title %}License{% endblock %}
+
+{% block content %}
+{% set badge = {
+  "valid":    ("#15803d", "rgba(21,128,61,0.10)",  "bi-patch-check",       "Active"),
+  "expiring": ("#b45309", "rgba(180,83,9,0.10)",   "bi-hourglass-split",   "Expiring soon"),
+  "grace":    ("#c62828", "rgba(198,40,40,0.10)",  "bi-exclamation-octagon", "Expired — read-only"),
+  "locked":   ("#c62828", "rgba(198,40,40,0.10)",  "bi-lock",              "Not licensed"),
+}[st.state] %}
+<div class="row justify-center">
+  <div class="col-lg-6">
+    <div class="form-card mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <h5 class="font-bold mb-0">License status</h5>
+        <span class="small font-semibold" style="color:{{ badge[0] }};background:{{ badge[1] }};padding:.25rem .6rem;border-radius:999px">
+          <i class="bi {{ badge[2] }} me-1"></i>{{ badge[3] }}
+        </span>
+      </div>
+      <p class="mb-4">{{ st.message }}</p>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% if st.customer %}
+          <tr><td class="text-muted" style="width:40%">Licensed to</td><td class="font-semibold">{{ st.customer }}</td></tr>
+          <tr><td class="text-muted">Expires</td><td>{{ st.expires }}{% if st.days_left is not none and st.days_left >= 0 %} <span class="text-muted">({{ st.days_left }} days)</span>{% endif %}</td></tr>
+          <tr><td class="text-muted">License ID</td><td><code>{{ st.payload.license_id }}</code></td></tr>
+          {% endif %}
+          <tr>
+            <td class="text-muted">Install ID</td>
+            <td><code>{{ install_id }}</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    {% if current_user.is_admin %}
+    <div class="form-card mb-4">
+      <h5 class="font-bold mb-2">{{ "Install renewed license" if st.customer else "Install license" }}</h5>
+      <p class="text-muted small mb-4">
+        Upload the <code>.lic</code> file you received, or paste its contents. Renewals can be installed
+        any time before expiry; the new term takes effect immediately. Include the Install ID above
+        when requesting a license.
+      </p>
+      <form method="POST" action="{{ url_for('license.upload') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-4">
+          <label class="form-label">License file</label>
+          <input type="file" name="license_file" accept=".lic,.key,.txt" class="form-control">
+        </div>
+        <div class="mb-4">
+          <label class="form-label">…or paste license text</label>
+          <textarea name="license_text" rows="5" class="form-control" style="font-family:monospace;font-size:.75rem"
+                    placeholder="-----BEGIN PWNBROKER LICENSE-----"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Install license</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="alert alert-info">Ask a PWNBroker administrator to install a license.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

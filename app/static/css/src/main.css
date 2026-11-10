@@ -159,8 +159,11 @@
   .dropdown-divider { @apply my-1 border-t; border-color: var(--color-line); }
 
   /* ── Modal ───────────────────────────────────────────────────────────── */
-  .modal { @apply fixed inset-0 z-50 hidden overflow-y-auto; }
-  .modal.show { @apply block; }
+  /* Above the sticky #topnav (110) and page toolbar (100), below the
+     customize panel (1050). The open modal dims the page itself since the
+     JS shim never inserts a separate .modal-backdrop element. */
+  .modal { @apply fixed inset-0 hidden overflow-y-auto; z-index: 1040; }
+  .modal.show { @apply block bg-ink/40; }
   .modal-backdrop {
     @apply fixed inset-0 z-40 bg-ink/40;
   }

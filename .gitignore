@@ -3,6 +3,13 @@ data/secret_key.txt
 data/encryption_key.txt
 data/logs/
 data/ssl/
+# Per-install license files (the license itself, install ID, clock state)
+data/license.key
+data/install_id.txt
+data/license_state.json
+# Vendor license signing keys must never be committed
+*.lic
+private_key.pem
 evidence_uploads/
 venv/
 logs/

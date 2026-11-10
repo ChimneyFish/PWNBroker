@@ -100,6 +100,7 @@
             {% if current_user.is_admin %}
             <a href="{{ url_for("activity.index") }}" class="dropdown-item"><i class="bi bi-journal-text me-2"></i>Activity Log</a>
             <a href="{{ url_for("settings.index") }}" class="dropdown-item"><i class="bi bi-gear me-2"></i>Settings &amp; Users</a>
+            <a href="{{ url_for("license.index") }}" class="dropdown-item"><i class="bi bi-patch-check me-2"></i>License</a>
             {% endif %}
             <div class="dropdown-divider"></div>
             <a href="{{ url_for("auth.logout") }}" class="dropdown-item text-danger"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
@@ -121,6 +122,14 @@
     </header>
 
     <div class="content-area px-6 py-6">
+      {% if license_status and request.endpoint != "license.index"
+            and (license_status.state in ("grace", "locked")
+                 or (license_status.state == "expiring" and current_user.is_admin)) %}
+        <div class="alert alert-{{ 'warning' if license_status.state == 'expiring' else 'danger' }}" role="alert">
+          <span><i class="bi bi-patch-exclamation me-1"></i>{{ license_status.message }}
+            <a href="{{ url_for('license.index') }}" class="font-semibold">Manage license</a></span>
+        </div>
+      {% endif %}
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
           <div class="alert alert-{{ cat }}" role="alert">

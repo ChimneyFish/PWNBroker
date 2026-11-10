@@ -2,12 +2,13 @@ import json
 import ipaddress
 from datetime import datetime, timezone
 from ..extensions import scheduler, db
+from ..licensing import licensed_job
 
 
 def register_jobs(app):
     scheduler.add_job(
         id="check_scheduled_scans",
-        func=_run_scheduled_scans,
+        func=licensed_job(app, _run_scheduled_scans),
         args=[app],
         trigger="interval",
         minutes=1,
@@ -15,7 +16,7 @@ def register_jobs(app):
     )
     scheduler.add_job(
         id="check_scheduled_reports",
-        func=_run_scheduled_reports,
+        func=licensed_job(app, _run_scheduled_reports),
         args=[app],
         trigger="interval",
         minutes=1,
@@ -23,7 +24,7 @@ def register_jobs(app):
     )
     scheduler.add_job(
         id="check_domain_changes",
-        func=_run_domain_monitor,
+        func=licensed_job(app, _run_domain_monitor),
         args=[app],
         trigger="interval",
         minutes=360,  # every 6 hours
@@ -32,7 +33,7 @@ def register_jobs(app):
     # CVE enrichment: EPSS + NVD + ATT&CK — daily at 02:00 UTC
     scheduler.add_job(
         id="refresh_cve_enrichments",
-        func=_run_cve_enrichment,
+        func=licensed_job(app, _run_cve_enrichment),
         args=[app],
         trigger="interval",
         hours=24,
@@ -41,7 +42,7 @@ def register_jobs(app):
     # Compliance auto-assessment — every 6 hours
     scheduler.add_job(
         id="auto_assess_compliance",
-        func=_run_auto_assess,
+        func=licensed_job(app, _run_auto_assess),
         args=[app],
         trigger="interval",
         hours=6,
@@ -50,7 +51,7 @@ def register_jobs(app):
     # Palo Alto threat log ingestion — every 5 minutes
     scheduler.add_job(
         id="poll_paloalto_firewalls",
-        func=_run_paloalto_poll,
+        func=licensed_job(app, _run_paloalto_poll),
         args=[app],
         trigger="interval",
         minutes=5,
@@ -61,7 +62,7 @@ def register_jobs(app):
     # have had a chance to populate the data it correlates against.
     scheduler.add_job(
         id="correlate_vuln_threat",
-        func=_run_vuln_threat_correlation,
+        func=licensed_job(app, _run_vuln_threat_correlation),
         args=[app],
         trigger="interval",
         minutes=15,
@@ -71,7 +72,7 @@ def register_jobs(app):
     # mail polled every 10 minutes via Graph delta queries.
     scheduler.add_job(
         id="sync_o365_mailboxes",
-        func=_run_o365_mailbox_sync,
+        func=licensed_job(app, _run_o365_mailbox_sync),
         args=[app],
         trigger="interval",
         hours=24,
@@ -79,7 +80,7 @@ def register_jobs(app):
     )
     scheduler.add_job(
         id="poll_o365_mail",
-        func=_run_o365_mail_poll,
+        func=licensed_job(app, _run_o365_mail_poll),
         args=[app],
         trigger="interval",
         minutes=10,
