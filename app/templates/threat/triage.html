@@ -75,19 +75,19 @@
         <span class="text-muted small">Flagged by:</span>
         {% for src in case.flagging_sources | fromjson %}
           {% if src == 'OTX' %}
-          <span class="badge ms-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
+          <span class="badge ms-1" style="background:rgba(225,124,0,0.2);color:#c26a00">OTX</span>
           {% elif src == 'AbuseIPDB' %}
-          <span class="badge ms-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">AbuseIPDB</span>
+          <span class="badge ms-1" style="background:rgba(192,57,43,0.2);color:#c0392b">AbuseIPDB</span>
           {% elif src.startswith('pulseDrive:') %}
-          <span class="badge ms-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
+          <span class="badge ms-1" style="background:rgba(124,58,237,0.2);color:#6d28d9">{{ src.split(':')[1] }}</span>
           {% elif src == 'PaloAlto' %}
-          <span class="badge ms-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
+          <span class="badge ms-1" style="background:rgba(250,146,20,0.2);color:#c2410c">Palo Alto</span>
           {% elif src == 'EndpointAgent' %}
-          <span class="badge ms-1" style="background:rgba(11,188,212,0.2);color:#0bbcd4">Endpoint Agent</span>
+          <span class="badge ms-1" style="background:rgba(19,121,140,0.2);color:#13798c">Endpoint Agent</span>
           {% elif src == 'SocCase' %}
-          <span class="badge ms-1" style="background:rgba(11,188,212,0.2);color:#0bbcd4">SOC Case</span>
+          <span class="badge ms-1" style="background:rgba(19,121,140,0.2);color:#13798c">SOC Case</span>
           {% elif src.startswith('VulnMgmt:') %}
-          <span class="badge ms-1" style="background:rgba(220,38,38,0.2);color:#f87171"
+          <span class="badge ms-1" style="background:rgba(220,38,38,0.2);color:#c62828"
                 title="{{ src }}">{{ src.split(':')[1] }} Vuln</span>
           {% endif %}
         {% endfor %}
@@ -188,10 +188,10 @@
         <td class="small">{{ case.threat_score }}/100</td>
         <td class="small">
           {% for src in case.flagging_sources | fromjson %}
-            {% if src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#e17c00">OTX</span>
-            {% elif src == 'AbuseIPDB' %}<span class="badge me-1" style="background:rgba(192,57,43,0.2);color:#ff8b7d">Abuse</span>
-            {% elif src.startswith('pulseDrive:') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#a78bfa">{{ src.split(':')[1] }}</span>
-            {% elif src == 'PaloAlto' %}<span class="badge me-1" style="background:rgba(250,146,20,0.2);color:#fb923c">Palo Alto</span>
+            {% if src == 'OTX' %}<span class="badge me-1" style="background:rgba(225,124,0,0.2);color:#c26a00">OTX</span>
+            {% elif src == 'AbuseIPDB' %}<span class="badge me-1" style="background:rgba(192,57,43,0.2);color:#c0392b">Abuse</span>
+            {% elif src.startswith('pulseDrive:') %}<span class="badge me-1" style="background:rgba(124,58,237,0.2);color:#6d28d9">{{ src.split(':')[1] }}</span>
+            {% elif src == 'PaloAlto' %}<span class="badge me-1" style="background:rgba(250,146,20,0.2);color:#c2410c">Palo Alto</span>
             {% endif %}
           {% endfor %}
         </td>
@@ -311,7 +311,7 @@
             <div class="text-muted" style="font-size:0.7rem">SCANNER</div>
           </div>
           <div class="px-4 py-2 rounded text-center grow"
-               style="background:{% if crim.is_vpn %}rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.3){% else %}rgba(255,255,255,0.04);border:1px solid var(--border-color){% endif %}">
+               style="background:{% if crim.is_vpn %}rgba(217,119,6,0.12);border:1px solid rgba(217,119,6,0.3){% else %}rgba(11,42,79,0.04);border:1px solid var(--border-color){% endif %}">
             <div class="font-bold {% if crim.is_vpn %}text-warning{% else %}text-muted{% endif %}" style="font-size:1.1rem">{{ 'YES' if crim.is_vpn else 'NO' }}</div>
             <div class="text-muted" style="font-size:0.7rem">VPN</div>
           </div>
@@ -332,7 +332,7 @@
           <span class="text-muted">ThreatMiner tags:</span>
           <div class="flex flex-wrap gap-1 mt-1">
             {% for tag in tm.tags[:6] %}
-            <span class="badge" style="background:rgba(124,58,237,0.15);color:#a78bfa;font-size:0.65rem">{{ tag }}</span>
+            <span class="badge" style="background:rgba(124,58,237,0.15);color:#6d28d9;font-size:0.65rem">{{ tag }}</span>
             {% endfor %}
           </div>
         </div>
@@ -357,7 +357,7 @@
       {% elif idb.no_data %}
         <p class="text-muted small">No data for this IP.</p>
       {% else %}
-        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
+        {% if idb.ports %}<div class="mb-2"><div class="text-muted small mb-1">Open Ports</div><div class="flex flex-wrap gap-1">{% for p in idb.ports %}<span class="badge font-monospace" style="background:rgba(19,121,140,0.15);color:var(--accent);font-size:0.7rem">{{ p }}</span>{% endfor %}</div></div>{% endif %}
         {% if idb.hostnames %}<div class="mb-2"><div class="text-muted small mb-1">Hostnames</div>{% for h in idb.hostnames[:4] %}<div class="small font-monospace" style="color:var(--accent)">{{ h }}</div>{% endfor %}{% if idb.hostnames | length > 4 %}<div class="text-muted small">+{{ idb.hostnames | length - 4 }} more</div>{% endif %}</div>{% endif %}
         {% if idb.vulns %}<div class="mb-2"><div class="text-muted small mb-1">Known CVEs</div><div class="flex flex-wrap gap-1">{% for cve in idb.vulns %}<a href="https://nvd.nist.gov/vuln/detail/{{ cve }}" target="_blank" class="badge bg-danger bg-opacity-20 text-danger no-underline" style="font-size:0.65rem">{{ cve }}</a>{% endfor %}</div></div>{% endif %}
         {% if idb.tags %}<div class="mb-1"><div class="text-muted small mb-1">Tags</div><div class="flex flex-wrap gap-1">{% for tag in idb.tags %}<span class="badge bg-secondary bg-opacity-25 text-light" style="font-size:0.65rem">{{ tag }}</span>{% endfor %}</div></div>{% endif %}
@@ -387,10 +387,10 @@
             <td class="small">{{ case.threat_score }}/100</td>
             <td class="small">
               {% for src in case.flagging_sources | fromjson %}
-                {% if src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#e17c00;font-size:0.6rem">OTX</span>
-                {% elif src == 'AbuseIPDB' %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#ff8b7d;font-size:0.6rem">Abuse</span>
-                {% elif src.startswith('pulseDrive:') %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;font-size:0.6rem">{{ src.split(':')[1] }}</span>
-                {% elif src == 'PaloAlto' %}<span class="badge" style="background:rgba(250,146,20,0.2);color:#fb923c;font-size:0.6rem">PA</span>
+                {% if src == 'OTX' %}<span class="badge" style="background:rgba(225,124,0,0.2);color:#c26a00;font-size:0.6rem">OTX</span>
+                {% elif src == 'AbuseIPDB' %}<span class="badge" style="background:rgba(192,57,43,0.2);color:#c0392b;font-size:0.6rem">Abuse</span>
+                {% elif src.startswith('pulseDrive:') %}<span class="badge" style="background:rgba(124,58,237,0.2);color:#6d28d9;font-size:0.6rem">{{ src.split(':')[1] }}</span>
+                {% elif src == 'PaloAlto' %}<span class="badge" style="background:rgba(250,146,20,0.2);color:#c2410c;font-size:0.6rem">PA</span>
                 {% endif %}
               {% endfor %}
             </td>

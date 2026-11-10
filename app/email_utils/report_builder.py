@@ -28,8 +28,8 @@ LOGO_PATH = os.path.join(
 )
 
 # ── Brand palette ─────────────────────────────────────────────────────────────
-BRAND   = colors.HexColor("#0bbcd4")
-DARK    = colors.HexColor("#0f172a")
+BRAND   = colors.HexColor("#13798c")
+DARK    = colors.HexColor("#0b2a4f")
 SLATE   = colors.HexColor("#475569")
 LGRAY   = colors.HexColor("#f1f5f9")
 BORDER  = colors.HexColor("#cbd5e1")

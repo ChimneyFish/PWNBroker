@@ -93,7 +93,7 @@
         'low':      latest_scan.results.filter_by(result_type='vulnerability', severity='low').count(),
       } %}
       {% for sev, cnt in counts.items() %}
-      <div class="text-center px-4 py-2 rounded" style="background:rgba(255,255,255,0.04);min-width:56px">
+      <div class="text-center px-4 py-2 rounded" style="background:rgba(11,42,79,0.04);min-width:56px">
         <div class="font-bold {% if sev == 'critical' %}text-danger{% elif sev == 'high' %}text-warning{% elif sev == 'medium' %}text-warning-emphasis{% else %}text-info{% endif %}">{{ cnt }}</div>
         <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted)">{{ sev }}</div>
       </div>

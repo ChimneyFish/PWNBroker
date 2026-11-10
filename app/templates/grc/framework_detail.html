@@ -26,7 +26,7 @@
       <div class="text-muted small">Controls Compliant</div>
     </div>
     <div class="grow">
-      <div class="progress" style="height:8px;background:rgba(255,255,255,0.08)">
+      <div class="progress" style="height:8px;background:rgba(11,42,79,0.08)">
         <div class="progress-bar bg-success"
              style="width:{{ (compliant | length / all_controls | length * 100) | round | int if all_controls else 0 }}%"></div>
       </div>
@@ -82,12 +82,12 @@
           <select class="form-select form-select-sm status-select"
                   data-ctrl="{{ ctrl.id }}"
                   style="background:var(--bg-input);border-color:var(--border-color);font-size:0.75rem;
-                  color:{% if status == 'compliant' %}#4ade80{% elif status == 'partial' %}#fbbf24{% elif status == 'non_compliant' %}#f87171{% elif status == 'not_applicable' %}#94a3b8{% else %}#64748b{% endif %}">
+                  color:{% if status == 'compliant' %}#15803d{% elif status == 'partial' %}#b45309{% elif status == 'non_compliant' %}#c62828{% elif status == 'not_applicable' %}#64748b{% else %}#64748b{% endif %}">
             <option value="not_assessed"   {% if status == 'not_assessed'   %}selected{% endif %} style="color:#64748b">Not Assessed</option>
-            <option value="compliant"      {% if status == 'compliant'      %}selected{% endif %} style="color:#4ade80">✓ Compliant</option>
-            <option value="partial"        {% if status == 'partial'        %}selected{% endif %} style="color:#fbbf24">~ Partial</option>
-            <option value="non_compliant"  {% if status == 'non_compliant'  %}selected{% endif %} style="color:#f87171">✗ Non-Compliant</option>
-            <option value="not_applicable" {% if status == 'not_applicable' %}selected{% endif %} style="color:#94a3b8">— N/A</option>
+            <option value="compliant"      {% if status == 'compliant'      %}selected{% endif %} style="color:#15803d">✓ Compliant</option>
+            <option value="partial"        {% if status == 'partial'        %}selected{% endif %} style="color:#b45309">~ Partial</option>
+            <option value="non_compliant"  {% if status == 'non_compliant'  %}selected{% endif %} style="color:#c62828">✗ Non-Compliant</option>
+            <option value="not_applicable" {% if status == 'not_applicable' %}selected{% endif %} style="color:#64748b">— N/A</option>
           </select>
         </td>
         <td>
@@ -172,10 +172,10 @@
 {% block scripts %}
 <script>
 const STATUS_COLORS = {
-  compliant:      '#4ade80',
-  partial:        '#fbbf24',
-  non_compliant:  '#f87171',
-  not_applicable: '#94a3b8',
+  compliant:      '#15803d',
+  partial:        '#b45309',
+  non_compliant:  '#c62828',
+  not_applicable: '#64748b',
   not_assessed:   '#64748b',
 };
 

@@ -21,7 +21,7 @@
           <div class="stat-value">{{ assets | length }}</div>
           <div class="stat-label">Total Assets</div>
         </div>
-        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+        <div class="stat-icon" style="background:rgba(19,121,140,0.1);color:var(--accent)">
           <i class="bi bi-hdd-network"></i>
         </div>
       </div>
@@ -34,7 +34,7 @@
           <div class="stat-value">{{ tags | length }}</div>
           <div class="stat-label">Tags Defined</div>
         </div>
-        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa">
+        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#6d28d9">
           <i class="bi bi-tags"></i>
         </div>
       </div>
@@ -48,7 +48,7 @@
           <div class="stat-value">{{ tagged | length }}</div>
           <div class="stat-label">Tagged</div>
         </div>
-        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#4ade80">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#15803d">
           <i class="bi bi-check2-circle"></i>
         </div>
       </div>
@@ -62,7 +62,7 @@
           <div class="stat-value {% if untagged %}text-warning{% else %}text-success{% endif %}">{{ untagged | length }}</div>
           <div class="stat-label">Untagged</div>
         </div>
-        <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#fbbf24">
+        <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#b45309">
           <i class="bi bi-question-circle"></i>
         </div>
       </div>
@@ -251,14 +251,14 @@
                    placeholder="Tag label (e.g. Server, DMZ, Critical)"
                    style="background:var(--bg-input);color:var(--text);border-color:var(--border-color)"
                    required maxlength="50">
-            <input type="color" name="color" value="#0bbcd4"
+            <input type="color" name="color" value="#13798c"
                    class="form-control form-control-sm form-control-color"
                    style="width:40px;padding:2px;background:var(--bg-input);border-color:var(--border-color)"
                    title="Pick a color">
             <button type="submit" class="btn btn-primary btn-sm">Add</button>
           </div>
           <div class="flex flex-wrap gap-2 mt-2">
-            {% for c in ['#0bbcd4','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
+            {% for c in ['#13798c','#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#6b7280'] %}
             <button type="button" class="btn btn-sm"
                     style="background:{{ c }};width:24px;height:24px;padding:0;border:none"
                     onclick="document.querySelector('[name=color]').value='{{ c }}'"></button>

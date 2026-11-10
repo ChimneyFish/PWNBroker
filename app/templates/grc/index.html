@@ -59,7 +59,7 @@
           </div>
           <div class="stat-label">Avg Compliance</div>
         </div>
-        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#4ade80">
+        <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#15803d">
           <i class="bi bi-clipboard-check"></i>
         </div>
       </div>
@@ -72,7 +72,7 @@
           <div class="stat-value">{{ active_pol | length }}</div>
           <div class="stat-label">Active Policies</div>
         </div>
-        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa">
+        <div class="stat-icon" style="background:rgba(139,92,246,0.1);color:#6d28d9">
           <i class="bi bi-file-text"></i>
         </div>
       </div>
@@ -84,7 +84,7 @@
 <div class="form-card mb-6 py-2 px-4 flex items-center gap-4 flex-wrap">
   <div class="small text-muted font-semibold">CVE INTEL</div>
   <div class="flex items-center gap-2">
-    <div class="progress grow" style="height:6px;width:140px;background:rgba(255,255,255,0.08)">
+    <div class="progress grow" style="height:6px;width:140px;background:rgba(11,42,79,0.08)">
       <div class="progress-bar bg-info"
            style="width:{{ ((enriched_count / total_cve_count * 100) | round | int) if total_cve_count else 0 }}%"></div>
     </div>
@@ -125,7 +125,7 @@
         {% else              %}{% set bg = 'rgba(22,163,74,0.4)' %}
         {% endif %}
         {% set count = heatmap.get((lik, imp), 0) %}
-        <div style="background:{{ bg }};border-radius:4px;height:44px;display:flex;align-items:center;justify-content:center;font-size:{{ '1rem' if count else '0.6rem' }};font-weight:{% if count %}700{% else %}400{% endif %};color:{% if count %}#fff{% else %}rgba(255,255,255,0.2){% endif %}">
+        <div style="background:{{ bg }};border-radius:4px;height:44px;display:flex;align-items:center;justify-content:center;font-size:{{ '1rem' if count else '0.6rem' }};font-weight:{% if count %}700{% else %}400{% endif %};color:{% if count %}#fff{% else %}rgba(11,42,79,0.2){% endif %}">
           {{ count if count else '·' }}
         </div>
         {% endfor %}
@@ -155,7 +155,7 @@
             {{ s.pct }}%
           </span>
         </div>
-        <div class="progress" style="height:6px;background:rgba(255,255,255,0.1)">
+        <div class="progress" style="height:6px;background:rgba(11,42,79,0.1)">
           <div class="progress-bar {% if s.pct >= 70 %}bg-success{% elif s.pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
                style="width:{{ s.pct }}%"></div>
         </div>
@@ -180,9 +180,9 @@
     <div class="section-header mb-4"><span class="section-title">Policies</span></div>
     <div class="form-card">
       {% for status, label, color in [
-          ('active','Active','#4ade80'),
-          ('draft','Draft','#94a3b8'),
-          ('under_review','Under Review','#fbbf24'),
+          ('active','Active','#15803d'),
+          ('draft','Draft','#64748b'),
+          ('under_review','Under Review','#b45309'),
           ('retired','Retired','#6b7280')
       ] %}
       {% set count = policies | selectattr('status','equalto',status) | list | length %}
@@ -239,7 +239,7 @@
             </td>
             <td>
               <div class="flex items-center gap-2">
-                <div class="progress grow" style="height:5px;width:70px;background:rgba(255,255,255,0.1)">
+                <div class="progress grow" style="height:5px;width:70px;background:rgba(11,42,79,0.1)">
                   <div class="progress-bar {% if e.epss_score >= 0.5 %}bg-danger{% elif e.epss_score >= 0.1 %}bg-warning{% else %}bg-info{% endif %}"
                        style="width:{{ (e.epss_score * 100) | round | int }}%"></div>
                 </div>
@@ -294,7 +294,7 @@
           <span class="small text-muted">{{ tactic }}</span>
           <span class="small text-danger font-semibold">{{ count }} CVE{{ 's' if count != 1 }}</span>
         </div>
-        <div class="progress" style="height:4px;background:rgba(255,255,255,0.08)">
+        <div class="progress" style="height:4px;background:rgba(11,42,79,0.08)">
           <div class="progress-bar bg-danger" style="width:{{ (count / max_count * 100) | round | int }}%"></div>
         </div>
       </div>

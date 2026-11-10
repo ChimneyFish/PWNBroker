@@ -37,7 +37,7 @@
           <div class="stat-value">{{ total_mailboxes }}</div>
           <div class="stat-label">Mailboxes Monitored</div>
         </div>
-        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)"><i class="bi bi-inboxes"></i></div>
+        <div class="stat-icon" style="background:rgba(19,121,140,0.1);color:var(--accent)"><i class="bi bi-inboxes"></i></div>
       </div>
     </a>
   </div>
@@ -48,7 +48,7 @@
           <div class="stat-value {% if phishing_count > 0 %}text-danger{% endif %}">{{ phishing_count }}</div>
           <div class="stat-label">Phishing Flags</div>
         </div>
-        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171"><i class="bi bi-shield-x"></i></div>
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#c62828"><i class="bi bi-shield-x"></i></div>
       </div>
     </a>
   </div>
@@ -59,7 +59,7 @@
           <div class="stat-value {% if dlp_count > 0 %}text-warning{% endif %}">{{ dlp_count }}</div>
           <div class="stat-label">Personal-Email / DLP Flags</div>
         </div>
-        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#fcd34d"><i class="bi bi-usb-drive"></i></div>
+        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#b45309"><i class="bi bi-usb-drive"></i></div>
       </div>
     </a>
   </div>
@@ -70,7 +70,7 @@
           <div class="stat-value {% if shadow_it_count > 0 %}text-info{% endif %}">{{ shadow_it_count }}</div>
           <div class="stat-label">Shadow IT Flags</div>
         </div>
-        <div class="stat-icon" style="background:rgba(124,58,237,0.1);color:#a78bfa"><i class="bi bi-cloud-plus"></i></div>
+        <div class="stat-icon" style="background:rgba(124,58,237,0.1);color:#6d28d9"><i class="bi bi-cloud-plus"></i></div>
       </div>
     </a>
   </div>
@@ -100,7 +100,7 @@
         <td>
           {% if r.is_phishing_risk %}<span class="badge bg-danger me-1" style="font-size:0.6rem">Phishing</span>{% endif %}
           {% if r.is_dlp_risk %}<span class="badge bg-warning text-dark me-1" style="font-size:0.6rem">DLP</span>{% endif %}
-          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#a78bfa;font-size:0.6rem">Shadow IT</span>{% endif %}
+          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#6d28d9;font-size:0.6rem">Shadow IT</span>{% endif %}
         </td>
         <td class="small font-monospace">{{ r.sender }}</td>
         <td class="small">{{ r.subject | truncate(60) }}</td>

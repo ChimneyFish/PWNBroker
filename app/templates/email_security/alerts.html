@@ -36,7 +36,7 @@
         <td>
           {% if r.is_phishing_risk %}<span class="badge bg-danger me-1" style="font-size:0.6rem">Phishing</span>{% endif %}
           {% if r.is_dlp_risk %}<span class="badge bg-warning text-dark me-1" style="font-size:0.6rem">DLP</span>{% endif %}
-          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#a78bfa;font-size:0.6rem">Shadow IT</span>{% endif %}
+          {% if r.is_shadow_it %}<span class="badge" style="background:rgba(124,58,237,0.3);color:#6d28d9;font-size:0.6rem">Shadow IT</span>{% endif %}
         </td>
         <td class="small font-monospace">{{ r.sender }}</td>
         <td class="small">{{ r.subject | truncate(60) }}</td>

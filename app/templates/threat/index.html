@@ -22,7 +22,7 @@
           <div class="stat-value">{{ total_lookups }}</div>
           <div class="stat-label">IOCs Checked</div>
         </div>
-        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+        <div class="stat-icon" style="background:rgba(19,121,140,0.1);color:var(--accent)">
           <i class="bi bi-search"></i>
         </div>
       </div>
@@ -35,7 +35,7 @@
           <div class="stat-value text-danger">{{ malicious_count }}</div>
           <div class="stat-label">Malicious / <span class="text-warning">{{ suspicious_count }} Suspicious</span></div>
         </div>
-        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171">
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#c62828">
           <i class="bi bi-shield-x"></i>
         </div>
       </div>
@@ -50,7 +50,7 @@
           </div>
           <div class="stat-label">Agents Online</div>
         </div>
-        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#4ade80">
+        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#15803d">
           <i class="bi bi-pc-display-horizontal"></i>
         </div>
       </div>
@@ -63,7 +63,7 @@
           <div class="stat-value {% if unacked > 0 %}text-warning{% endif %}">{{ unacked }}</div>
           <div class="stat-label">Unread Alerts</div>
         </div>
-        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#fcd34d">
+        <div class="stat-icon" style="background:rgba(217,119,6,0.1);color:#b45309">
           <i class="bi bi-bell{% if unacked > 0 %}-fill{% endif %}"></i>
         </div>
       </div>
@@ -175,7 +175,7 @@
           </div>
           <div class="stat-label">Firewalls Reporting OK{% if paloalto_error %} · <span class="text-danger">{{ paloalto_error }} error</span>{% endif %}</div>
         </div>
-        <div class="stat-icon" style="background:rgba(56,189,248,0.1);color:#38bdf8">
+        <div class="stat-icon" style="background:rgba(56,189,248,0.1);color:#0284c7">
           <i class="bi bi-hdd-network"></i>
         </div>
       </div>
@@ -188,7 +188,7 @@
           <div class="stat-value">{{ paloalto_logs_today }}</div>
           <div class="stat-label">Threat Logs Today</div>
         </div>
-        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+        <div class="stat-icon" style="background:rgba(19,121,140,0.1);color:var(--accent)">
           <i class="bi bi-file-earmark-text"></i>
         </div>
       </div>
@@ -201,7 +201,7 @@
           <div class="stat-value {% if paloalto_critical > 0 %}text-danger{% endif %}">{{ paloalto_critical }}</div>
           <div class="stat-label">Critical / High Today</div>
         </div>
-        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#f87171">
+        <div class="stat-icon" style="background:rgba(220,38,38,0.1);color:#c62828">
           <i class="bi bi-exclamation-triangle-fill"></i>
         </div>
       </div>

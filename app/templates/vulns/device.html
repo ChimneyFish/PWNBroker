@@ -27,7 +27,7 @@
           <div class="stat-value">{{ open_t | length }}</div>
           <div class="stat-label">Open</div>
         </div>
-        <div class="stat-icon" style="background:rgba(11,188,212,0.1);color:var(--accent)">
+        <div class="stat-icon" style="background:rgba(19,121,140,0.1);color:var(--accent)">
           <i class="bi bi-bug"></i>
         </div>
       </div>
@@ -66,7 +66,7 @@
           <div class="stat-value text-success">{{ patched_t | length }}</div>
           <div class="stat-label">Patched</div>
         </div>
-        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#4ade80">
+        <div class="stat-icon" style="background:rgba(22,163,74,0.1);color:#15803d">
           <i class="bi bi-shield-check"></i>
         </div>
       </div>
@@ -135,7 +135,7 @@
     </thead>
     <tbody>
       {% for t in sev_tickets %}
-      <tr id="row-{{ t.id }}" {% if t.sla_status == 'overdue' %}style="border-left:3px solid var(--critical)"{% elif t.sla_status == 'due_soon' %}style="border-left:3px solid #fcd34d"{% endif %}>
+      <tr id="row-{{ t.id }}" {% if t.sla_status == 'overdue' %}style="border-left:3px solid var(--critical)"{% elif t.sla_status == 'due_soon' %}style="border-left:3px solid #b45309"{% endif %}>
         <td style="max-width:300px">
           <div class="small font-semibold" style="word-break:break-word">{{ t.vuln_name or t.title }}</div>
           {% if t.scan_type %}

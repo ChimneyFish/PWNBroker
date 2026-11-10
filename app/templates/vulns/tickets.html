@@ -59,7 +59,7 @@
     </thead>
     <tbody>
       {% for t in tickets %}
-      <tr id="row-{{ t.id }}" {% if t.sla_status == 'overdue' %}style="border-left:3px solid var(--critical)"{% elif t.sla_status == 'due_soon' %}style="border-left:3px solid #fcd34d"{% endif %}>
+      <tr id="row-{{ t.id }}" {% if t.sla_status == 'overdue' %}style="border-left:3px solid var(--critical)"{% elif t.sla_status == 'due_soon' %}style="border-left:3px solid #b45309"{% endif %}>
         <td>
           <div class="font-semibold small">{{ (t.vuln_name or t.title) | truncate(80) }}</div>
           <div class="flex gap-2 mt-1 flex-wrap">

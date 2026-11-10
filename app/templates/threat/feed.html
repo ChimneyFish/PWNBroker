@@ -46,14 +46,14 @@
     <div class="flex flex-wrap gap-2 items-center">
       <!-- Indicator count -->
       {% if pulse.indicator_count is defined %}
-      <span class="badge" style="background:rgba(11,188,212,0.15);color:var(--accent)">
+      <span class="badge" style="background:rgba(19,121,140,0.15);color:var(--accent)">
         <i class="bi bi-list-ul me-1"></i>{{ pulse.indicator_count }} indicators
       </span>
       {% endif %}
 
       <!-- Tags -->
       {% for tag in (pulse.tags or [])[:8] %}
-      <span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-muted);font-size:0.7rem">{{ tag }}</span>
+      <span class="badge" style="background:rgba(11,42,79,0.05);color:var(--text-muted);font-size:0.7rem">{{ tag }}</span>
       {% endfor %}
 
       <!-- Malware families -->

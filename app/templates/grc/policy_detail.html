@@ -23,11 +23,11 @@
 
 {% if not p.content and not files %}
 <div class="form-card mb-6" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.35)">
-  <div class="flex items-center gap-2" style="color:#fbbf24">
+  <div class="flex items-center gap-2" style="color:#b45309">
     <i class="bi bi-exclamation-triangle"></i>
     <div class="small">
       This policy has no written content or attached document yet — write it below, upload a document,
-      or <a href="{{ url_for('grc.policy_templates', policy_id=p.id) }}" style="color:#fbbf24;text-decoration:underline">apply a template</a>.
+      or <a href="{{ url_for('grc.policy_templates', policy_id=p.id) }}" style="color:#b45309;text-decoration:underline">apply a template</a>.
     </div>
   </div>
 </div>

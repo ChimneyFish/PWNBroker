@@ -12,18 +12,18 @@
       <p class="text-muted small mb-6">Set the timezone for all timestamps displayed in PwnBroker, and configure the NTP server used to keep the system clock accurate.</p>
 
       <!-- NTP sync status bar -->
-      <div class="flex items-center gap-4 mb-6 p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+      <div class="flex items-center gap-4 mb-6 p-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
         <div class="flex items-center gap-2">
           {% if ntp_status.ntp_synced is none %}
             <span class="badge bg-secondary bg-opacity-25 text-muted">timedatectl unavailable</span>
           {% elif ntp_status.ntp_synced %}
-            <span style="width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 6px #4ade80"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#15803d;display:inline-block;box-shadow:0 0 6px #15803d"></span>
             <span class="small text-success font-semibold">NTP Synced</span>
           {% elif ntp_status.ntp_active %}
-            <span style="width:8px;height:8px;border-radius:50%;background:#facc15;display:inline-block;box-shadow:0 0 6px #facc15"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#a16207;display:inline-block;box-shadow:0 0 6px #a16207"></span>
             <span class="small text-warning font-semibold">NTP Active, syncing…</span>
           {% else %}
-            <span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#c62828;display:inline-block"></span>
             <span class="small text-danger font-semibold">NTP Not Active</span>
           {% endif %}
         </div>
@@ -72,7 +72,7 @@
 
           <!-- Quick TZ preview -->
           <div class="col-12">
-            <div class="p-4 rounded small" style="background:rgba(11,188,212,0.05);border:1px solid rgba(11,188,212,0.15)">
+            <div class="p-4 rounded small" style="background:rgba(19,121,140,0.05);border:1px solid rgba(19,121,140,0.15)">
               <span class="text-muted me-2">Preview — current time in selected zone:</span>
               <span id="tz-preview" class="font-semibold text-primary font-monospace">—</span>
             </div>
@@ -384,7 +384,7 @@
         </div>
 
         <!-- Confluence sub-panel -->
-        <div class="p-4 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="p-4 mb-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
           <div class="flex items-center gap-2 mb-4">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="confluence_enabled" id="confluence_enabled"
@@ -410,7 +410,7 @@
         </div>
 
         <!-- Jira sub-panel -->
-        <div class="p-4 mb-6 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="p-4 mb-6 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
           <div class="flex items-center gap-2 mb-4">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="jira_enabled" id="jira_enabled"
@@ -724,7 +724,7 @@
           <i class="bi bi-terminal me-1"></i>Quick Setup Script (Azure CLI) — do this once
         </button>
         <div class="collapse mt-3" id="o365-quicksetup">
-          <div class="p-4 rounded" style="background:rgba(0,0,0,0.25);border:1px solid var(--border-color)">
+          <div class="p-4 rounded" style="background:rgba(11,42,79,0.05);border:1px solid var(--border-color)">
             <p class="small text-muted mb-2">
               Creates the Azure AD app registration PWNBroker needs (own client secret, per this install — never
               shared across installs) and grants it <code>Mail.Read</code> + <code>User.Read.All</code>. Run this
@@ -735,7 +735,7 @@
             <div class="position-relative">
               <button type="button" class="btn btn-sm btn-outline-secondary position-absolute" style="top:0.5rem;right:0.5rem"
                       onclick="copyO365Script()">Copy</button>
-              <pre class="small p-3 mb-0 rounded" id="o365-script" style="background:rgba(0,0,0,0.35);overflow-x:auto;white-space:pre">#!/usr/bin/env bash
+              <pre class="small p-3 mb-0 rounded" id="o365-script" style="background:rgba(11,42,79,0.05);overflow-x:auto;white-space:pre">#!/usr/bin/env bash
 # Creates the PwnBroker Email Security app registration for this tenant.
 set -euo pipefail
 
@@ -810,7 +810,7 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
           </div>
         </div>
 
-        <div class="p-4 mb-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+        <div class="p-4 mb-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
           <div class="font-semibold mb-3 small text-muted">TUNING (optional)</div>
           <div class="row g-3">
             <div class="col-md-4">
@@ -955,7 +955,7 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
           </div>
         </div>
       </form>
-      <div class="mt-4 p-4 rounded small" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+      <div class="mt-4 p-4 rounded small" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
         <div class="row g-2">
           <div class="col-12 font-semibold text-muted uppercase mb-1" style="font-size:0.7rem;letter-spacing:0.08em">Current Certificate</div>
           {% if cert_info %}
@@ -993,7 +993,7 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
 
       <div class="row g-4">
         <div class="col-md-6">
-          <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="p-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
             <div class="font-semibold small mb-2"><i class="bi bi-download me-1"></i>Export Backup</div>
             <form method="POST" action="{{ url_for('settings.backup_export') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -1020,7 +1020,7 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
         </div>
 
         <div class="col-md-6">
-          <div class="p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+          <div class="p-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
             <div class="font-semibold small mb-2"><i class="bi bi-upload me-1"></i>Restore Backup</div>
             <form method="POST" action="{{ url_for('settings.backup_import') }}" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -1160,7 +1160,7 @@ echo "Paste these into PwnBroker -> Settings -> Email Security, then Save."</pre
       </div>
 
       <!-- Role legend -->
-      <div class="mt-6 p-4 rounded" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color)">
+      <div class="mt-6 p-4 rounded" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
         <div class="row g-3">
           <div class="col-6">
             <div class="flex items-center gap-2 mb-2">

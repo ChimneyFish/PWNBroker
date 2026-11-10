@@ -61,52 +61,52 @@ const WIDGET_DEFS = {
   // Stats
   'stat-scans': {
     cat: 'stats', title: 'Total Scans', size: 'sm',
-    icon: 'bi-radar', color: '#60a5fa', colorBg: 'rgba(59,130,246,0.12)',
+    icon: 'bi-radar', color: '#2563eb', colorBg: 'rgba(59,130,246,0.12)',
     dataKey: 'total_scans', link: '/scans', desc: 'All scans ever run'
   },
   'stat-running': {
     cat: 'stats', title: 'Running Now', size: 'sm',
-    icon: 'bi-activity', color: '#facc15', colorBg: 'rgba(234,179,8,0.12)',
+    icon: 'bi-activity', color: '#a16207', colorBg: 'rgba(234,179,8,0.12)',
     dataKey: 'running_scans', link: '/scans', desc: 'Active scans'
   },
   'stat-targets': {
     cat: 'stats', title: 'Targets', size: 'sm',
-    icon: 'bi-bullseye', color: '#38bdf8', colorBg: 'rgba(56,189,248,0.12)',
+    icon: 'bi-bullseye', color: '#0284c7', colorBg: 'rgba(56,189,248,0.12)',
     dataKey: 'total_targets', link: '/targets', desc: 'Configured scan targets'
   },
   'stat-critical': {
     cat: 'stats', title: 'Critical Vulns', size: 'sm',
-    icon: 'bi-exclamation-triangle-fill', color: '#f87171', colorBg: 'rgba(220,38,38,0.12)',
+    icon: 'bi-exclamation-triangle-fill', color: '#c62828', colorBg: 'rgba(220,38,38,0.12)',
     dataKey: 'critical_vulns', link: '/vulns', desc: 'Unresolved critical findings'
   },
   'stat-high': {
     cat: 'stats', title: 'High Vulns', size: 'sm',
-    icon: 'bi-exclamation-circle-fill', color: '#fb923c', colorBg: 'rgba(234,88,12,0.12)',
+    icon: 'bi-exclamation-circle-fill', color: '#c2410c', colorBg: 'rgba(234,88,12,0.12)',
     dataKey: 'high_vulns', link: '/vulns', desc: 'High severity findings'
   },
   'stat-agents': {
     cat: 'stats', title: 'Online Agents', size: 'sm',
-    icon: 'bi-pc-display-horizontal', color: '#4ade80', colorBg: 'rgba(22,163,74,0.12)',
+    icon: 'bi-pc-display-horizontal', color: '#15803d', colorBg: 'rgba(22,163,74,0.12)',
     dataKey: 'online_agents', link: '/threat/agents', desc: 'Active endpoint agents'
   },
   'stat-assets': {
     cat: 'stats', title: 'Assets', size: 'sm',
-    icon: 'bi-hdd-network', color: '#a78bfa', colorBg: 'rgba(139,92,246,0.12)',
+    icon: 'bi-hdd-network', color: '#6d28d9', colorBg: 'rgba(139,92,246,0.12)',
     dataKey: 'total_assets', link: '/assets', desc: 'Discovered assets'
   },
   'stat-soc': {
     cat: 'stats', title: 'Open SOC Cases', size: 'sm',
-    icon: 'bi-shield-exclamation', color: '#fbbf24', colorBg: 'rgba(245,158,11,0.12)',
+    icon: 'bi-shield-exclamation', color: '#b45309', colorBg: 'rgba(245,158,11,0.12)',
     dataKey: 'open_soc', link: '/threat/triage', desc: 'Pending SOC triage cases'
   },
   'stat-paloalto-fw': {
     cat: 'stats', title: 'PA Firewalls', size: 'sm',
-    icon: 'bi-hdd-network', color: '#38bdf8', colorBg: 'rgba(56,189,248,0.12)',
+    icon: 'bi-hdd-network', color: '#0284c7', colorBg: 'rgba(56,189,248,0.12)',
     dataKey: 'paloalto_firewalls', link: '/threat/paloalto', desc: 'Registered Palo Alto firewalls'
   },
   'stat-paloalto-logs': {
     cat: 'stats', title: 'PA Threat Logs (24h)', size: 'sm',
-    icon: 'bi-shield-exclamation', color: '#fb923c', colorBg: 'rgba(251,146,60,0.12)',
+    icon: 'bi-shield-exclamation', color: '#c2410c', colorBg: 'rgba(251,146,60,0.12)',
     dataKey: 'paloalto_logs_today', link: '/threat/paloalto', desc: 'Threat log entries ingested today'
   },
   // Charts
@@ -255,9 +255,9 @@ function buildAgentChart(id, def, data) {
   const s = data.agent_stats;
   const total = s.online + s.offline + s.unknown;
   const rows = [
-    { label: 'Online',  val: s.online,  color: '#4ade80' },
-    { label: 'Offline', val: s.offline, color: '#f87171' },
-    { label: 'Unknown', val: s.unknown, color: '#94a3b8' },
+    { label: 'Online',  val: s.online,  color: '#15803d' },
+    { label: 'Offline', val: s.offline, color: '#c62828' },
+    { label: 'Unknown', val: s.unknown, color: '#64748b' },
   ].map(r => `<div class="agent-status-row">
     <span class="flex items-center gap-2">
       <span style="width:8px;height:8px;border-radius:50%;background:${r.color};display:inline-block"></span>
@@ -392,7 +392,7 @@ function initSeverityChart(data) {
       datasets: [{
         data: ['critical','high','medium','low','info'].map(k => sm[k] || 0),
         backgroundColor: Object.values(CHART_COLORS),
-        borderWidth: 2, borderColor: '#0b1222',
+        borderWidth: 2, borderColor: '#ffffff',
         hoverOffset: 6,
       }]
     },
@@ -400,7 +400,7 @@ function initSeverityChart(data) {
       responsive: true, maintainAspectRatio: false,
       cutout: '68%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#4f6480', padding: 14, font: { size: 11 } } },
+        legend: { position: 'bottom', labels: { color: '#5b7088', padding: 14, font: { size: 11 } } },
         tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } },
       },
     }
@@ -418,18 +418,18 @@ function initTrendChart(data) {
       datasets: [{
         label: 'Scans',
         data: data.trend.data,
-        borderColor: '#0bbcd4',
-        backgroundColor: 'rgba(11,188,212,0.08)',
+        borderColor: '#13798c',
+        backgroundColor: 'rgba(19,121,140,0.08)',
         borderWidth: 2, tension: 0.4, fill: true,
-        pointBackgroundColor: '#0bbcd4', pointRadius: 3, pointHoverRadius: 5,
+        pointBackgroundColor: '#13798c', pointRadius: 3, pointHoverRadius: 5,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, maxTicksLimit: 7 } },
-        y: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, precision: 0 }, beginAtZero: true },
+        x: { grid: { color: 'rgba(11,42,79,0.08)' }, ticks: { color: '#5b7088', font: { size: 10 }, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(11,42,79,0.08)' }, ticks: { color: '#5b7088', font: { size: 10 }, precision: 0 }, beginAtZero: true },
       },
     }
   });
@@ -447,18 +447,18 @@ function initVulnTargetChart(data) {
       datasets: [{
         label: 'Vulnerabilities',
         data: vbt.data.length ? vbt.data : [0],
-        backgroundColor: 'rgba(11,188,212,0.25)',
-        borderColor: '#0bbcd4',
+        backgroundColor: 'rgba(19,121,140,0.25)',
+        borderColor: '#13798c',
         borderWidth: 1.5, borderRadius: 4,
-        hoverBackgroundColor: 'rgba(11,188,212,0.4)',
+        hoverBackgroundColor: 'rgba(19,121,140,0.4)',
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: 'rgba(22,32,53,0.8)' }, ticks: { color: '#4f6480', font: { size: 10 }, precision: 0 }, beginAtZero: true },
-        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+        x: { grid: { color: 'rgba(11,42,79,0.08)' }, ticks: { color: '#5b7088', font: { size: 10 }, precision: 0 }, beginAtZero: true },
+        y: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
       },
     }
   });

@@ -256,7 +256,7 @@
     {% set crim = pd.criminalip if pd else None %}
     {% set urlh = pd.urlhaus if pd else None %}
     <div class="col-md-6">
-      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
+      <div class="p-2 rounded h-full" style="background:rgba(11,42,79,0.05);border:1px solid var(--border-color)">
         <div class="flex items-center gap-2 mb-2">
           <span class="badge font-bold" style="background:#7c3aed;font-size:0.65rem">PD</span>
           <span class="small font-semibold">pulseDrive</span>
@@ -295,7 +295,7 @@
 
     <!-- InternetDB -->
     <div class="col-md-6">
-      <div class="p-2 rounded h-full" style="background:rgba(0,0,0,0.2);border:1px solid var(--border-color)">
+      <div class="p-2 rounded h-full" style="background:rgba(11,42,79,0.05);border:1px solid var(--border-color)">
         <div class="flex items-center gap-2 mb-2">
           <span class="badge font-bold" style="background:#a01f24;font-size:0.65rem">IDB</span>
           <span class="small font-semibold">InternetDB</span>
@@ -317,7 +317,7 @@
           {% if idb.ports %}
           <div class="flex flex-wrap gap-1 mb-1">
             {% for p in idb.ports[:8] %}
-            <span class="badge font-monospace" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.6rem">{{ p }}</span>
+            <span class="badge font-monospace" style="background:rgba(19,121,140,0.15);color:var(--accent);font-size:0.6rem">{{ p }}</span>
             {% endfor %}
             {% if idb.ports | length > 8 %}<span class="badge bg-secondary" style="font-size:0.6rem">+{{ idb.ports | length - 8 }}</span>{% endif %}
           </div>
@@ -382,9 +382,9 @@
         <td class="small">
           {% for src in (r.description or '').split(', ') if src %}
             {% if src == 'crt.sh' %}
-            <span class="badge me-1" style="background:rgba(11,188,212,0.15);color:var(--accent);font-size:0.65rem">crt.sh</span>
+            <span class="badge me-1" style="background:rgba(19,121,140,0.15);color:var(--accent);font-size:0.65rem">crt.sh</span>
             {% elif src == 'DNSDumpster' %}
-            <span class="badge me-1" style="background:rgba(234,88,12,0.2);color:#fb923c;font-size:0.65rem">DNSDumpster</span>
+            <span class="badge me-1" style="background:rgba(234,88,12,0.2);color:#c2410c;font-size:0.65rem">DNSDumpster</span>
             {% else %}
             <span class="badge bg-secondary me-1" style="font-size:0.65rem">{{ src }}</span>
             {% endif %}
