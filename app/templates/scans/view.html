@@ -39,6 +39,19 @@
       <div class="font-semibold text-primary uppercase" style="font-size:0.8rem">{{ scan.scan_type }}</div>
     </div>
   </div>
+  {% if scan.scan_type in ('full', 'port') %}
+  <div class="col-auto">
+    <div class="stat-card">
+      <div class="stat-label">Credentialed</div>
+      <div class="font-semibold" style="font-size:0.8rem">
+        {% if scan.cred_mode == 'off' %}<span class="text-muted">Off</span>
+        {% elif scan.cred_mode == 'scan' %}<i class="bi bi-key-fill text-success me-1"></i>{{ scan.ssh_username }} <span class="text-muted">(this scan)</span>
+        {% elif scan.target and scan.target.ssh_username %}<i class="bi bi-key-fill text-success me-1"></i>{{ scan.target.ssh_username }} <span class="text-muted">(target)</span>
+        {% else %}<span class="text-muted">No login saved</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <div class="col-auto">
     <div class="stat-card">
       <div class="stat-label">Status</div>

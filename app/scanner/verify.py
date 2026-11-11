@@ -202,7 +202,10 @@ def run_nuclei(target, template_paths, timeout):
            "-timeout", "8", "-retries", "1", "-rl", "30", "-c", "10"]
     env = {**os.environ, "HOME": home}
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+        # stdin closed: nuclei reads targets from stdin whenever it isn't a
+        # TTY, and would wait forever on an inherited open pipe.
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env,
+                           stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         raise RuntimeError(f"check timed out after {timeout}s")
     finally:
@@ -278,13 +281,25 @@ def needs_verification(r):
             and not getattr(r, "verification_evidence", None))
 
 
-def verify_results(results, budget=_TOTAL_BUDGET_SECONDS):
+def verify_results(results, budget=_TOTAL_BUDGET_SECONDS, creds_of=None):
     """Verify every version-matched CVE finding in `results` (ScanResult
-    objects, saved or not) in place. Returns a {status: count} summary."""
+    objects, saved or not) in place. Returns a {status: count} summary.
+
+    `creds_of(result)` → ssh_verify.Creds or None. When given, findings the
+    live checks couldn't settle get a credentialed second look (vendor
+    backports, loaded modules); summary["credentialed"] lists each host."""
     todo = [r for r in results if needs_verification(r)]
     summary = {CONFIRMED: 0, NOT_EXPLOITABLE: 0, UNCONFIRMED: 0}
     try:
         _verify(todo, summary, budget)
+        if creds_of and todo:
+            from .ssh_verify import verify_with_ssh
+            hints = {(r.host, r.port): (r.service or "") for r in results
+                     if getattr(r, "result_type", None) == "port"}
+            try:
+                summary["credentialed"] = verify_with_ssh(todo, creds_of, summary, hints)
+            except Exception as e:  # never lose the live-check verdicts over this
+                log.warning("credentialed checks failed: %s", e)
     finally:
         for r in results:
             classify(r)
@@ -375,6 +390,7 @@ def update_templates():
     # No -duc here: it also disables the template download itself.
     p = subprocess.run([binary, "-update-templates", "-update-template-dir", templates_dir(),
                         "-silent", "-nc"], capture_output=True, text=True, timeout=900,
+                       stdin=subprocess.DEVNULL,
                        env={**os.environ, "HOME": home})
     ok = os.path.exists(os.path.join(templates_dir(), "cves.json"))
     return ok, (p.stderr or p.stdout).strip()[-300:]

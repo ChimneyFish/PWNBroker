@@ -6,6 +6,7 @@
            [--notes TEXT | --notes-file F] [--bump major|minor|patch]
     publish VERSION DEST       rsync a built release to the update server,
                                e.g. root@pwnbroker.space:/srv/pwnbroker-updates/releases/
+    installer VERSION          (re)build the single-file installer for a built release
     verify DIR                 check a built release's signature and hash
 
 Output goes to releases_out/<version>/ (git-ignored):
@@ -13,6 +14,8 @@ Output goes to releases_out/<version>/ (git-ignored):
     manifest.json                version, channel, sha256, changelog …
     manifest.sig                 Ed25519 signature over manifest.json (base64)
     pwnbroker-<version>.pwnupdate  all three in one file, for offline installs
+    pwnbroker-<version>-install.run  single-file installer for new servers
+                                   (sudo bash pwnbroker-<v>-install.run)
 
 The release key is separate from the license key (a leak of one doesn't
 compromise the other). Default location ~/.pwnbroker-release/ (override with
@@ -177,6 +180,56 @@ def cmd_build(args):
             b.add(os.path.join(d, fn), arcname=fn)
     print(f"Built {version} ({args.channel}) from {commit[:10]}: {len(files)} files, "
           f"{len(tar_bytes) / 1e6:.1f} MB → {d}")
+    path, digest = make_installer(d, version, priv.public_key())
+    print(f"Installer: {path}  ({os.path.getsize(path) / 1e6:.1f} MB, sha256 {digest[:16]}…)")
+
+
+HEADER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "installer_header.sh")
+PAYLOAD_MARKER = b"__PWNBROKER_PAYLOAD_BELOW__\n"
+
+
+def installer_name(version):
+    return f"pwnbroker-{version}-install.run"
+
+
+def make_installer(d, version, public_key):
+    """One self-extracting file: installer_header.sh + an uncompressed tar of
+    (manifest.json, manifest.sig, pwnbroker-<v>.tar.gz). The header checks the
+    payload checksum and the release signature, then runs the bundled setup.sh."""
+    payload = io.BytesIO()
+    with tarfile.open(fileobj=payload, mode="w", format=tarfile.USTAR_FORMAT) as t:
+        for fn in ("manifest.json", "manifest.sig", f"pwnbroker-{version}.tar.gz"):
+            info = t.gettarinfo(os.path.join(d, fn), arcname=fn)
+            info.uid = info.gid = 0
+            info.uname = info.gname = "root"
+            with open(os.path.join(d, fn), "rb") as f:
+                t.addfile(info, f)
+    payload = payload.getvalue()
+    pub_pem = public_key.public_bytes(serialization.Encoding.PEM,
+                                      serialization.PublicFormat.SubjectPublicKeyInfo).decode()
+    pub_body = "\n".join(l for l in pub_pem.strip().splitlines() if not l.startswith("-----"))
+    header = open(HEADER, "rb").read()
+    if not header.endswith(PAYLOAD_MARKER):
+        sys.exit(f"{HEADER} must end with the payload marker line")
+    for k, v in ((b"@VERSION@", version), (b"@PAYLOAD_SHA256@", hashlib.sha256(payload).hexdigest()),
+                 (b"@RELEASE_PUBKEY@", pub_body)):
+        header = header.replace(k, v.encode())
+    path = os.path.join(d, installer_name(version))
+    with open(path, "wb") as f:
+        f.write(header + payload)
+    os.chmod(path, 0o755)
+    digest = hashlib.sha256(header + payload).hexdigest()
+    with open(path + ".sha256", "w") as f:
+        f.write(f"{digest}  {installer_name(version)}\n")
+    return path, digest
+
+
+def cmd_installer(args):
+    d = os.path.join(OUT, args.version)
+    if not os.path.exists(os.path.join(d, "manifest.sig")):
+        sys.exit(f"No built release at {d} — run `build` first.")
+    path, digest = make_installer(d, args.version, _load_private(args).public_key())
+    print(f"Installer: {path}\n  sha256 {digest}")
 
 
 def cmd_publish(args):
@@ -185,13 +238,16 @@ def cmd_publish(args):
         sys.exit(f"No built release at {d}")
     dest = args.dest.rstrip("/") + "/" + args.version + "/"
     files = [os.path.join(d, f) for f in ("manifest.json", "manifest.sig", f"pwnbroker-{args.version}.tar.gz")]
+    inst = os.path.join(d, installer_name(args.version))
+    if os.path.exists(inst):  # served (license-gated) by the update server's /v1/installer
+        files[2:2] = [inst, inst + ".sha256"]
     # Upload under a temp name then rename, so the server never serves a
     # half-uploaded release (it ignores directories without manifest.sig).
     host, _, path = dest.partition(":")
     if path:
         subprocess.run(["ssh", host, f"mkdir -p '{path}'"], check=True)
     subprocess.run(["rsync", "-av", "--exclude", "manifest.sig", *files, dest], check=True)
-    subprocess.run(["rsync", "-av", files[1], dest], check=True)
+    subprocess.run(["rsync", "-av", os.path.join(d, "manifest.sig"), dest], check=True)
     print(f"Published {args.version} → {dest}")
 
 
@@ -224,6 +280,7 @@ def main():
     b.add_argument("--force", action="store_true", help="overwrite an existing build of this version")
     b.set_defaults(fn=cmd_build)
     p = sub.add_parser("publish"); p.add_argument("version"); p.add_argument("dest"); p.set_defaults(fn=cmd_publish)
+    i = sub.add_parser("installer"); i.add_argument("version"); i.set_defaults(fn=cmd_installer)
     v = sub.add_parser("verify"); v.add_argument("dir"); v.set_defaults(fn=cmd_verify)
     args = ap.parse_args()
     args.fn(args)

@@ -30,6 +30,8 @@
   <summary>{% if ev.result == 'confirmed' %}Proof{% elif ev.result == 'not_exploitable' %}Why it's ruled out{% else %}Why it's unverified{% endif %}</summary>
   <div class="verify-evidence-body">
     <div>{{ ev.detail }}</div>
+    {% if ev.credentialed %}<div class="mt-1"><i class="bi bi-key me-1"></i>{{ ev.credentialed }}</div>{% endif %}
+    {% if ev.package %}<div class="text-muted">Installed package: <code>{{ ev.package }}</code></div>{% endif %}
     {% if ev.check %}<div class="text-muted">Check: {{ ev.method }} · {{ ev.check }}{% if ev.target %} · {{ ev.target }}{% endif %}</div>{% endif %}
     {% if ev.matched_at %}<div class="text-muted">Matched at: <code>{{ ev.matched_at }}</code></div>{% endif %}
     {% if ev.checked_at %}<div class="text-muted">Checked {{ ev.checked_at | replace('T', ' ') | replace('Z', ' UTC') }}</div>{% endif %}

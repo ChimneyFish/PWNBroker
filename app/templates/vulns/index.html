@@ -84,7 +84,14 @@
       <div class="text-danger mt-1">Last verification failed: {{ verify_state.error }}</div>
       {% elif verify_state.summary %}
       <div class="text-muted mt-1">Last verification: {{ verify_state.summary.confirmed }} proven exploitable,
-        {{ verify_state.summary.not_exploitable }} ruled out, {{ verify_state.summary.unconfirmed }} still unverified.</div>
+        {{ verify_state.summary.not_exploitable }} ruled out, {{ verify_state.summary.unconfirmed }} still unverified.
+        {%- set cred = verify_state.summary.credentialed or [] %}
+        {%- if cred %}
+        {%- set cred_ok = cred | selectattr('ok') | list %}
+        Credentialed checks logged in to {{ cred_ok | length }} of {{ cred | length }} host{{ 's' if cred | length != 1 }}
+        and ruled out {{ cred_ok | sum(attribute='ruled_out') }}.
+        {%- for h in cred if not h.ok %}<div class="text-danger">SSH login to {{ h.host }} failed: {{ h.error }}</div>{% endfor %}
+        {%- endif %}</div>
       {% endif %}
     </div>
     {% if current_user.is_admin and total_unverified and not verify_state.running %}

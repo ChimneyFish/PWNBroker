@@ -45,8 +45,19 @@ python tools/release/build_release.py publish 1.1.0 root@pwnbroker.space:/srv/pw
 - **Offline customers:** send them
   `releases_out/<version>/pwnbroker-<version>.pwnupdate`. They upload it under
   user menu → Updates.
-- **New customer install:** send the release tarball. They run
-  `mkdir pwnbroker && tar xzf pwnbroker-X.Y.Z.tar.gz -C pwnbroker && sudo bash pwnbroker/setup.sh`.
+- **New customer install:** `build` also writes the single-file installer
+  `releases_out/<version>/pwnbroker-<version>-install.run` (plus a `.sha256`).
+  Send it, or let customers download it from the update server with their
+  license (`publish` uploads it):
+
+  ```bash
+  curl -fsS --data-binary @license.key https://pwnbroker.space:7585/updates/v1/installer -o pwnbroker-install.run
+  sudo bash pwnbroker-install.run --license license.key
+  ```
+
+  The file checks its own checksum and the release signature (the same key
+  the updater trusts) before installing; `--check` only verifies. To rebuild
+  just the installer for an existing build: `build_release.py installer X.Y.Z`.
 
 `publish` uploads `manifest.sig` last. The server ignores a release directory
 until that file exists, so a half-uploaded release is never offered.

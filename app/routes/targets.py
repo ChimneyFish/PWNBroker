@@ -6,6 +6,7 @@ from ..models import Target, DomainRecord, ThreatConfig
 from ..extensions import db
 from ..validators import is_valid_host, is_valid_github_repo, is_valid_local_path
 from .decorators import admin_required
+from ..scanner.ssh_verify import apply_ssh_form, Creds, test_login, SSH_FIELDS
 
 targets_bp = Blueprint("targets", __name__, url_prefix="/targets")
 
@@ -53,12 +54,10 @@ def new():
             created_by=current_user.id,
             target_type=target_type,
         )
-        t.ssh_port = int(request.form.get("ssh_port") or 22)
-        t.ssh_username = request.form.get("ssh_username", "").strip() or None
-        t.ssh_auth_type = request.form.get("ssh_auth_type", "password")
-        t.ssh_password = request.form.get("ssh_password", "").strip() or None
-        t.ssh_private_key = request.form.get("ssh_private_key", "").strip() or None
-        t.ssh_key_passphrase = request.form.get("ssh_key_passphrase", "").strip() or None
+        ssh_err = apply_ssh_form(t, request.form)
+        if ssh_err:
+            flash(ssh_err, "danger")
+            return render_template("targets/new.html")
         t.ad_dc_host = request.form.get("ad_dc_host", "").strip() or None
         t.ad_username = request.form.get("ad_username", "").strip() or None
         t.ad_auth_type = request.form.get("ad_auth_type", "password")
@@ -94,6 +93,78 @@ def detail(target_id):
         by_type.setdefault(r.record_type, []).append(r)
     return render_template("targets/detail.html", target=t, by_type=by_type,
                            record_count=len(records))
+
+
+@targets_bp.route("/<int:target_id>/credentials", methods=["GET", "POST"])
+@login_required
+@admin_required
+def credentials(target_id):
+    """Attach, change or remove the SSH login saved on a target (used for
+    credentialed CVE checks, deep EOL checks and remote dependency scans)."""
+    t = Target.query.get_or_404(target_id)
+    if request.method == "POST":
+        from ..audit import log_action
+        if request.form.get("remove"):
+            for f in SSH_FIELDS:
+                setattr(t, f, None)
+            t.ssh_port, t.ssh_auth_type = 22, "password"
+            db.session.commit()
+            log_action("target.ssh_credentials_removed", entity_type="target",
+                       entity_id=t.id, entity_name=t.name)
+            flash(f"SSH credentials removed from '{t.name}'.", "success")
+            return redirect(url_for("targets.index"))
+        err = apply_ssh_form(t, request.form, keep_secrets=True)
+        if err:
+            db.session.rollback()
+            flash(err, "danger")
+            return render_template("targets/credentials.html", target=t)
+        db.session.commit()
+        log_action("target.ssh_credentials_saved", entity_type="target", entity_id=t.id,
+                   entity_name=t.name, detail=f"user={t.ssh_username or '-'} auth={t.ssh_auth_type}")
+        flash(f"SSH credentials saved on '{t.name}'." if t.ssh_username
+              else f"'{t.name}' has no SSH credentials.", "success")
+        return redirect(url_for("targets.index"))
+    return render_template("targets/credentials.html", target=t)
+
+
+def _host_for_test(default_host):
+    """The host a "Test login" button should connect to: the form's
+    test_host if given, else the target host when it's a single host."""
+    from ..validators import is_valid_host
+    host = (request.form.get("test_host") or "").strip() or default_host or ""
+    if not host or "/" in host or not is_valid_host(host):
+        return None
+    return host
+
+
+def ssh_test_response(form_obj, default_host):
+    """Shared JSON handler for the Test login buttons."""
+    from flask import jsonify
+    from types import SimpleNamespace
+    host = _host_for_test(default_host)
+    if not host:
+        return jsonify(ok=False, error="Enter a single host or IP to test against "
+                                       "(a subnet or group can't be tested as a whole).")
+    ns = SimpleNamespace(**{f: getattr(form_obj, f, None) for f in SSH_FIELDS})
+    err = apply_ssh_form(ns, request.form, keep_secrets=True)
+    if err:
+        return jsonify(ok=False, error=err)
+    if not ns.ssh_username:
+        return jsonify(ok=False, error="Enter an SSH username.")
+    creds = Creds(host=host, ssh_username=ns.ssh_username, ssh_port=ns.ssh_port,
+                  ssh_auth_type=ns.ssh_auth_type, ssh_password=ns.ssh_password,
+                  ssh_private_key=ns.ssh_private_key, ssh_key_passphrase=ns.ssh_key_passphrase)
+    result = test_login(creds)
+    result["host"] = host
+    return jsonify(result)
+
+
+@targets_bp.route("/<int:target_id>/credentials/test", methods=["POST"])
+@login_required
+@admin_required
+def credentials_test(target_id):
+    t = Target.query.get_or_404(target_id)
+    return ssh_test_response(t, t.host)
 
 
 @targets_bp.route("/<int:target_id>/re-enum", methods=["POST"])

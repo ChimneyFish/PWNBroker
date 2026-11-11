@@ -37,7 +37,37 @@ PwnBroker is a self-hosted security operations platform that combines network sc
 - Root / sudo access
 - Outbound internet access (for threat intel API calls and NVD CVE lookups)
 
-### Quick Install
+### Single-File Installer (recommended)
+
+PWNBroker ships as one file, `pwnbroker-<version>-install.run`, that contains
+the signed release and everything that installs it. Download it with your
+license key and install in one go:
+
+```bash
+curl -fsS --data-binary @license.key https://pwnbroker.space:7585/updates/v1/installer -o pwnbroker-install.run
+sudo bash pwnbroker-install.run --license license.key
+```
+
+Before installing it verifies its own checksum (a truncated or corrupted
+download is refused) and the PWNBroker release signature (a modified file is
+refused). Options:
+
+| Option | Default | |
+|---|---|---|
+| `--license FILE` | — | Install this license (otherwise upload it under user menu → License) |
+| `--port N` | 443 | HTTPS port |
+| `--dir PATH` | `/opt/PWNBroker` | Install directory |
+| `--update-url URL` | `https://pwnbroker.space:7585/updates` | Update server |
+| `--check` | | Only verify the file |
+| `--extract DIR` | | Only verify and unpack the release |
+
+It needs Ubuntu 22.04+/Debian 12+ with systemd, x86_64 or arm64, 3 GB free
+disk, and internet access for OS and Python packages. Progress is shown and
+logged to `/var/log/pwnbroker-install.log`. Running a newer installer on an
+existing server upgrades it in place and keeps all data; running the same one
+again repairs the install.
+
+### Quick Install (from source)
 
 `setup.sh` manages its own git checkout — grab just the script and run it, no separate clone needed:
 
@@ -191,14 +221,26 @@ Clicking a target shows:
 - **DNS enumeration** — click **Re-Enumerate** to refresh DNS records
 - Subdomain changes are tracked: new records show as `new`, changed values as `changed`, removed entries as `removed`
 
-### SSH Credentials (for Dependency Scanning)
+### SSH Credentials (credentialed checks)
 
-To enable dependency scanning on a remote host, add SSH credentials on the target detail page. Supported auth types:
+Add an SSH login to a host or subnet target when you create it, or any time
+later with the **key** icon on the Targets page (filled key = a login is saved).
+Supported auth types:
 
 - **Password** — username + password
-- **Key** — upload a PEM private key (with optional passphrase)
+- **Key** — paste an OpenSSH or PEM private key (Ed25519, ECDSA or RSA), with
+  its passphrase if it's encrypted
 
-Test the connection with the **Test SSH** button before running a scan.
+Use **Test login** before saving: it logs in and shows the OS, the package
+manager it found, and whether passwordless sudo is available. Secrets are
+stored encrypted and never shown again; leave a secret blank when editing to
+keep the saved one. **Remove saved credentials** deletes the login.
+
+The login is used for credentialed CVE checks (see *Credentialed checks* in
+section 7), precise end-of-life checks on full scans, and remote dependency
+scans. Use a dedicated low-privilege account; everything run on the host is
+read-only. On a subnet target the login is tried on every host found; a
+target saved for an individual IP takes precedence for that IP.
 
 ### Deleting a Target
 
@@ -294,8 +336,9 @@ Set up recurring scans using cron expressions:
 
 1. Go to **Scans → Schedule New**
 2. Pick a target or asset group, scan type, and port range
-3. Enter a cron expression (e.g., `0 2 * * *` for 2 AM daily)
-4. Click **Create Schedule**
+3. Choose how credentialed checks log in (same options as a one-off scan)
+4. Enter a cron expression (e.g., `0 2 * * *` for 2 AM daily)
+5. Click **Create Schedule**
 
 Active schedules can be paused/resumed with the toggle on the Scans index page. Scheduled scans appear in the activity log when they run.
 
@@ -335,6 +378,37 @@ check written for that CVE, and gets one of three verdicts:
   findings are unchanged.
 - Set `VULN_VERIFY=0` in `.env` to turn checking off (findings then stay
   unverified).
+
+### Credentialed checks (SSH)
+
+Most version-matched CVEs have no safe remote check, so on their own they
+stay Unverified. With an SSH login, scans also look inside the host and rule
+out the ones that don't apply:
+
+| Rule-out | How it's checked |
+|---|---|
+| **Vendor backport** | Finds the package that owns the listening service, its exact installed version, and the vendor changelog. If the changelog lists the CVE, the fix is installed even though the banner shows the old upstream version. Ubuntu trims the on-disk changelog, so the full one for that exact version is fetched from changelogs.ubuntu.com (only the package name and version are sent). |
+| **Module not loaded** | For Apache httpd (`apachectl -M`) and nginx (`nginx -V`): a CVE in a module the server doesn't load is ruled out. |
+| **Different OS** | A CVE that only affects the product on Windows, on a host running Linux/Unix. |
+
+Credentialed checks only ever **rule findings out**. They never make a
+finding count as a vulnerability on their own; that still needs a live check
+that reproduces it. Findings they can't rule out stay Unverified with a note
+saying what was found (e.g. "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix
+listed for CVE-…").
+
+On **New Scan** / **Schedule Scan**, *Credentialed Checks (SSH)* chooses the login:
+
+- **Use the target's saved SSH login** (default): uses the login saved on the target.
+- **Use these credentials for this scan**: enter a login just for this scan
+  (stored encrypted with the scan). For a subnet or asset group it's tried on
+  every host.
+- **Off**: don't log in to hosts.
+
+Each scan shows which login it used, and adds one info row per host with how
+many CVEs were ruled out, or why the login failed. **Verify now** reuses each
+finding's scan login (or its target's). In a real test against stock Ubuntu
+22.04 Apache, credentialed checks ruled out 88 of 95 version-matched CVEs.
 
 ### Vuln Tickets (`/vulns/tickets`)
 

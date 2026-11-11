@@ -7,7 +7,8 @@ published by dropping a built release directory (tools/release/build_release.py
 publish) into $PWNUPD_ROOT/releases/<version>/.
 
     $PWNUPD_ROOT/
-        releases/<version>/{manifest.json, manifest.sig, pwnbroker-<v>.tar.gz}
+        releases/<version>/{manifest.json, manifest.sig, pwnbroker-<v>.tar.gz,
+                            pwnbroker-<v>-install.run}   (installer: optional)
         yanked.txt          versions to stop offering (one per line)
         revoked.txt         license IDs to refuse (one per line)
         server_secret.txt   HMAC key for download tokens (auto-created)
@@ -186,5 +187,31 @@ def create_app(root=None, license_public_key_pem=None, prefix=None):
         if not os.path.exists(path):
             abort(404)
         return send_file(path, mimetype="application/gzip", as_attachment=True)
+
+    @app.post("/v1/installer")
+    def installer():
+        """Single-file installer for a new server, for anyone holding an active
+        license. The body is the license key file as-is (or JSON {"license": …}):
+
+            curl -fsS --data-binary @license.key \\
+                 https://pwnbroker.space:7585/updates/v1/installer -o pwnbroker-install.run
+        """
+        body = request.get_json(silent=True)
+        text = body.get("license") if isinstance(body, dict) else request.get_data(as_text=True)
+        payload, err = _verify_license(text)
+        if err:
+            return jsonify({"error": err[0]}), err[1]
+        channel = request.args.get("channel") if request.args.get("channel") in CHANNEL_ACCESS else "stable"
+        for _, v, _, _ in _releases(CHANNEL_ACCESS[channel]):
+            path = os.path.join(rel_dir, v, f"pwnbroker-{v}-install.run")
+            if os.path.exists(path):
+                with sqlite3.connect(db_path) as con:
+                    con.execute("INSERT OR REPLACE INTO checkins VALUES (?,?,?,?,?,?,?)", (
+                        payload.get("license_id"), "installer-download", payload.get("customer"), v,
+                        channel, request.remote_addr,
+                        datetime.now(timezone.utc).isoformat(timespec="seconds")))
+                return send_file(path, mimetype="application/octet-stream", as_attachment=True,
+                                 download_name=f"pwnbroker-{v}-install.run")
+        return jsonify({"error": "No installer has been published yet."}), 404
 
     return app

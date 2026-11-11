@@ -139,6 +139,16 @@ class Scan(db.Model):
     scan_path = db.Column(db.String(512))  # filesystem path for OSV dependency scans
     auto_remediate = db.Column(db.Boolean, default=False)  # open fix PRs after github_repo scan
     pen_token = db.Column(EncryptedString)  # optional Bearer token for PEN operational scans
+    # Credentialed (SSH) checks — see scanner/ssh_verify.py.
+    # cred_mode: target (use the target's saved SSH login, default) | scan (the
+    # login below, for every host this scan covers) | off (never log in).
+    cred_mode = db.Column(db.String(10), default="target")
+    ssh_port = db.Column(db.Integer, default=22)
+    ssh_username = db.Column(db.String(100))
+    ssh_auth_type = db.Column(db.String(20), default="password")
+    ssh_password = db.Column(EncryptedString)
+    ssh_private_key = db.Column(EncryptedString)
+    ssh_key_passphrase = db.Column(EncryptedString)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
@@ -236,6 +246,16 @@ class ScheduledScan(db.Model):
     port_range     = db.Column(db.String(50), default="1-1024")
     cron_expression = db.Column(db.String(100), nullable=False)
     active     = db.Column(db.Boolean, default=True)
+    # Credentialed (SSH) checks — see scanner/ssh_verify.py.
+    # cred_mode: target (use the target's saved SSH login, default) | scan (the
+    # login below, for every host this scan covers) | off (never log in).
+    cred_mode = db.Column(db.String(10), default="target")
+    ssh_port = db.Column(db.Integer, default=22)
+    ssh_username = db.Column(db.String(100))
+    ssh_auth_type = db.Column(db.String(20), default="password")
+    ssh_password = db.Column(EncryptedString)
+    ssh_private_key = db.Column(EncryptedString)
+    ssh_key_passphrase = db.Column(EncryptedString)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
     last_run   = db.Column(db.DateTime)
     next_run   = db.Column(db.DateTime)

@@ -423,14 +423,9 @@ SUPPORTED_LOCKFILES = set(LOCKFILE_PARSERS.keys())
 
 
 def _load_private_key(key_str: str, passphrase):
-    """Load a PEM private key trying RSA, Ed25519, ECDSA, and DSS in order."""
-    import paramiko
-    for cls in (paramiko.RSAKey, paramiko.Ed25519Key, paramiko.ECDSAKey, paramiko.DSSKey):
-        try:
-            return cls.from_private_key(io.StringIO(key_str), password=passphrase)
-        except (paramiko.SSHException, ValueError):
-            continue
-    raise ValueError("Unsupported private key type or incorrect passphrase.")
+    """Load a private key of any type paramiko supports."""
+    from .ssh_verify import load_private_key
+    return load_private_key(key_str, passphrase)
 
 
 def fetch_lockfiles_via_ssh(target, remote_path) -> tuple[str, list[str]]:

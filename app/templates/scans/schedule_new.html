@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ssh_fields.html" import scan_creds %}
 {% block title %}Schedule Scan — PwnBroker{% endblock %}
 {% block page_title %}Schedule Scan{% endblock %}
 
@@ -51,6 +52,8 @@
           <label class="form-label">Port Range</label>
           <input type="text" name="port_range" class="form-control" value="1-1024">
         </div>
+
+        {{ scan_creds(url_for('scans.ssh_test')) }}
 
         <!-- ── Schedule Builder ────────────────────────────────────── -->
         <div class="mb-6">

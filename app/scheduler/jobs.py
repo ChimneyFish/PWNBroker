@@ -111,6 +111,7 @@ def _run_update_verification_checks(app):
 def _run_scheduled_scans(app):
     with app.app_context():
         from ..models import ScheduledScan, Scan, AssetGroup, Asset, Tag, Target
+        from ..scanner.ssh_verify import copy_scan_creds
         import threading
         now = datetime.now(timezone.utc)
         due = ScheduledScan.query.filter(
@@ -140,6 +141,7 @@ def _run_scheduled_scans(app):
                         created_by=sched.created_by,
                         status="pending",
                     )
+                    copy_scan_creds(sched, scan)
                     db.session.add(scan)
                     db.session.flush()
                     db.session.commit()
@@ -162,6 +164,7 @@ def _run_scheduled_scans(app):
                             created_by=sched.created_by,
                             status="pending",
                         )
+                        copy_scan_creds(sched, scan)
                         db.session.add(scan)
                         db.session.flush()
                         db.session.commit()
@@ -175,6 +178,7 @@ def _run_scheduled_scans(app):
                     created_by=sched.created_by,
                     status="pending",
                 )
+                copy_scan_creds(sched, scan)
                 db.session.add(scan)
                 db.session.flush()
                 db.session.commit()

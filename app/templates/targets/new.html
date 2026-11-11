@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_ssh_fields.html" import ssh_fields %}
 {% block title %}New Target — PwnBroker{% endblock %}
 {% block page_title %}New Target{% endblock %}
 
@@ -39,47 +40,16 @@
         <div class="border-t border-line pt-6 mb-6">
           <button type="button" class="btn btn-sm btn-outline-secondary mb-4" id="ssh_toggle">
             <i class="bi bi-terminal me-1"></i>SSH Credentials
-            <span class="text-muted ms-1" style="font-size:0.75rem">(for Dependency Scanner)</span>
+            <span class="text-muted ms-1" style="font-size:0.75rem">(credentialed checks)</span>
             <i class="bi bi-chevron-down ms-1" id="ssh_chevron"></i>
           </button>
 
           <div id="ssh_fields" style="display:none">
             <div class="p-4 rounded mb-4" style="background:rgba(11,42,79,0.03);border:1px solid var(--border-color)">
-              <div class="row g-3">
-                <div class="col-8">
-                  <label class="form-label">SSH Username</label>
-                  <input type="text" name="ssh_username" class="form-control" placeholder="ubuntu">
-                </div>
-                <div class="col-4">
-                  <label class="form-label">SSH Port</label>
-                  <input type="number" name="ssh_port" class="form-control" value="22">
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Auth Type</label>
-                  <select name="ssh_auth_type" class="form-select" id="ssh_auth_type">
-                    <option value="password">Password</option>
-                    <option value="key">Private Key</option>
-                  </select>
-                </div>
-
-                <!-- Password auth -->
-                <div class="col-12" id="ssh_password_field">
-                  <label class="form-label">Password</label>
-                  <input type="password" name="ssh_password" class="form-control" autocomplete="new-password">
-                </div>
-
-                <!-- Key auth -->
-                <div class="col-12" id="ssh_key_field" style="display:none">
-                  <label class="form-label">Private Key <span class="text-muted font-normal">(PEM format)</span></label>
-                  <textarea name="ssh_private_key" class="form-control font-monospace" rows="5"
-                            placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
-                            style="font-size:0.75rem"></textarea>
-                </div>
-                <div class="col-12" id="ssh_passphrase_field" style="display:none">
-                  <label class="form-label">Key Passphrase <span class="text-muted font-normal">(if encrypted)</span></label>
-                  <input type="password" name="ssh_key_passphrase" class="form-control" autocomplete="new-password">
-                </div>
-              </div>
+              <div class="small text-muted mb-3">Optional. Lets scans log in (read-only) to rule out CVEs the vendor
+                already patched or whose vulnerable module isn't loaded, plus precise EOL and remote dependency
+                checks. You can add or change these later from the Targets list.</div>
+              {{ ssh_fields() }}
             </div>
           </div>
         </div>
@@ -132,10 +102,6 @@
 const toggleBtn  = document.getElementById('ssh_toggle');
 const sshFields  = document.getElementById('ssh_fields');
 const chevron    = document.getElementById('ssh_chevron');
-const authSelect = document.getElementById('ssh_auth_type');
-const pwField    = document.getElementById('ssh_password_field');
-const keyField   = document.getElementById('ssh_key_field');
-const ppField    = document.getElementById('ssh_passphrase_field');
 
 toggleBtn.addEventListener('click', () => {
   const open = sshFields.style.display === '';
@@ -168,13 +134,6 @@ document.getElementById('target_type').addEventListener('change', function() {
   document.getElementById('host_label').textContent = labels[this.value] || 'Host / IP / Domain';
   document.getElementById('host_input').placeholder = placeholders[this.value] || '192.168.1.1 or example.com';
   adFields.style.display = this.value === 'ad_domain' ? '' : 'none';
-});
-
-authSelect.addEventListener('change', function() {
-  const isKey = this.value === 'key';
-  pwField.style.display  = isKey ? 'none' : '';
-  keyField.style.display = isKey ? '' : 'none';
-  ppField.style.display  = isKey ? '' : 'none';
 });
 
 adAuthSelect.addEventListener('change', function() {

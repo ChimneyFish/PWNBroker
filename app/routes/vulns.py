@@ -339,7 +339,9 @@ def _reverify_worker(app, ticket_ids):
                 # latest check's (the evidence records when it was checked).
                 r.verification_status, r.verification_evidence = "unconfirmed", None
                 rows.append((t, r))
-            summary = verify_results([r for _, r in rows])
+            from ..scanner.ssh_verify import creds_for
+            summary = verify_results([r for _, r in rows],
+                                     creds_of=lambda r: creds_for(r.scan, r.host))
             now = datetime.now(timezone.utc)
             for t, r in rows:
                 _apply_newer_evidence(t, r, now)

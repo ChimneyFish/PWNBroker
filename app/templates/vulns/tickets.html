@@ -43,11 +43,14 @@
   These were matched from a service's <strong>version banner only</strong>. Nothing has shown they're
   exploitable on these hosts (the vulnerable feature may be disabled or the fix backported), so they
   don't count as open and have no SLA. Each one says why it couldn't be tested. Any that a later scan
-  proves move to Open automatically.
+  proves move to Open automatically. Adding SSH credentials to a target lets scans rule out many of
+  these (vendor backports, modules not loaded).
   {% else %}
   <i class="bi bi-shield-check me-1"></i>
-  A check written for each of these CVEs ran against the live service and the vulnerable behaviour was
-  <strong>not present</strong>. They're kept for reference; expand "Why it's ruled out" for the details.
+  Each of these was <strong>ruled out</strong>: either a check for the CVE ran against the live service and
+  the vulnerable behaviour wasn't there, or a credentialed (SSH) check found the vendor's backported fix
+  installed, the vulnerable module not loaded, or a CVE for a different OS. They're kept for reference;
+  expand "Why it's ruled out" for the evidence.
   {% endif %}
 </div>
 {% endif %}

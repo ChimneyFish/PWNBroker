@@ -1,6 +1,7 @@
 import json
 import os
 import threading
+from types import SimpleNamespace
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from ..models import Scan, Target, ScheduledScan, ScanResult, AtlassianConfig, AssetGroup, Asset, Tag, VulnTicket
@@ -8,6 +9,7 @@ from ..extensions import db
 from ..scheduler.jobs import _next_run_from_cron
 from ..validators import is_valid_port_range
 from .decorators import admin_required
+from ..scanner.ssh_verify import apply_scan_cred_form, copy_scan_creds
 
 scans_bp = Blueprint("scans", __name__, url_prefix="/scans")
 
@@ -136,6 +138,11 @@ def new():
         if not is_valid_port_range(port_range):
             flash(f"'{port_range}' isn't a valid port range (e.g. 1-1024 or 22,80,443).", "danger")
             return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
+        creds = SimpleNamespace()
+        cred_err = apply_scan_cred_form(creds, request.form)
+        if cred_err:
+            flash(cred_err, "danger")
+            return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
 
         # ── Asset group ──────────────────────────────────────────────────────
         if raw_target.startswith("g:"):
@@ -151,6 +158,7 @@ def new():
                     name=f"{name} — {group.name}", target_id=target_obj.id, scan_type=scan_type,
                     port_range=port_range, pen_token=pen_token, created_by=current_user.id, status="pending",
                 )
+                copy_scan_creds(creds, scan)
                 db.session.add(scan)
                 db.session.commit()
 
@@ -182,6 +190,7 @@ def new():
                     target_id=t.id, scan_type=scan_type,
                     port_range=port_range, pen_token=pen_token, created_by=current_user.id, status="pending",
                 )
+                copy_scan_creds(creds, scan)
                 db.session.add(scan)
                 db.session.flush()
                 log_action("scan.create", entity_type="scan", entity_id=scan.id,
@@ -202,6 +211,7 @@ def new():
         scan = Scan(name=name, target_id=target_id, scan_type=scan_type,
                     port_range=port_range, scan_path=scan_path, pen_token=pen_token,
                     created_by=current_user.id, status="pending")
+        copy_scan_creds(creds, scan)
         db.session.add(scan)
         db.session.commit()
 
@@ -217,6 +227,20 @@ def new():
         return redirect(url_for("scans.view", scan_id=scan.id))
 
     return render_template("scans/new.html", targets=targets, groups=groups, scan_types=SCAN_TYPES)
+
+
+@scans_bp.route("/ssh-test", methods=["POST"])
+@login_required
+@admin_required
+def ssh_test():
+    """Test the per-scan SSH login against the chosen target (or test_host)."""
+    from .targets import ssh_test_response
+    raw = (request.form.get("target_id") or "").strip()
+    host = None
+    if raw.isdigit():
+        t = db.session.get(Target, int(raw))
+        host = t.host if t else None
+    return ssh_test_response(SimpleNamespace(), host)
 
 
 @scans_bp.route("/<int:scan_id>")
@@ -291,6 +315,13 @@ def schedule_new():
             return render_template("scans/schedule_new.html", targets=targets,
                                    groups=groups, scan_types=SCAN_TYPES)
 
+        creds = SimpleNamespace()
+        cred_err = apply_scan_cred_form(creds, request.form)
+        if cred_err:
+            flash(cred_err, "danger")
+            return render_template("scans/schedule_new.html", targets=targets,
+                                   groups=groups, scan_types=SCAN_TYPES)
+
         next_run = _next_run_from_cron(cron)
 
         if raw_target.startswith("g:"):
@@ -322,6 +353,7 @@ def schedule_new():
                 created_by=current_user.id, next_run=next_run,
             )
 
+        copy_scan_creds(creds, sched)
         db.session.add(sched)
         db.session.commit()
         flash(f"Scheduled scan '{name}' created.", "success")

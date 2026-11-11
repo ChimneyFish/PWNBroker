@@ -27,7 +27,8 @@
           {% if t.target_type == 'domain' %}
           <span class="badge" style="background:rgba(19,121,140,0.15);color:var(--accent);font-size:0.65rem">DOMAIN</span>
           {% else %}
-          <span class="badge bg-secondary" style="font-size:0.65rem">HOST</span>
+          <span class="badge bg-secondary bg-opacity-20 text-muted" style="font-size:0.65rem">HOST</span>
+          {% if t.ssh_username %}<span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.6rem" title="Credentialed checks: {{ t.ssh_username }}"><i class="bi bi-key-fill me-1"></i>SSH</span>{% endif %}
           {% endif %}
         </td>
         <td><code class="text-primary">{{ t.host }}</code></td>
@@ -45,6 +46,13 @@
           {% if t.target_type == 'domain' %}
           <a href="{{ url_for('targets.detail', target_id=t.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="DNS Records">
             <i class="bi bi-diagram-3"></i>
+          </a>
+          {% endif %}
+          {% if current_user.is_admin and t.target_type in ('host', 'ip', None, '') %}
+          <a href="{{ url_for('targets.credentials', target_id=t.id) }}"
+             class="btn btn-sm {{ 'btn-outline-primary' if t.ssh_username else 'btn-outline-secondary' }} py-0 px-2"
+             title="{{ 'SSH login saved: ' ~ t.ssh_username ~ ' — edit' if t.ssh_username else 'Add SSH credentials for credentialed checks' }}">
+            <i class="bi bi-key{{ '-fill' if t.ssh_username }}"></i>
           </a>
           {% endif %}
           {% if current_user.is_admin %}

@@ -320,7 +320,7 @@ fi
 # scan_for_vulnerabilities() phase) — pinned release, not the `main`-branch
 # "latest" installer some docs suggest. Installed to /usr/local/bin, no sudo
 # needed since this script already runs as root.
-TRIVY_VERSION="v0.68.2"
+TRIVY_VERSION="v0.76.0"
 if command -v trivy &>/dev/null; then
     ok "Trivy already installed ($(trivy --version 2>/dev/null | head -1))"
 else

@@ -259,6 +259,25 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
                 ))
 
 
+def _credentialed_report(scan_id, report):
+    """One info row per host summarising what the SSH checks did."""
+    rows = []
+    for h in report or []:
+        if h["ok"]:
+            title = f"Credentialed checks: ruled out {h['ruled_out']} of {h['checked']} unverified CVEs"
+            desc = (f"Logged in to {h['host']} as {h['user']} ({h.get('os') or 'unknown OS'}) and checked "
+                    f"installed package versions, vendor changelogs (backported fixes) and loaded modules. "
+                    f"{h['ruled_out']} version-matched CVE(s) were ruled out; the rest stay Unverified "
+                    f"with what the check found.")
+        else:
+            title = f"Credentialed checks failed on {h['host']}"
+            desc = (f"Couldn't log in to {h['host']} as {h['user']}: {h['error']}. "
+                    f"Fix the SSH credentials on the target or the scan and rescan, or use Verify now.")
+        rows.append(ScanResult(scan_id=scan_id, result_type="info", host=h["host"],
+                               severity="info", title=title, description=desc))
+    return rows
+
+
 def run_scan(scan_id: int, app=None):
     _app = app or current_app._get_current_object()
     with _app.app_context():
@@ -468,10 +487,13 @@ def run_scan(scan_id: int, app=None):
                     # Deeper, version-precise EOL check via SSH + endoflife.date —
                     # only for full scans against a single credentialed host (skips
                     # subnets/domains, and skips port-only scans to stay fast).
-                    if (scan_type == "full" and scan.target and scan.target.ssh_username
-                            and not _is_cidr(host) and not _is_domain(host)):
+                    from .ssh_verify import creds_for
+                    eol_creds = (creds_for(scan, host)
+                                 if scan_type == "full" and not _is_cidr(host) and not _is_domain(host)
+                                 else None)
+                    if eol_creds:
                         from .eol_scanner import run_eol_scan
-                        for r in run_eol_scan(scan, scan.target):
+                        for r in run_eol_scan(scan, eol_creds):
                             results.append(ScanResult(
                                 scan_id=scan_id,
                                 result_type=r.get("result_type", "info"),
@@ -588,7 +610,9 @@ def run_scan(scan_id: int, app=None):
                 # service before anything is saved (see scanner/verify.py).
                 try:
                     from .verify import verify_results
-                    verify_results(results)
+                    from .ssh_verify import creds_for
+                    summary = verify_results(results, creds_of=lambda r: creds_for(scan, r.host))
+                    results.extend(_credentialed_report(scan_id, summary.get("credentialed")))
                 except Exception as e:
                     current_app.logger.warning("Exploit verification failed: %s", e)
 

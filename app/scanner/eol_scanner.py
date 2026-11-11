@@ -108,14 +108,8 @@ def _ssh_exec(target, commands: dict) -> dict:
     }
 
     if target.ssh_auth_type == "key" and target.ssh_private_key:
-        key_file = io.StringIO(target.ssh_private_key)
-        passphrase = target.ssh_key_passphrase or None
-        # Try RSA first, then Ed25519
-        try:
-            kw["pkey"] = paramiko.RSAKey.from_private_key(key_file, password=passphrase)
-        except Exception:
-            key_file.seek(0)
-            kw["pkey"] = paramiko.Ed25519Key.from_private_key(key_file, password=passphrase)
+        from .ssh_verify import load_private_key
+        kw["pkey"] = load_private_key(target.ssh_private_key, target.ssh_key_passphrase)
     else:
         kw["password"] = target.ssh_password
 
