@@ -16,35 +16,69 @@ _MAX_TRIAGE_HOSTS = 10
 _MAX_SUBDOMAIN_SCAN = 30
 
 # nmap's "vulns" NSE library (shared by most --script vuln modules, e.g.
-# ssl-heartbleed, smb-vuln-ms17-010) prints a "State: VULNERABLE" line when a
-# script's live probe positively confirms the issue, vs "NOT VULNERABLE" or no
-# State line at all otherwise — this is what promotes a hit to "confirmed"
-# rather than the version-correlation guess every CVE/CPE match otherwise is.
-_NSE_VULNERABLE_RE = re.compile(r'State:\s*(?:LIKELY )?VULNERABLE', re.I)
+# ssl-heartbleed, smb-vuln-ms17-010) prints one block per check with a
+# "State:" line: VULNERABLE when the live probe reproduced the issue,
+# LIKELY VULNERABLE when it only matched a heuristic, NOT VULNERABLE when it
+# tested and found the issue absent (shown because the scan passes
+# --script-args vulns.showall). Only VULNERABLE counts as proof.
+_NSE_STATE_RE      = re.compile(r'^\s*State:\s*(.+?)\s*$', re.M)
+_NSE_HEADER_RE     = re.compile(r'^\s*(?:NOT |LIKELY )?VULNERABLE(?: \([^)]*\))?:\s*$', re.M)
 _NSE_CVE_RE        = re.compile(r'CVE-\d{4}-\d{4,7}')
 _NSE_RISK_RE       = re.compile(r'Risk factor:\s*(\w+)', re.I)
 _NSE_RISK_TO_SEVERITY = {"critical": "critical", "high": "high", "medium": "medium", "low": "low"}
 
 
+def _nse_blocks(output: str):
+    """Split one script's output into (verdict, text) per vulns-library
+    block — a script can report several checks. verdict is confirmed /
+    likely / not_vulnerable; blocks with any other state are skipped."""
+    starts = [m.start() for m in _NSE_HEADER_RE.finditer(output)] or [0]
+    chunks = [output[a:b] for a, b in zip(starts, starts[1:] + [len(output)])]
+    out = []
+    for chunk in chunks:
+        m = _NSE_STATE_RE.search(chunk)
+        if not m:
+            continue
+        state = m.group(1).upper()
+        if state.startswith("NOT VULNERABLE"):
+            out.append(("not_vulnerable", chunk))
+        elif state.startswith("LIKELY VULNERABLE"):
+            out.append(("likely", chunk))
+        elif state.startswith("VULNERABLE"):
+            out.append(("confirmed", chunk))
+    return out
+
+
 def _parse_nse_vuln_scripts(scripts: dict, host: str, port, protocol: str) -> list:
-    """Turn positive nmap NSE vuln-category script output into confirmed
-    vulnerability ScanResult dicts. `scripts` is nmap-python's {script_name:
-    output_text} dict for one port — everything not from the vulns.lua
-    library (most of "default") won't match and is silently skipped."""
+    """Turn nmap NSE vuln-category output for one port into findings.
+    `scripts` is python-nmap's {script_name: output_text} dict. Returns dicts
+    with a "verdict" of confirmed / likely / not_vulnerable; not_vulnerable
+    entries carry the CVEs nmap tested and cleared (used to rule out matching
+    version-correlated CVEs), they are not findings themselves."""
     findings = []
     for script_name, output in (scripts or {}).items():
-        if not output or not _NSE_VULNERABLE_RE.search(output):
+        if not output:
             continue
-        cve_ids = _NSE_CVE_RE.findall(output)
-        risk_match = _NSE_RISK_RE.search(output)
-        severity = _NSE_RISK_TO_SEVERITY.get(
-            (risk_match.group(1).lower() if risk_match else ""), "high")
-        findings.append({
-            "cve_id": cve_ids[0] if cve_ids else None,
-            "severity": severity,
-            "title": f"{script_name}: confirmed vulnerable — {host}:{port}/{protocol}",
-            "description": output.strip(),
-        })
+        for verdict, text in _nse_blocks(output):
+            cve_ids = _NSE_CVE_RE.findall(text)
+            if verdict == "not_vulnerable":
+                findings.append({"verdict": "not_vulnerable", "cve_ids": cve_ids,
+                                 "script": script_name, "description": text.strip()})
+                continue
+            risk_match = _NSE_RISK_RE.search(text)
+            severity = _NSE_RISK_TO_SEVERITY.get(
+                (risk_match.group(1).lower() if risk_match else ""), "high")
+            likely = verdict == "likely"
+            findings.append({
+                "verdict": "likely" if likely else "confirmed",
+                "script": script_name,
+                "cve_id": cve_ids[0] if cve_ids else None,
+                "cve_ids": cve_ids,
+                "severity": severity,
+                "title": (f"{script_name}: {'possibly' if likely else 'confirmed'} vulnerable"
+                          f" — {host}:{port}/{protocol}"),
+                "description": text.strip(),
+            })
     return findings
 
 # Every call site (scheduled tag/manual group scans, the eol/secrets/dependency/
@@ -152,20 +186,36 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
         ))
 
         # NSE vuln-category scripts actively probed this port and reported a
-        # real verdict — promote a positive hit ahead of (and independent of)
-        # do_cve, since it's a live confirmation rather than a version guess.
-        for nse_hit in _parse_nse_vuln_scripts(p.get("scripts"), p["host"], p["port"], p["protocol"]):
+        # verdict. VULNERABLE is live proof; LIKELY VULNERABLE is a heuristic
+        # that still needs proof; NOT VULNERABLE clears the CVEs it tested.
+        from .verify import evidence
+        nse = _parse_nse_vuln_scripts(p.get("scripts"), p["host"], p["port"], p["protocol"])
+        nse_proven, nse_cleared = {}, {}
+        for hit in nse:
+            if hit["verdict"] == "not_vulnerable":
+                for c in hit["cve_ids"]:
+                    nse_cleared.setdefault(c, hit)
+                continue
+            confirmed = hit["verdict"] == "confirmed"
+            if confirmed:
+                for c in hit["cve_ids"]:
+                    nse_proven.setdefault(c, hit)
             results.append(ScanResult(
                 scan_id=scan_id,
                 result_type="vulnerability",
                 host=p["host"],
                 port=p["port"],
                 service=p.get("service"),
-                severity=nse_hit["severity"],
-                title=nse_hit["title"],
-                description=nse_hit["description"],
-                cve_id=nse_hit["cve_id"],
-                verification_status="confirmed",
+                severity=hit["severity"],
+                title=hit["title"],
+                description=hit["description"],
+                cve_id=hit["cve_id"],
+                match_confidence="none" if confirmed else "heuristic",
+                verification_status="confirmed" if confirmed else "unconfirmed",
+                verification_evidence=evidence(
+                    "nmap", hit["script"], "confirmed" if confirmed else "unconfirmed",
+                    "nmap's check reproduced the issue on the live service." if confirmed else
+                    "nmap's check only matched a heuristic (LIKELY VULNERABLE) — not proof."),
             ))
 
         if do_cve:
@@ -175,6 +225,22 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
                 cpe=p.get("cpe", ""),
             )
             for cve in cves:
+                # A CPE/keyword-correlated CVE match: NVD says this
+                # product+version *can* be vulnerable, not that this host is
+                # (the feature may be disabled, the fix backported, or the
+                # banner wrong). It starts unconfirmed; nmap's own verdict for
+                # the same CVE settles it here, otherwise verify.py tests it.
+                status, ev = "unconfirmed", None
+                if cve["cve_id"] in nse_proven:
+                    status = "confirmed"
+                    ev = evidence("nmap", nse_proven[cve["cve_id"]]["script"], status,
+                                  "nmap's check for this CVE reproduced it on the live service.")
+                elif cve["cve_id"] in nse_cleared:
+                    status = "not_exploitable"
+                    ev = evidence("nmap", nse_cleared[cve["cve_id"]]["script"], status,
+                                  "nmap's check for this CVE ran against the live service and "
+                                  "reported NOT VULNERABLE.",
+                                  proof=nse_cleared[cve["cve_id"]]["description"][:1500])
                 results.append(ScanResult(
                     scan_id=scan_id,
                     result_type="vulnerability",
@@ -188,13 +254,8 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
                     cvss_score=cve["cvss_score"],
                     cpe=cve.get("cpe", ""),
                     match_confidence=cve.get("match_confidence", "none"),
-                    # A CPE/keyword-correlated CVE match: NVD says this
-                    # product+version *can* be vulnerable, not that this
-                    # specific host demonstrably is — the banner could be
-                    # stale, backported-patched, or simply wrong. Left as the
-                    # column's "unconfirmed" default explicitly, so it reads
-                    # clearly here rather than relying on a schema default.
-                    verification_status="unconfirmed",
+                    verification_status=status,
+                    verification_evidence=ev,
                 ))
 
 
@@ -522,6 +583,14 @@ def run_scan(scan_id: int, app=None):
                                     description=f["description"],
                                     remediation=f.get("remediation", ""),
                                 ))
+
+                # Prove or rule out every version-matched CVE against the live
+                # service before anything is saved (see scanner/verify.py).
+                try:
+                    from .verify import verify_results
+                    verify_results(results)
+                except Exception as e:
+                    current_app.logger.warning("Exploit verification failed: %s", e)
 
                 db.session.bulk_save_objects(results)
                 scan.status = "done"

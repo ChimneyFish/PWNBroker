@@ -198,6 +198,7 @@ def create_app(config_class=Config):
         _migrate_dedupe_assets(app)
         _migrate_indexes(app)
         _migrate_encrypt_secrets(app)
+        _migrate_unproven_tickets(app)
         _seed_admin(app)
         _recover_orphaned_scans(app)
         _register_sso_providers(app)
@@ -338,6 +339,7 @@ def _migrate_columns(app):
             ("cpe", "VARCHAR(256)"),
             ("match_confidence", "VARCHAR(20) DEFAULT 'none'"),
             ("verification_status", "VARCHAR(20) DEFAULT 'unconfirmed'"),
+            ("verification_evidence", "TEXT"),
         ],
         "threat_configs": [
             ("securitytrails_api_key",  "VARCHAR(512)"),
@@ -401,6 +403,42 @@ def _migrate_columns(app):
                 if col_name not in existing:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"))
         conn.commit()
+
+
+def _migrate_unproven_tickets(app):
+    """Tickets auto-created from version-only CVE matches before exploit
+    verification existed are moved to "unverified", so they stop counting as
+    open until a scan proves them. Only untouched tickets move (still "open",
+    unassigned, no notes); the note added here makes this run once per ticket,
+    so a ticket someone deliberately reopens stays open."""
+    from .models import ScanResult, VulnTicket
+    # Findings: version-only matches leave result_type "vulnerability" so
+    # counts, reports and integrations only see proven ones.
+    for status, rtype in (("not_exploitable", "not_exploitable"), (None, "unverified")):
+        q = ScanResult.query.filter(
+            ScanResult.result_type == "vulnerability",
+            ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")))
+        q = (q.filter(ScanResult.verification_status == status) if status
+             else q.filter(ScanResult.verification_status.notin_(("confirmed", "not_exploitable"))))
+        n = q.update({ScanResult.result_type: rtype}, synchronize_session=False)
+        if n:
+            app.logger.info("Reclassified %d version-only findings as %s", n, rtype)
+    db.session.commit()
+
+    q = (VulnTicket.query.join(ScanResult, VulnTicket.scan_result_id == ScanResult.id)
+         .filter(VulnTicket.status == "open", VulnTicket.assigned_to.is_(None),
+                 VulnTicket.notes.is_(None),
+                 ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")),
+                 ScanResult.verification_status != "confirmed"))
+    moved = 0
+    for t in q.all():
+        t.status = "unverified"
+        t.notes = ("[system] Moved to Unverified: this was matched from the service's version "
+                   "banner only. It reopens automatically if a scan proves it exploitable.")
+        moved += 1
+    if moved:
+        db.session.commit()
+        app.logger.info("Moved %d version-only vuln tickets to unverified", moved)
 
 
 def _migrate_indexes(app):

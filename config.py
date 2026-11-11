@@ -64,6 +64,11 @@ class Config:
     # Scanner
     NMAP_PATH = os.environ.get("NMAP_PATH", "/usr/bin/nmap")
     NVD_API_KEY = os.environ.get("NVD_API_KEY", "")
+    # Exploit verification of version-matched CVEs (app/scanner/verify.py).
+    # VULN_VERIFY=0 turns it off (findings then stay "unverified").
+    VULN_VERIFY = os.environ.get("VULN_VERIFY", "1")
+    NUCLEI_BIN = os.environ.get("NUCLEI_BIN", "")                     # default: tools/nuclei/nuclei or PATH
+    NUCLEI_TEMPLATES_DIR = os.environ.get("NUCLEI_TEMPLATES_DIR", "")  # default: data/nuclei-templates
     NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     NVD_CPE_API_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
 

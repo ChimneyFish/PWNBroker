@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "vulns/_verification.html" as vb %}
 {% block title %}{{ target.name }} — Vulns — PwnBroker{% endblock %}
 {% block page_title %}{{ target.name }}{% endblock %}
 
@@ -151,23 +152,9 @@
           {% if t.cve_id %}
           <a href="https://nvd.nist.gov/vuln/detail/{{ t.cve_id }}" target="_blank"
              class="badge bg-danger text-white no-underline" style="font-size:0.65rem;white-space:nowrap">{{ t.cve_id }}</a>
-          {% if t.scan_result and t.scan_result.verification_status == 'confirmed' %}
-          <span class="badge bg-success bg-opacity-20 text-success block mt-1" style="font-size:0.6rem;white-space:nowrap"
-                title="An active probe demonstrated this against the live target">
-            <i class="bi bi-shield-fill-check me-1"></i>Confirmed
-          </span>
-          {% elif t.scan_result and t.scan_result.match_confidence == 'cpe' %}
-          <span class="badge bg-success bg-opacity-20 text-success block mt-1" style="font-size:0.6rem;white-space:nowrap"
-                title="Version-matched via CPE — NVD applied its own version-range check, not independently verified against this host">
-            <i class="bi bi-patch-check-fill me-1"></i>CPE-matched
-          </span>
-          {% elif t.scan_result and t.scan_result.match_confidence == 'keyword' %}
-          <span class="badge bg-warning bg-opacity-20 text-warning block mt-1" style="font-size:0.6rem;white-space:nowrap"
-                title="No CPE could be resolved for this service — matched by free-text keyword search only, verify manually">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>Keyword match
-          </span>
-          {% endif %}
+          {{ vb.verification_badge(t.scan_result, block=True) }}
           {% else %}<span class="text-muted">—</span>{% endif %}
+          {{ vb.evidence_details(t.scan_result) }}
         </td>
         <td class="small text-muted">{{ t.cvss_score or '—' }}</td>
         <td>
@@ -194,7 +181,8 @@
           {% endif %}
         </td>
         <td class="small text-muted">
-          {% if t.status == 'patched' and t.patched_at %}
+          {% if t.is_unproven %}—
+          {% elif t.status == 'patched' and t.patched_at %}
             <span class="text-success">{{ t.patched_at | localdt('%Y-%m-%d') }}</span>
           {% elif t.due_date %}
             {{ t.due_date | localdt('%Y-%m-%d') }}
@@ -238,6 +226,8 @@
             <option value="patched">Patched</option>
             <option value="accepted_risk">Accepted Risk</option>
             <option value="false_positive">False Positive</option>
+            <option value="unverified">Unverified</option>
+            <option value="not_exploitable">Not Exploitable</option>
           </select>
         </div>
         <div class="mb-4">

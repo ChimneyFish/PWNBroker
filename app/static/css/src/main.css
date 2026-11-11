@@ -546,7 +546,7 @@ body {
 .sev-info     { background: rgba(71,85,105,0.10);   color: #475569; }
 
 /* ── Status badges ───────────────────────────────────────────────────────── */
-.badge-status { font-size: 0.68rem; font-weight: 700; padding: 3px 9px; border-radius: 4px; letter-spacing: 0.05em; }
+.badge-status { white-space: nowrap; font-size: 0.68rem; font-weight: 700; padding: 3px 9px; border-radius: 4px; letter-spacing: 0.05em; }
 .status-pending  { background: rgba(71,85,105,0.12);   color: #475569; }
 .status-running  { background: rgba(19,121,140,0.12);  color: var(--accent); }
 .status-done     { background: rgba(22,163,74,0.12);   color: #15803d; }
@@ -923,3 +923,13 @@ body {
   border-radius: 4px; padding: 3px 10px;
 }
 .live-badge i { color: var(--accent-red); }
+
+/* Exploit verification (vulns/_verification.html) */
+.status-unverified      { background: rgba(217,119,6,0.12);  color: #b45309; }
+.status-not_exploitable { background: rgba(71,85,105,0.12);  color: #475569; }
+.verify-evidence { margin-top: 4px; font-size: 0.7rem; }
+.verify-evidence summary { cursor: pointer; color: var(--accent); }
+.verify-evidence-body { margin-top: 4px; padding: 6px 8px; border-left: 2px solid var(--border-color); }
+.verify-evidence-body > div { margin-bottom: 2px; }
+.verify-evidence pre { margin: 4px 0 0; max-height: 220px; overflow: auto; white-space: pre-wrap;
+  word-break: break-all; font-size: 0.66rem; background: rgba(11,42,79,0.05); padding: 6px; border-radius: 4px; }

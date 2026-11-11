@@ -305,6 +305,37 @@ Active schedules can be paused/resumed with the toggle on the Scans index page. 
 
 The Vuln Management module tracks findings as tickets through their remediation lifecycle.
 
+### Only proven vulnerabilities are counted
+
+A CVE matched from a service's version banner only says the product *can* be
+vulnerable; whether this host is depends on configuration. (Apache 2.4.49 is
+only exploitable through CVE-2021-41773 if a non-default setting allows it.)
+So every version-matched CVE is re-tested against the live service with a
+check written for that CVE, and gets one of three verdicts:
+
+| Verdict | What happened | Counted? |
+|---|---|---|
+| **Exploitable** | The check reproduced the issue. The proof (request + response) is on the finding. | Yes — open ticket with SLA |
+| **Not exploitable** | The check ran cleanly and the vulnerable behaviour wasn't there (feature disabled, fix backported, not that product). | No — kept under "Not Exploitable" |
+| **Unverified** | No safe check exists for this CVE, or the check couldn't complete. Each one says why. | No — kept under "Unverified" |
+
+- Checks come from the nuclei template library (~4,500 CVEs), installed by
+  `setup.sh` and refreshed weekly. nmap's own vuln-script verdicts count too
+  (VULNERABLE proves, NOT VULNERABLE rules out; LIKELY VULNERABLE is not proof).
+- Only safe checks run: never ones tagged DoS/intrusive/fuzzing, never ones
+  needing credentials, and never ones that call out to an external server —
+  no scan data leaves your network.
+- A later scan that proves an unverified finding reopens it automatically; a
+  rescan that shows an open one is no longer exploitable (fixed, or the
+  feature turned off) closes it as Not Exploitable.
+- **Verify now** on the Vulnerabilities page re-tests every unverified finding
+  without a full rescan (useful after the check library updates).
+- Dashboard, reports, exports and Jira/Confluence only include proven
+  vulnerabilities. Dependency (OSV), EOL, secrets and other non-version
+  findings are unchanged.
+- Set `VULN_VERIFY=0` in `.env` to turn checking off (findings then stay
+  unverified).
+
 ### Vuln Tickets (`/vulns/tickets`)
 
 A ticket is automatically created for each unique vulnerability the first time it is found on a host. If the same CVE reappears on the same host in a later scan, the existing ticket is updated rather than duplicated.
@@ -317,7 +348,9 @@ A ticket is automatically created for each unique vulnerability the first time i
 | In Progress | Someone is actively remediating |
 | Patched | Fix confirmed |
 | Accepted Risk | Risk accepted by the team |
-| False Positive | Finding is not actually exploitable |
+| False Positive | Finding is wrong (marked by hand) |
+| Unverified | Version match only, not proven on this host (no SLA) |
+| Not Exploitable | The CVE's check ran and the issue wasn't present (no SLA) |
 
 **SLA tracking**: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.
 

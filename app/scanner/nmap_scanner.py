@@ -123,7 +123,10 @@ def run_port_scan(host: str, port_range: str = "1-1024") -> Tuple[List[Dict], Di
     if is_subnet:
         args = f"-sV {pn_flag}--open -T4"
     else:
-        args = f"-sV {pn_flag}--script default,vuln -O --osscan-guess --open -T4"
+        # vulns.showall makes vuln scripts also print NOT VULNERABLE verdicts,
+        # which verify a version-matched CVE as not exploitable on this host.
+        args = (f"-sV {pn_flag}--script default,vuln --script-args vulns.showall "
+                f"-O --osscan-guess --open -T4")
 
     try:
         nm.scan(hosts=host, ports=port_range, arguments=args)

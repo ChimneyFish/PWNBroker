@@ -22,58 +22,126 @@ def _derive_vuln_name(r):
     return r.title or ""
 
 
+def _proof_status(r):
+    """Ticket status a finding should have based on what was proven.
+    Findings that are only inferred (version banner / heuristic) don't become
+    actionable tickets until an active check confirms them."""
+    if r.is_inferred and r.verification_status != "confirmed":
+        return "not_exploitable" if r.verification_status == "not_exploitable" else "unverified"
+    return "patched" if r.is_remediated else "open"
+
+
+def _note(t, text):
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+    t.notes = f"[{ts} system] {text}\n{t.notes or ''}".strip()
+
+
+def _apply_newer_evidence(t, r, now):
+    """A later scan re-tested a vuln that already has a ticket. Proof moves
+    the ticket: confirmed → open, ruled out → not_exploitable. Tickets someone
+    is handling by hand (in progress, accepted risk, …) aren't touched except
+    to note a ruled-out result. Returns True if the ticket changed."""
+    if not r.is_inferred and r.verification_status != "confirmed":
+        return False
+    new = _proof_status(r)
+    if new == "open" and t.status in ("unverified", "not_exploitable"):
+        sla = _SLA_DAYS.get(r.severity, 90)
+        t.status, t.scan_result_id = "open", r.id
+        t.opened_at, t.sla_days, t.due_date = now, sla, now + timedelta(days=sla)
+        t.patched_at = None
+        _note(t, "Reopened: a scan confirmed this is exploitable on the live service.")
+        return True
+    if new == "not_exploitable" and t.status == "unverified":
+        t.status, t.scan_result_id = "not_exploitable", r.id
+        _note(t, "Ruled out: the check for this CVE ran and the vulnerable behaviour was not present.")
+        return True
+    if (new == "not_exploitable" and t.status in ("open", "in_progress")
+            and t.scan_result and t.scan_result.is_inferred):
+        t.status, t.scan_result_id = "not_exploitable", r.id
+        _note(t, "Closed: a rescan's check shows this is no longer exploitable "
+                 "(fixed, or the vulnerable feature was disabled).")
+        return True
+    return False
+
+
 def _auto_sync():
-    """Create VulnTickets for vulnerability ScanResults not yet tracked, deduplicating by device+vuln."""
+    """Create VulnTickets for vulnerability ScanResults not yet tracked,
+    deduplicating by device+vuln. Version-only CVE matches get an
+    "unverified"/"not_exploitable" ticket (not counted as open) unless an
+    active check proved them; newer proof updates the existing ticket."""
     now = datetime.now(timezone.utc)
 
-    # Build two seen-sets: by scan_result_id (fast skip) and by (target, host, vuln-key) (dedup)
-    tracked_sr  = set()
-    tracked_key = set()
-    for t in VulnTicket.query.with_entities(
-        VulnTicket.scan_result_id, VulnTicket.target_id,
-        VulnTicket.host_ip, VulnTicket.cve_id, VulnTicket.title
-    ).all():
-        tracked_sr.add(t.scan_result_id)
-        tracked_key.add((t.target_id, t.host_ip or "", t.cve_id or t.title or ""))
+    by_key = {}   # (target, host, vuln-key) → ticket (dedup)
+    for t in VulnTicket.query.all():
+        by_key.setdefault((t.target_id, t.host_ip or "", t.cve_id or t.title or ""), t)
 
-    results = ScanResult.query.filter_by(result_type="vulnerability").all()
-
-    changed = False
+    # One verdict per (device, vuln, scan): the same CVE can be reported on
+    # several ports of a host — proven on any port means exploitable; ruled
+    # out only if every port was ruled out. Oldest scan first, so the newest
+    # verdict is the one that sticks, and an older scan never overrides a
+    # newer one (otherwise two ports with different verdicts would flip the
+    # ticket back and forth on every page load).
+    results = (ScanResult.query
+               .filter(ScanResult.result_type.in_(("vulnerability", "unverified", "not_exploitable")))
+               .order_by(ScanResult.scan_id, ScanResult.id).all())
+    # Groups include results already linked to a ticket, so a scan's verdict
+    # is always judged across all of its ports.
+    groups = {}
     for r in results:
-        if r.id in tracked_sr:
-            continue
         scan = r.scan
         if not scan or not scan.target_id:
             continue
-        host    = r.host or ""
-        vuln_key = r.cve_id or r.title or ""
-        dedup_key = (scan.target_id, host, vuln_key)
-        if dedup_key in tracked_key:
-            continue  # same vuln on same device already has a ticket
+        key = (scan.target_id, r.host or "", r.cve_id or r.title or "")
+        groups.setdefault((key, r.scan_id), []).append(r)
 
+    def representative(rs):
+        for r in rs:
+            if r.verification_status == "confirmed" or not r.is_inferred:
+                return r
+        if all(r.verification_status == "not_exploitable" for r in rs):
+            return rs[0]
+        return next((r for r in rs if r.verification_status == "unconfirmed"), rs[0])
+
+    changed = False
+    for (dedup_key, scan_id), rs in sorted(groups.items(), key=lambda kv: kv[0][1]):
+        r = representative(rs)
+        scan = r.scan
+        existing = by_key.get(dedup_key)
+        if existing is not None:
+            # same vuln on same device already has a ticket
+            linked = existing.scan_result
+            if linked is not None and linked.scan_id is not None and scan_id < linked.scan_id:
+                continue  # older evidence than what the ticket already reflects
+            if _apply_newer_evidence(existing, r, now):
+                changed = True
+            continue
+
+        status = _proof_status(r)
         sla    = _SLA_DAYS.get(r.severity, 90)
         opened = scan.completed_at or scan.created_at or now
         if opened.tzinfo is None:
             opened = opened.replace(tzinfo=timezone.utc)
-        db.session.add(VulnTicket(
+        t = VulnTicket(
             scan_result_id = r.id,
             target_id      = scan.target_id,
             title          = r.title,
             vuln_name      = _derive_vuln_name(r),
-            host_ip        = host,
+            host_ip        = r.host or "",
             severity       = r.severity,
             cve_id         = r.cve_id,
             cvss_score     = r.cvss_score,
             description    = r.description,
             remediation    = r.remediation,
             scan_type      = "dependency" if scan.scan_type == "osv" else "host",
-            status         = "patched" if r.is_remediated else "open",
+            status         = status,
             sla_days       = sla,
             due_date       = opened + timedelta(days=sla),
             opened_at      = opened,
-            patched_at     = now if r.is_remediated else None,
-        ))
-        tracked_key.add(dedup_key)
+            patched_at     = now if status == "patched" else None,
+        )
+        db.session.add(t)
+        db.session.flush()   # so t.scan_result resolves for later groups
+        by_key[dedup_key] = t
         changed = True
 
     # Backfill host_ip / vuln_name for tickets created before these fields existed
@@ -105,6 +173,8 @@ def index():
     # Group by individual device (target + specific host IP)
     by_device = {}
     for t in tickets:
+        if t.is_unproven:
+            continue
         host = t.host_ip or t.target.host
         key  = (t.target_id, host)
         if key not in by_device:
@@ -126,9 +196,14 @@ def index():
             row["patched"] += 1
 
     device_rows = sorted(by_device.values(), key=lambda x: x["open"], reverse=True)
+    unverified      = sum(1 for t in tickets if t.status == "unverified")
+    not_exploitable = sum(1 for t in tickets if t.status == "not_exploitable")
 
     return render_template("vulns/index.html",
                            device_rows=device_rows,
+                           total_unverified=unverified,
+                           total_not_exploitable=not_exploitable,
+                           verify_state=_verify_state,
                            total_open=len(open_t),
                            total_critical=len(critical),
                            total_overdue=len(overdue),
@@ -243,3 +318,59 @@ def ticket_update(ticket_id):
         "days_open":     t.days_open,
         "risk_entry_id": risk.id if risk else (t.risk_entry.id if t.risk_entry else None),
     })
+
+
+# ── Re-verify unproven findings against the live services ──────────────────
+
+_verify_state = {"running": False, "started": None, "summary": None, "error": None}
+
+
+def _reverify_worker(app, ticket_ids):
+    from ..scanner.verify import verify_results
+    with app.app_context():
+        try:
+            tickets = VulnTicket.query.filter(VulnTicket.id.in_(ticket_ids)).all()
+            rows = []
+            for t in tickets:
+                r = t.scan_result
+                if not r or not r.cve_id or not r.port or not r.is_inferred:
+                    continue
+                # Re-test in place: the finding's verdict/evidence become the
+                # latest check's (the evidence records when it was checked).
+                r.verification_status, r.verification_evidence = "unconfirmed", None
+                rows.append((t, r))
+            summary = verify_results([r for _, r in rows])
+            now = datetime.now(timezone.utc)
+            for t, r in rows:
+                _apply_newer_evidence(t, r, now)
+            db.session.commit()
+            _verify_state["summary"] = summary
+        except Exception as e:  # pragma: no cover - surfaced on the page
+            db.session.rollback()
+            _verify_state["error"] = str(e)
+        finally:
+            _verify_state["running"] = False
+
+
+@vulns_bp.route("/reverify", methods=["POST"])
+@login_required
+@admin_required
+def reverify():
+    """Re-test every unverified finding (e.g. after nuclei templates update or
+    the service changed) without running full scans."""
+    import threading
+    from flask import current_app, flash
+    if _verify_state["running"]:
+        flash("Verification is already running.", "info")
+        return redirect(url_for("vulns.index"))
+    ids = [t.id for t in VulnTicket.query.filter_by(status="unverified").all()]
+    if not ids:
+        flash("Nothing to verify — there are no unverified findings.", "info")
+        return redirect(url_for("vulns.index"))
+    _verify_state.update(running=True, started=datetime.now(timezone.utc), summary=None, error=None)
+    threading.Thread(target=_reverify_worker,
+                     args=(current_app._get_current_object(), ids), daemon=True).start()
+    from ..audit import log_action
+    log_action("vuln.reverify", entity_type="vuln_ticket", entity_name=f"{len(ids)} findings")
+    flash(f"Verifying {len(ids)} unverified findings against the live services…", "info")
+    return redirect(url_for("vulns.index"))

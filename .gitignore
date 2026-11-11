@@ -7,6 +7,9 @@ data/ssl/
 data/license.key
 data/install_id.txt
 data/license_state.json
+data/nuclei-templates/
+data/nuclei-home/
+tools/nuclei/
 # Vendor license signing keys must never be committed
 *.lic
 private_key.pem

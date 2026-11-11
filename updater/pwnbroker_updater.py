@@ -60,7 +60,7 @@ HEALTH_TIMEOUT = 180
 # Never deleted, overwritten or included in code backups: runtime state and
 # things setup.sh installs next to the code.
 PRESERVE = ("data", "logs", "evidence_uploads", "venv", "docker", ".git", ".env",
-            "tools/pen", "tools/reaper", "tools/backdoor_detector", "releases_out",
+            "tools/pen", "tools/reaper", "tools/backdoor_detector", "tools/nuclei", "releases_out",
             "app/static/agent/PwnBrokerAgentSetup.exe")
 RELEASE_FILES = ".release_files"
 
@@ -316,7 +316,8 @@ class Updater:
                 t.add(self._p(rel), arcname=rel, recursive=False)
         with tarfile.open(os.path.join(d, "data.tar.gz"), "w:gz") as t:
             t.add(self.data, arcname="data",
-                  filter=lambda ti: None if ti.name.startswith(("data/logs", "data/.update")) else ti)
+                  filter=lambda ti: None if ti.name.startswith(
+                      ("data/logs", "data/.update", "data/nuclei-templates", "data/nuclei-home")) else ti)
         meta = {"from_version": self.current_version(), "to_version": to_version,
                 "created": _now().isoformat(timespec="seconds"),
                 "requirements_sha256": self._requirements_hash()}

@@ -39,9 +39,11 @@ class TestParseNseVulnScripts:
         assert f["severity"] == "high"
         assert "smb-vuln-ms17-010" in f["title"]
 
-    def test_not_vulnerable_is_skipped(self):
-        scripts = {"smb-vuln-ms17-010": _NOT_VULNERABLE_OUTPUT}
-        assert _parse_nse_vuln_scripts(scripts, "10.0.0.5", 445, "tcp") == []
+    def test_not_vulnerable_is_not_a_finding_but_clears_its_cves(self):
+        scripts = {"smb-vuln-ms17-010": _NOT_VULNERABLE_OUTPUT + "  IDs:  CVE:CVE-2017-0143\n"}
+        out = _parse_nse_vuln_scripts(scripts, "10.0.0.5", 445, "tcp")
+        assert [f["verdict"] for f in out] == ["not_vulnerable"]
+        assert out[0]["cve_ids"] == ["CVE-2017-0143"]
 
     def test_empty_or_missing_scripts_dict(self):
         assert _parse_nse_vuln_scripts({}, "10.0.0.5", 445, "tcp") == []
@@ -52,10 +54,10 @@ class TestParseNseVulnScripts:
         findings = _parse_nse_vuln_scripts(scripts, "10.0.0.5", 22, "tcp")
         assert findings[0]["severity"] == "high"
 
-    def test_likely_vulnerable_state_also_counts(self):
+    def test_likely_vulnerable_is_reported_but_not_as_proof(self):
         scripts = {"ssl-heartbleed": "State: LIKELY VULNERABLE\nRisk factor: HIGH"}
         findings = _parse_nse_vuln_scripts(scripts, "10.0.0.5", 443, "tcp")
-        assert len(findings) == 1
+        assert len(findings) == 1 and findings[0]["verdict"] == "likely"
 
 
 class TestAppendPortResultsNseIntegration:

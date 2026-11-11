@@ -283,8 +283,9 @@ class TestMatchConfidenceBadge:
         resp = admin_client.get(f"/scans/{scan_id}")
         body = resp.data.decode()
         assert resp.status_code == 200
-        assert "CPE-matched" in body
-        assert "Keyword match" in body
+        # Version-matched CVEs are shown as unproven until a check proves them.
+        assert body.count("Unverified") >= 2
+        assert "keyword match" in body
 
     def test_vulns_pages_show_badge_via_linked_scan_result(self, app, admin_client):
         """vulns.device / vulns.tickets render VulnTicket rows, which don't
@@ -320,14 +321,15 @@ class TestMatchConfidenceBadge:
         device_resp = admin_client.get(f"/vulns/device/{target_id}")
         device_body = device_resp.data.decode()
         assert device_resp.status_code == 200
-        assert "CPE-matched" in device_body
-        assert "Keyword match" in device_body
+        assert device_body.count("Unverified") >= 2
 
         tickets_resp = admin_client.get("/vulns/tickets?status=all")
         tickets_body = tickets_resp.data.decode()
         assert tickets_resp.status_code == 200
-        assert "CPE-matched" in tickets_body
-        assert "Keyword match" in tickets_body
+        assert "CVE-2021-0003" in tickets_body and "CVE-2021-0004" in tickets_body
+        # ...but they aren't open tickets
+        open_body = admin_client.get("/vulns/tickets?status=open").data.decode()
+        assert "CVE-2021-0003" not in open_body and "CVE-2021-0004" not in open_body
 
 
 class TestEnrichScanCves:
@@ -348,3 +350,37 @@ class TestEnrichScanCves:
             assert e is not None
             assert e.epss_score == 0.9
             assert e.kev_listed is True
+
+
+class TestCpeLookupReturnsEveryCve:
+    """Regression: the CPE lookup used to request only 5 results and NVD
+    returns oldest first, so Apache 2.4.49 got 2007-2011 CVEs and never
+    CVE-2021-41773."""
+
+    def _item(self, cve_id, score):
+        return {"cve": {"id": cve_id, "descriptions": [{"lang": "en", "value": cve_id}],
+                        "metrics": {"cvssMetricV31": [{"cvssData": {"baseScore": score}}]}}}
+
+    def test_pages_through_all_results_newest_most_severe_first(self, app):
+        pages = [
+            {"totalResults": 3, "vulnerabilities": [self._item("CVE-2007-0001", 4.3),
+                                                     self._item("CVE-2011-0001", 5.0)]},
+            {"totalResults": 3, "vulnerabilities": [self._item("CVE-2021-41773", 7.5)]},
+        ]
+        calls = []
+
+        def fake(url, params, key, max_retries=5):
+            calls.append(params["startIndex"])
+            return pages[len(calls) - 1]
+        with app.app_context(), patch.object(cl, "_nvd_get", side_effect=fake):
+            out = cl.lookup_cves_by_cpe("cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*")
+            again = cl.lookup_cves_by_cpe("cpe:2.3:a:apache:http_server:2.4.49:*:*:*:*:*:*:*")
+        assert calls == [0, 2]                      # second call served from cache
+        assert [c["cve_id"] for c in out] == ["CVE-2021-41773", "CVE-2011-0001", "CVE-2007-0001"]
+        assert again == out
+
+    def test_failed_page_is_not_cached(self, app):
+        with app.app_context(), patch.object(cl, "_nvd_get", return_value=None) as m:
+            assert cl.lookup_cves_by_cpe("cpe:2.3:a:x:y:1:*:*:*:*:*:*:*") == []
+            cl.lookup_cves_by_cpe("cpe:2.3:a:x:y:1:*:*:*:*:*:*:*")
+        assert m.call_count == 2

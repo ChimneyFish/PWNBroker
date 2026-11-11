@@ -1,0 +1,40 @@
+{# Exploitability badge + evidence for a ScanResult (see scanner/verify.py). #}
+
+{% macro verification_badge(r, block=False) -%}
+{%- if r -%}
+{%- set cls = "badge no-underline" ~ (" block mt-1" if block else "") -%}
+{%- set ev = r.evidence -%}
+{%- if r.verification_status == 'confirmed' -%}
+<span class="{{ cls }} bg-danger bg-opacity-20 text-danger" style="font-size:0.62rem;white-space:nowrap"
+      title="Proven: {{ (ev.detail if ev else 'an active check reproduced this against the live service') }}">
+  <i class="bi bi-shield-fill-exclamation me-1"></i>Exploitable
+</span>
+{%- elif r.verification_status == 'not_exploitable' -%}
+<span class="{{ cls }} bg-secondary bg-opacity-20 text-muted" style="font-size:0.62rem;white-space:nowrap"
+      title="{{ ev.detail if ev else 'An active check showed the vulnerable behaviour is not present' }}">
+  <i class="bi bi-shield-check me-1"></i>Not exploitable
+</span>
+{%- elif r.is_inferred -%}
+<span class="{{ cls }} bg-warning bg-opacity-20 text-warning" style="font-size:0.62rem;white-space:nowrap"
+      title="{{ ev.detail if ev else 'Matched from the version banner only — not proven exploitable on this host' }}">
+  <i class="bi bi-question-circle me-1"></i>Unverified
+</span>
+{%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro evidence_details(r) -%}
+{%- set ev = r.evidence if r else None -%}
+{%- if ev -%}
+<details class="verify-evidence">
+  <summary>{% if ev.result == 'confirmed' %}Proof{% elif ev.result == 'not_exploitable' %}Why it's ruled out{% else %}Why it's unverified{% endif %}</summary>
+  <div class="verify-evidence-body">
+    <div>{{ ev.detail }}</div>
+    {% if ev.check %}<div class="text-muted">Check: {{ ev.method }} · {{ ev.check }}{% if ev.target %} · {{ ev.target }}{% endif %}</div>{% endif %}
+    {% if ev.matched_at %}<div class="text-muted">Matched at: <code>{{ ev.matched_at }}</code></div>{% endif %}
+    {% if ev.checked_at %}<div class="text-muted">Checked {{ ev.checked_at | replace('T', ' ') | replace('Z', ' UTC') }}</div>{% endif %}
+    {% if ev.proof %}<pre>{{ ev.proof }}</pre>{% endif %}
+  </div>
+</details>
+{%- endif -%}
+{%- endmacro %}

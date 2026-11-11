@@ -66,6 +66,40 @@
   </div>
 </div>
 
+{% if total_unverified or total_not_exploitable or verify_state.running or verify_state.summary or verify_state.error %}
+<div class="form-card mb-6">
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="small">
+      <div class="font-semibold mb-1"><i class="bi bi-funnel me-1"></i>Only proven vulnerabilities are counted above</div>
+      <div class="text-muted">
+        Version-matched CVEs are tested against the live service before they become tickets.
+        <a href="{{ url_for('vulns.tickets') }}?status=unverified">{{ total_unverified }} unverified</a>
+        (no safe check, or the check was inconclusive) ·
+        <a href="{{ url_for('vulns.tickets') }}?status=not_exploitable">{{ total_not_exploitable }} ruled out</a>
+        (checked: not exploitable).
+      </div>
+      {% if verify_state.running %}
+      <div class="text-info mt-1"><i class="bi bi-hourglass-split me-1"></i>Verifying unverified findings… refresh in a minute.</div>
+      {% elif verify_state.error %}
+      <div class="text-danger mt-1">Last verification failed: {{ verify_state.error }}</div>
+      {% elif verify_state.summary %}
+      <div class="text-muted mt-1">Last verification: {{ verify_state.summary.confirmed }} proven exploitable,
+        {{ verify_state.summary.not_exploitable }} ruled out, {{ verify_state.summary.unconfirmed }} still unverified.</div>
+      {% endif %}
+    </div>
+    {% if current_user.is_admin and total_unverified and not verify_state.running %}
+    <form method="post" action="{{ url_for('vulns.reverify') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm btn-outline-secondary" type="submit"
+              title="Re-test every unverified finding against the live services now">
+        <i class="bi bi-shield-check me-1"></i>Verify {{ total_unverified }} now
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Device table -->
 <div class="section-header mb-4">
   <span class="section-title">Devices ({{ device_rows | length }})</span>

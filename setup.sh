@@ -58,14 +58,14 @@ info "Service user: $SERVICE_USER"
 echo ""
 
 # =============================================================================
-step "1 / 14 — System Packages"
+step "1 / 15 — System Packages"
 # =============================================================================
 info "Updating package lists..."
 apt-get update -qq
 
 PKGS=(
     python3 python3-pip python3-venv python3-dev
-    nmap openssl libcap2-bin
+    nmap openssl libcap2-bin unzip
     curl git ufw
     build-essential libssl-dev libffi-dev
     pkg-config libxml2-dev libxmlsec1-dev
@@ -76,7 +76,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${PKG
 ok "System packages installed"
 
 # =============================================================================
-step "2 / 14 — Service User"
+step "2 / 15 — Service User"
 # =============================================================================
 if ! id "$SERVICE_USER" &>/dev/null; then
     useradd --system --no-create-home --shell /bin/false \
@@ -87,7 +87,7 @@ else
 fi
 
 # =============================================================================
-step "3 / 14 — Application Files"
+step "3 / 15 — Application Files"
 # =============================================================================
 # $INSTALL_DIR is a live git checkout, not a one-time copy — updating the
 # deployed app from here on is just: cd $INSTALL_DIR && git pull (as root,
@@ -163,7 +163,7 @@ chmod 755 "$INSTALL_DIR"
 ok "Directory permissions set"
 
 # =============================================================================
-step "4 / 14 — Python Virtual Environment"
+step "4 / 15 — Python Virtual Environment"
 # =============================================================================
 PY_VER=$(python3 --version 2>&1)
 info "Using $PY_VER"
@@ -184,7 +184,7 @@ chown -R "$SERVICE_USER":"$SERVICE_USER" "$INSTALL_DIR/venv"
 ok "Virtual environment ready  ($("$INSTALL_DIR/venv/bin/python3" --version))"
 
 # =============================================================================
-step "5 / 14 — PEN Operational Scanner"
+step "5 / 15 — PEN Operational Scanner"
 # =============================================================================
 # PEN (github.com/ekomsSavior/PEN) has no releases/module path to `go install`
 # directly — it has to be cloned and built from source, per its own README.
@@ -211,7 +211,7 @@ fi
 warn "PEN's exploitation module can optionally crack hashes with john (installed above) and dump exposed git repos with git-dumper (pip install git-dumper, not installed automatically) — both are optional, PEN skips them gracefully if missing"
 
 # =============================================================================
-step "6 / 14 — REAPER Secret Scanner"
+step "6 / 15 — REAPER Secret Scanner"
 # =============================================================================
 # REAPER (github.com/ekomsSavior/REAPER) ships its own go.mod/go.sum, so no
 # `go mod init` step is needed here (unlike PEN). Note the build command is
@@ -239,7 +239,62 @@ fi
 warn "REAPER requires a GitHub token (Settings → Threat Intel APIs, repo + public_repo scopes) — scans return a 'token required' result until one is configured"
 
 # =============================================================================
-step "7 / 14 — Backdoor Detector"
+step "7 / 15 — Exploit Verification (nuclei)"
+# =============================================================================
+# Version-matched CVEs are only reported as vulnerabilities once a check for
+# that specific CVE reproduces the issue on the live service (see
+# app/scanner/verify.py). The checks are nuclei templates (MIT-licensed).
+# The binary is pinned and verified against hashes in this script, so a
+# tampered download is refused rather than trusted because the hash came from
+# the same server as the file.
+NUCLEI_VERSION="3.11.1"
+declare -A NUCLEI_SHA256=(
+    [amd64]="ea63d4ae232808cd7c6bc00d0142428e231fab59dae01042246097d195835ab6"
+    [arm64]="8044e3d9768ba0a744b2872c1a87e813006f013da97ca9f50f7661a4203bec07"
+)
+NUCLEI_DIR="$INSTALL_DIR/tools/nuclei"
+NUCLEI_BIN="$NUCLEI_DIR/nuclei"
+case "$(uname -m)" in
+    x86_64|amd64)  NUCLEI_ARCH=amd64 ;;
+    aarch64|arm64) NUCLEI_ARCH=arm64 ;;
+    *)             NUCLEI_ARCH="" ;;
+esac
+if [[ -x "$NUCLEI_BIN" ]] && "$NUCLEI_BIN" -version 2>&1 | grep -q "v$NUCLEI_VERSION"; then
+    ok "nuclei $NUCLEI_VERSION already installed"
+elif [[ -z "$NUCLEI_ARCH" ]]; then
+    warn "No nuclei build for $(uname -m) — findings will stay 'unverified' (VULN_VERIFY has no effect)"
+else
+    info "Installing nuclei $NUCLEI_VERSION ($NUCLEI_ARCH)..."
+    NTMP=$(mktemp -d)
+    NZIP="nuclei_${NUCLEI_VERSION}_linux_${NUCLEI_ARCH}.zip"
+    if curl -fsSL -o "$NTMP/$NZIP" \
+            "https://github.com/projectdiscovery/nuclei/releases/download/v${NUCLEI_VERSION}/${NZIP}" \
+        && echo "${NUCLEI_SHA256[$NUCLEI_ARCH]}  $NTMP/$NZIP" | sha256sum -c --quiet - \
+        && unzip -q -o "$NTMP/$NZIP" nuclei -d "$NTMP"; then
+        mkdir -p "$NUCLEI_DIR"
+        install -m 755 "$NTMP/nuclei" "$NUCLEI_BIN"
+        ok "nuclei installed at $NUCLEI_BIN (checksum verified)"
+    else
+        warn "nuclei download or checksum verification failed — findings will stay 'unverified'"
+        warn "Re-run setup.sh to retry."
+    fi
+    rm -rf "$NTMP"
+fi
+if [[ -x "$NUCLEI_BIN" ]]; then
+    info "Downloading the CVE check library (nuclei templates, ~90 MB)..."
+    mkdir -p "$INSTALL_DIR/data/nuclei-home" "$INSTALL_DIR/data/nuclei-templates"
+    if HOME="$INSTALL_DIR/data/nuclei-home" "$NUCLEI_BIN" -silent -nc -update-templates \
+            -update-template-dir "$INSTALL_DIR/data/nuclei-templates" >/dev/null 2>&1 \
+        && [[ -f "$INSTALL_DIR/data/nuclei-templates/cves.json" ]]; then
+        ok "CVE checks ready ($(grep -c '' "$INSTALL_DIR/data/nuclei-templates/cves.json") CVEs; refreshed weekly by the app)"
+    else
+        warn "Couldn't download the CVE checks now — the app retries weekly, or re-run setup.sh"
+    fi
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/data/nuclei-home" "$INSTALL_DIR/data/nuclei-templates" 2>/dev/null || true
+fi
+
+# =============================================================================
+step "8 / 15 — Backdoor Detector"
 # =============================================================================
 # Backdoor Detector (github.com/ekomsSavior/backdoor_detector) is pure Python
 # — no build step, just a clone-if-missing like PEN/REAPER's source checkout,
@@ -281,7 +336,7 @@ fi
 warn "Backdoor Detector's npm-audit sub-scan needs Node.js/npm — not installed automatically (this project's stack doesn't otherwise need Node); install from nodejs.org if you want that sub-scan to run. Safety and pip-audit are already installed via requirements.txt."
 
 # =============================================================================
-step "8 / 14 — BloodHound CE (Active Directory attack-path analysis)"
+step "9 / 15 — BloodHound CE (Active Directory attack-path analysis)"
 # =============================================================================
 # BloodHound CE's only supported self-hosted deployment is Docker Compose
 # (Postgres + Neo4j + its own API/UI binary) — this is the first Docker
@@ -428,7 +483,7 @@ EOF
 fi
 
 # =============================================================================
-step "9 / 14 — nmap Raw-Socket Capability"
+step "10 / 15 — nmap Raw-Socket Capability"
 # =============================================================================
 # nmap needs CAP_NET_RAW for OS fingerprinting (-O) and CAP_NET_ADMIN for some
 # scan types.  setcap grants these to the nmap binary so the service user
@@ -443,7 +498,7 @@ else
 fi
 
 # =============================================================================
-step "10 / 14 — TLS Certificate"
+step "11 / 15 — TLS Certificate"
 # =============================================================================
 CERT="$INSTALL_DIR/data/ssl/cert.pem"
 KEY="$INSTALL_DIR/data/ssl/key.pem"
@@ -466,7 +521,7 @@ else
 fi
 
 # =============================================================================
-step "11 / 14 — Environment File"
+step "12 / 15 — Environment File"
 # =============================================================================
 ENV_FILE="$INSTALL_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -515,7 +570,7 @@ chmod 640 "$ENV_FILE"
 chown root:"$SERVICE_USER" "$ENV_FILE"
 
 # =============================================================================
-step "12 / 14 — Systemd Service"
+step "13 / 15 — Systemd Service"
 # =============================================================================
 # One worker, multiple threads — not scaled by CPU count. APScheduler's
 # background jobs (scan checks, report sends, the Palo Alto poller) and the
@@ -636,7 +691,7 @@ ok "Service enabled for autostart on boot"
 ok "Updater installed (hourly check + on-demand from user menu → Updates)"
 
 # =============================================================================
-step "13 / 14 — Log Rotation"
+step "14 / 15 — Log Rotation"
 # =============================================================================
 cat > /etc/logrotate.d/pwnbroker << EOF
 $INSTALL_DIR/logs/*.log {
@@ -655,7 +710,7 @@ EOF
 ok "Logrotate config installed (/etc/logrotate.d/pwnbroker)"
 
 # =============================================================================
-step "14 / 14 — Firewall & Service Start"
+step "15 / 15 — Firewall & Service Start"
 # =============================================================================
 # Firewall
 if command -v ufw &>/dev/null; then

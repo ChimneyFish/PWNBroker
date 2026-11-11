@@ -256,14 +256,26 @@ def resolve_cpe(product: str, version: str = "") -> Optional[str]:
     return cached.resolved_cpe if cached else resolved
 
 
-def lookup_cves_by_cpe(cpe: str, max_results: int = 20) -> List[Dict]:
+_CPE_MAX_CVES = 1000  # safety cap; NVD pages are up to 2000 results
+
+
+def lookup_cves_by_cpe(cpe: str, max_results: int = _CPE_MAX_CVES) -> List[Dict]:
     """CVE lookup via NVD's exact-CPE match (`cpeName`), which makes NVD apply
     its own version-range configuration matching server-side, instead of a
-    text-relevance keyword search."""
+    text-relevance keyword search.
+
+    Returns *every* CVE NVD lists for the CPE (newest/most severe first).
+    This used to request only the first 5 results — and NVD returns oldest
+    first, so a service only ever got its five oldest CVEs (Apache 2.4.49
+    got 2007–2011 issues and never CVE-2021-41773). Each one is then proven
+    or ruled out against the live service by scanner/verify.py, so a long
+    list doesn't turn into noise."""
     from ..extensions import db
     from ..models import CpeCveCache
 
-    cached = CpeCveCache.query.filter_by(cache_key=cpe).first()
+    # "all:" prefix: rows cached by the old 5-result lookup are ignored.
+    cache_key = f"all:{cpe}"
+    cached = CpeCveCache.query.filter_by(cache_key=cache_key).first()
     if cached and not cached.is_stale:
         try:
             return json.loads(cached.cve_data)
@@ -272,26 +284,36 @@ def lookup_cves_by_cpe(cpe: str, max_results: int = 20) -> List[Dict]:
 
     api_key = _get_nvd_api_key()
     url = current_app.config.get("NVD_API_URL")
-    data = _nvd_get(url, {"cpeName": cpe, "resultsPerPage": max_results}, api_key)
-
-    cves = []
-    if data:
-        for item in data.get("vulnerabilities", []):
+    cves, start, complete = [], 0, True
+    while len(cves) < max_results:
+        data = _nvd_get(url, {"cpeName": cpe, "resultsPerPage": 2000, "startIndex": start}, api_key)
+        if not data:
+            complete = False
+            break
+        items = data.get("vulnerabilities", [])
+        for item in items:
             cve = item.get("cve", {})
             if not _cpe_is_vulnerable(cve, cpe):
                 continue
             parsed = _parse_cve_item(cve)
             parsed["match_confidence"] = "cpe"
             cves.append(parsed)
+        start += len(items)
+        if not items or start >= int(data.get("totalResults", 0) or 0):
+            break
+    cves.sort(key=lambda c: (c.get("cvss_score") or 0, c.get("cve_id") or ""), reverse=True)
+    cves = cves[:max_results]
+    if not complete:
+        return cves  # don't cache a partial list
 
     if cached:
         cached.cve_data = json.dumps(cves)
         cached.lookup_type = "cpe"
         cached.fetched_at = datetime.now(timezone.utc)
     else:
-        cached = CpeCveCache(cache_key=cpe, lookup_type="cpe", cve_data=json.dumps(cves))
+        cached = CpeCveCache(cache_key=cache_key, lookup_type="cpe", cve_data=json.dumps(cves))
         db.session.add(cached)
-    winner = _commit_cache_row(db, CpeCveCache, {"cache_key": cpe}, cached)
+    winner = _commit_cache_row(db, CpeCveCache, {"cache_key": cache_key}, cached)
     if winner is not cached and winner is not None:
         try:
             return json.loads(winner.cve_data)
@@ -367,7 +389,9 @@ def lookup_cves_for_service(product: str, version: str = "", max_results: int = 
     resolved_cpe = nmap_cpe_23 or resolve_cpe(product, version)
 
     if resolved_cpe:
-        results = lookup_cves_by_cpe(resolved_cpe, max_results)
+        # max_results only caps the low-confidence keyword fallback below; an
+        # exact-CPE match returns every CVE NVD lists for that version.
+        results = lookup_cves_by_cpe(resolved_cpe)
         for r in results:
             r["cpe"] = resolved_cpe
         return results

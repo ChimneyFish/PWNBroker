@@ -154,7 +154,17 @@ class Scan(db.Model):
 
     @property
     def vuln_count(self):
+        """Proven/actionable vulnerabilities only. Version-only CVE matches
+        are stored as result_type "unverified" / "not_exploitable"."""
         return self.results.filter_by(result_type="vulnerability").count()
+
+    @property
+    def unverified_count(self):
+        return self.results.filter_by(result_type="unverified").count()
+
+    @property
+    def not_exploitable_count(self):
+        return self.results.filter_by(result_type="not_exploitable").count()
 
     @property
     def critical_count(self):
@@ -165,7 +175,7 @@ class ScanResult(db.Model):
     __tablename__ = "scan_results"
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey("scans.id"), nullable=False)
-    result_type = db.Column(db.String(30))  # port | vulnerability | web_check | info
+    result_type = db.Column(db.String(30))  # port | vulnerability | unverified | not_exploitable | web_check | info
     host = db.Column(db.String(256))
     port = db.Column(db.Integer)
     protocol = db.Column(db.String(10))
@@ -188,8 +198,31 @@ class ScanResult(db.Model):
     # PEN's own [!] exploit-confirmation marker) — everything else (CVE/CPE
     # version correlation, OSV manifest matches, YARA/secret pattern hits,
     # header/cert checks) is a real finding but not an exploit confirmation.
-    verification_status = db.Column(db.String(20), default="unconfirmed")  # unconfirmed | confirmed
+    #
+    # Version-correlated CVE matches (match_confidence cpe/keyword) and nmap
+    # "LIKELY VULNERABLE" heuristics (match_confidence "heuristic") are
+    # re-tested against the live service by scanner/verify.py:
+    #   confirmed        the CVE-specific check reproduced the issue
+    #   not_exploitable  the check ran cleanly; vulnerable behaviour absent
+    #   unconfirmed      no safe check exists, or it was inconclusive
+    # verification_evidence holds the JSON proof/explanation for the verdict.
+    verification_status = db.Column(db.String(20), default="unconfirmed")  # unconfirmed | confirmed | not_exploitable
+    verification_evidence = db.Column(db.Text)
     raw_data = db.Column(db.Text)
+
+    @property
+    def is_inferred(self):
+        """True for findings that only *suggest* a vulnerability (version
+        banner / heuristic) and need an active check to prove it."""
+        return self.match_confidence in ("cpe", "keyword", "heuristic")
+
+    @property
+    def evidence(self):
+        import json as _json
+        try:
+            return _json.loads(self.verification_evidence) if self.verification_evidence else None
+        except ValueError:
+            return None
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -588,6 +621,11 @@ class VulnTicket(db.Model):
     scan_type      = db.Column(db.String(20))            # host | dependency
     status         = db.Column(db.String(20), default="open")
     # open | in_progress | patched | accepted_risk | false_positive
+    # | unverified       version-matched only, no proof it's exploitable here
+    # | not_exploitable  an active check showed the vulnerable behaviour absent
+    # The last two are kept for reference but are not actionable: they don't
+    # count as open, carry no SLA, and reopen automatically if a later scan
+    # proves the issue.
     sla_days       = db.Column(db.Integer)
     due_date       = db.Column(db.DateTime)
     opened_at      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -605,10 +643,18 @@ class VulnTicket(db.Model):
 
     @property
     def is_resolved(self):
-        return self.status in ("patched", "accepted_risk", "false_positive")
+        """Not actionable (so excluded from open counts and SLAs)."""
+        return self.status in ("patched", "accepted_risk", "false_positive",
+                               "unverified", "not_exploitable")
+
+    @property
+    def is_unproven(self):
+        return self.status in ("unverified", "not_exploitable")
 
     @property
     def sla_status(self):
+        if self.is_unproven:
+            return "no_sla"
         if self.is_resolved:
             return "resolved"
         if not self.due_date:

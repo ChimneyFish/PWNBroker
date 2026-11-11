@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "vulns/_verification.html" as vb %}
 {% block title %}{{ scan.name }} — PwnBroker{% endblock %}
 {% block page_title %}{{ scan.name }}{% endblock %}
 
@@ -50,6 +51,16 @@
       <div class="font-semibold" data-stat="vulns">{{ scan.vuln_count }}</div>
     </a>
   </div>
+  {% set unv_n, ne_n = scan.unverified_count, scan.not_exploitable_count %}
+  {% if unv_n or ne_n %}
+  <div class="col-auto">
+    <a href="#unverified" class="stat-card no-underline" style="color:inherit;display:block"
+       title="Version-matched CVEs that weren't proven exploitable on this host — not counted as vulnerabilities">
+      <div class="stat-label">Unverified / ruled out</div>
+      <div class="font-semibold text-muted">{{ unv_n }} / {{ ne_n }}</div>
+    </a>
+  </div>
+  {% endif %}
   <div class="col-auto">
     <a href="#results" class="stat-card no-underline" style="color:inherit;display:block">
       <div class="stat-label">Critical</div>
@@ -407,17 +418,28 @@
 </div>
 {% endif %}
 
-{% for rtype, rlist in [('vulnerability', 'Vulnerabilities'), ('port', 'Open Ports'), ('info', 'Info')] %}
+{% for rtype, rlist in [('vulnerability', 'Vulnerabilities'), ('unverified', 'Unverified — version match only'), ('not_exploitable', 'Ruled out — not exploitable'), ('port', 'Open Ports'), ('info', 'Info')] %}
 {% set items = results | selectattr('result_type', 'equalto', rtype) | list %}
+{% set is_vuln = rtype in ('vulnerability', 'unverified', 'not_exploitable') %}
+{% set folded = rtype in ('unverified', 'not_exploitable') %}
 {% if items %}
+{% if folded %}
+<details class="mt-6" {% if rtype == 'unverified' %}id="unverified"{% endif %}>
+<summary class="section-header" style="cursor:pointer"><span class="section-title"><i class="bi bi-chevron-right me-1"></i>{{ rlist }} ({{ items|length }})</span>
+  <span class="text-muted small ms-2" style="text-transform:none;letter-spacing:0">
+  {% if rtype == 'unverified' %}matched from the version banner; no safe check could prove them on this host — not counted
+  {% else %}the check for each CVE ran and the vulnerable behaviour wasn't present{% endif %}</span>
+</summary>
+{% else %}
 <div class="section-header mt-6" {% if loop.first %}id="results"{% endif %}><span class="section-title">{{ rlist }} ({{ items|length }})</span></div>
+{% endif %}
 <div class="data-table mb-6">
   <table class="table table-dark table-hover">
     <thead>
       <tr>
         <th>Severity</th><th>Title</th><th>Host</th>
         {% if rtype == 'port' %}<th>Port</th><th>Service</th>
-        {% elif rtype == 'vulnerability' %}<th>CVE</th><th>Match</th><th>CVSS</th><th>Description</th>
+        {% elif is_vuln %}<th>CVE</th><th>Verified</th><th>CVSS</th><th>Description</th>
         {% else %}<th>Description</th><th>Remediation</th>{% endif %}
       </tr>
     </thead>
@@ -430,25 +452,12 @@
         {% if rtype == 'port' %}
           <td>{{ r.port }}/{{ r.protocol }}</td>
           <td class="text-muted small">{{ r.service or '—' }}</td>
-        {% elif rtype == 'vulnerability' %}
+        {% elif is_vuln %}
           <td>{% if r.cve_id %}<a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank" class="text-primary small">{{ r.cve_id }}</a>{% else %}—{% endif %}</td>
           <td>
-            {% if r.verification_status == 'confirmed' %}
-            <span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.65rem"
-                  title="An active probe (nmap NSE vuln script or PEN exploit check) demonstrated this against the live target">
-              <i class="bi bi-shield-fill-check me-1"></i>Confirmed
-            </span>
-            {% elif r.match_confidence == 'cpe' %}
-            <span class="badge bg-success bg-opacity-20 text-success" style="font-size:0.65rem"
-                  title="Version-matched via CPE — NVD applied its own version-range check, not independently verified against this host">
-              <i class="bi bi-patch-check-fill me-1"></i>CPE-matched
-            </span>
-            {% elif r.match_confidence == 'keyword' %}
-            <span class="badge bg-warning bg-opacity-20 text-warning" style="font-size:0.65rem"
-                  title="No CPE could be resolved for this service — matched by free-text keyword search only, verify manually">
-              <i class="bi bi-exclamation-triangle-fill me-1"></i>Keyword match
-            </span>
-            {% else %}—{% endif %}
+            {{ vb.verification_badge(r) }}
+            {% if r.match_confidence == 'keyword' %}<div class="text-muted" style="font-size:0.6rem" title="No CPE could be resolved — matched by keyword search">keyword match</div>{% endif %}
+            {{ vb.evidence_details(r) }}
           </td>
           <td>{% if r.cvss_score %}<strong>{{ r.cvss_score }}</strong>{% else %}—{% endif %}</td>
           <td class="text-muted small" style="max-width:300px">
@@ -477,6 +486,7 @@
     </tbody>
   </table>
 </div>
+{% if folded %}</details>{% endif %}
 {% endif %}
 {% endfor %}
 

@@ -86,6 +86,26 @@ def register_jobs(app):
         minutes=10,
         replace_existing=True,
     )
+    # Exploit-verification checks (nuclei templates) — new CVE checks are
+    # published daily; refresh weekly so new CVEs can be proven/ruled out.
+    scheduler.add_job(
+        id="update_verification_checks",
+        func=licensed_job(app, _run_update_verification_checks),
+        args=[app],
+        trigger="interval",
+        days=7,
+        replace_existing=True,
+    )
+
+
+def _run_update_verification_checks(app):
+    with app.app_context():
+        try:
+            from ..scanner.verify import update_templates
+            ok, msg = update_templates()
+            (app.logger.info if ok else app.logger.warning)("Verification checks update: %s", msg or "ok")
+        except Exception as e:
+            app.logger.error(f"Verification checks update failed: {e}")
 
 
 def _run_scheduled_scans(app):
