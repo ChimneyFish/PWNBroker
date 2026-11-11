@@ -45,8 +45,48 @@ def version():
     return m.group(1) if m else ""
 
 
-def build(src, out):
+# Per-page wording. The profile is picked from the source file name.
+PROFILES = {
+    "guide": {
+        "tag": "User Guide",
+        "description": "Install, configure and use PwnBroker — self-hosted vulnerability management, "
+                       "scanning, threat intelligence and GRC.",
+        "lead": "Install, configure and run PwnBroker — scanning, proven-exploitable vulnerability "
+                "management, threat intelligence and GRC on your own infrastructure.",
+        "meta": "Version {version} · Updated {built}",
+        "foot": "PwnBroker {version} · © PwnBroker. All data stays on your infrastructure.",
+        "search": "Search sections…",
+    },
+    "terms": {
+        "tag": "Legal",
+        "description": "PWNBroker Terms of Service — the agreement that governs use of the PWNBroker "
+                       "software, license keys, updates and support.",
+        "lead": "The agreement that governs your use of PWNBroker. Please read it carefully — "
+                "Sections 3 and 7 cover authorized use and limits of liability.",
+        "meta": "{effective}",
+        "foot": "© PWNBroker. All rights reserved.",
+        "search": "Search the terms…",
+    },
+    "privacy": {
+        "tag": "Privacy",
+        "description": "PWNBroker Privacy Policy — what we collect for licensing, updates and support. "
+                       "Your scan and security data stays on your own servers.",
+        "lead": "Your scan results and security data stay on your own servers — we never receive them. "
+                "This policy covers the little we do collect for licensing, updates and support.",
+        "meta": "{effective}",
+        "foot": "© PWNBroker. All rights reserved.",
+        "search": "Search the policy…",
+    },
+}
+
+
+def build(src, out, profile=None):
     text = open(src, encoding="utf-8").read()
+    if not profile:
+        name = os.path.basename(src).lower()
+        profile = next((k for k in PROFILES if k in name), "guide")
+    prof = PROFILES[profile]
+    text = re.sub(r"<!--.*?-->\n?", "", text, flags=re.S)       # authoring notes stay out of the page
 
     # Title + intro come from the top of the file; the hand-written Table of
     # Contents is replaced by the generated sidebar.
@@ -55,6 +95,13 @@ def build(src, out):
     body_md = text[title_m.end():] if title_m else text
     body_md = re.sub(r"\n## Table of Contents\n.*?(?=\n## )", "\n", body_md, flags=re.S)
     body_md = re.sub(r"^---\s*$", "", body_md, flags=re.M)   # section rules are styled via h2
+    # An "**Effective date:** … · **Last updated:** …" line moves into the hero.
+    effective = ""
+    eff_m = re.search(r"^\*\*Effective date:\*\*\s*(.+?)\s*·\s*\*\*Last updated:\*\*\s*(.+?)\s*$",
+                      body_md, flags=re.M)
+    if eff_m:
+        effective = f"Effective {eff_m.group(1)} · Last updated {eff_m.group(2)}"
+        body_md = body_md[:eff_m.start()] + body_md[eff_m.end():]
 
     md = markdown.Markdown(
         extensions=["tables", "fenced_code", "sane_lists", "toc", "attr_list"],
@@ -77,10 +124,14 @@ def build(src, out):
     logo = logo_data_uri()
     logo_html = (f'<img src="{logo}" alt="" width="34" height="37">' if logo else "")
     ver = version()
+    fields = {"version": html.escape(ver), "built": date.today().isoformat(),
+              "effective": html.escape(effective)}
     page = TEMPLATE.format(
         title=html.escape(title), logo=logo_html, nav=nav_html, content=content,
-        version=html.escape(ver), built=date.today().isoformat(),
-        favicon=f'<link rel="icon" href="{logo}">' if logo else "")
+        favicon=f'<link rel="icon" href="{logo}">' if logo else "",
+        tag=html.escape(prof["tag"]), description=html.escape(prof["description"]),
+        lead=html.escape(prof["lead"]), search=html.escape(prof["search"]),
+        meta=prof["meta"].format(**fields), foot=html.escape(prof["foot"].format(**fields)))
     with open(out, "w", encoding="utf-8") as f:
         f.write(page)
     print(f"Wrote {out} ({len(page) / 1024:.0f} KB, {len(nav)} sections)")
@@ -92,7 +143,7 @@ TEMPLATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
-<meta name="description" content="Install, configure and use PwnBroker — self-hosted vulnerability management, scanning, threat intelligence and GRC.">
+<meta name="description" content="{description}">
 {favicon}
 <style>
 :root {{
@@ -219,13 +270,13 @@ main {{ padding: 36px 56px 80px; min-width: 0; }}
 <header class="topbar">
   <button class="icon-btn" id="menu-btn" aria-label="Open navigation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
   <a class="brand" href="#">{logo}<span><b>Pwn</b>Broker</span></a>
-  <span class="tag">User Guide</span>
+  <span class="tag">{tag}</span>
   <div class="spacer"></div>
   <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode" title="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
 </header>
 <div class="layout">
   <nav class="sidebar" id="sidebar" aria-label="Guide contents">
-    <input class="search" id="search" type="search" placeholder="Search sections…" aria-label="Search sections">
+    <input class="search" id="search" type="search" placeholder="{search}" aria-label="{search}">
     <ul id="nav">
 {nav}
     </ul>
@@ -235,12 +286,11 @@ main {{ padding: 36px 56px 80px; min-width: 0; }}
     <article class="doc">
       <div class="hero">
         <h1>{title}</h1>
-        <p>Install, configure and run PwnBroker — scanning, proven-exploitable vulnerability management,
-           threat intelligence and GRC on your own infrastructure.</p>
-        <div class="meta">Version {version} · Updated {built}</div>
+        <p>{lead}</p>
+        <div class="meta">{meta}</div>
       </div>
 {content}
-      <div class="foot">PwnBroker {version} · © PwnBroker. All data stays on your infrastructure.</div>
+      <div class="foot">{foot}</div>
     </article>
   </main>
 </div>
@@ -336,6 +386,7 @@ main {{ padding: 36px 56px 80px; min-width: 0; }}
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default=os.path.join(ROOT, "docs", "guide.md"))
-    ap.add_argument("--out", default=os.path.join(ROOT, "docs", "guide.html"))
+    ap.add_argument("--out", help="output HTML (default: next to --src, .md -> .html)")
+    ap.add_argument("--profile", choices=sorted(PROFILES), help="page wording (default: from file name)")
     a = ap.parse_args()
-    build(a.src, a.out)
+    build(a.src, a.out or os.path.splitext(a.src)[0] + ".html", a.profile)
