@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PwnBroker — Complete User Guide</title>
+<meta name="description" content="Install, configure and use PwnBroker — self-hosted vulnerability management, scanning, threat intelligence and GRC.">
+<link rel="icon" href="data:image/png;base64,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">
+<style>
+:root {
+  --bg: #f3f6f8; --card: #ffffff; --side: #eaf1f4; --line: #d5e0e6; --ink: #0b2a4f;
+  --muted: #5b7088; --accent: #13798c; --accent-dim: #0e5f70; --orange: #ef7318;
+  --code-bg: #0b2a4f; --code-ink: #e6eef5; --inline-bg: #e8f1f4;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1626; --card: #0f2036; --side: #0c1b2e; --line: #1f3550; --ink: #e2ebf4;
+    --muted: #8ea3ba; --accent: #3bb3c7; --accent-dim: #62c6d6; --orange: #f68b3c;
+    --code-bg: #06101c; --code-ink: #dbe7f2; --inline-bg: #16304d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1626; --card: #0f2036; --side: #0c1b2e; --line: #1f3550; --ink: #e2ebf4;
+  --muted: #8ea3ba; --accent: #3bb3c7; --accent-dim: #62c6d6; --orange: #f68b3c;
+  --code-bg: #06101c; --code-ink: #dbe7f2; --inline-bg: #16304d;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 var(--font);
+       -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* top bar */
+.topbar { position: sticky; top: 0; z-index: 20; height: 60px; display: flex; align-items: center;
+          gap: 12px; padding: 0 20px; background: var(--card); border-bottom: 1px solid var(--line); }
+.topbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 3px;
+                 background: linear-gradient(90deg, var(--ink), var(--accent) 55%, var(--orange)); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); font-size: 1.2rem; }
+.brand:hover { text-decoration: none; }
+.brand b { font-weight: 800; }
+.brand span { font-weight: 400; }
+.tag { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+       color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.spacer { flex: 1; }
+.icon-btn { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 8px;
+            height: 36px; min-width: 36px; padding: 0 10px; cursor: pointer; font: inherit; font-size: .9rem; }
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+#menu-btn { display: none; }
+
+/* layout */
+.layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); }
+.sidebar { position: sticky; top: 63px; height: calc(100vh - 63px); overflow-y: auto; padding: 20px 14px 40px 20px;
+           border-right: 1px solid var(--line); background: var(--side); }
+.search { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+          color: var(--ink); font: inherit; font-size: .9rem; margin-bottom: 14px; }
+.search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar .nav-sec > a { display: block; font-weight: 600; font-size: .9rem; padding: 6px 10px; border-radius: 6px; color: var(--ink); }
+.sidebar .nav-sec ul a { display: block; font-size: .84rem; padding: 3px 10px 3px 22px; color: var(--muted); border-radius: 6px; }
+.sidebar .nav-sec ul { display: none; margin-bottom: 6px; }
+.sidebar .nav-sec.open ul, .sidebar.searching .nav-sec ul { display: block; }
+.sidebar a:hover { background: var(--card); text-decoration: none; color: var(--accent); }
+.sidebar a.active { color: var(--accent); background: var(--card); box-shadow: inset 3px 0 0 var(--orange); }
+.sidebar .hidden { display: none !important; }
+.no-results { color: var(--muted); font-size: .85rem; padding: 6px 10px; display: none; }
+
+main { padding: 36px 56px 80px; min-width: 0; }
+.icon-btn svg { width: 18px; height: 18px; vertical-align: -4px; }
+.doc { max-width: 860px; }
+.hero { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 28px 30px; margin-bottom: 36px; }
+.hero h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.2; }
+.hero p { margin: 0; color: var(--muted); }
+.hero .meta { margin-top: 14px; font-size: .82rem; color: var(--muted); }
+
+.doc h2 { font-size: 1.6rem; line-height: 1.25; margin: 56px 0 16px; padding-top: 22px; border-top: 1px solid var(--line); }
+.doc h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.doc h3 { font-size: 1.2rem; margin: 34px 0 10px; }
+.doc h4 { font-size: 1rem; margin: 24px 0 8px; }
+.doc .headerlink { margin-left: 8px; opacity: 0; color: var(--muted); font-weight: 400; }
+.doc h2:hover .headerlink, .doc h3:hover .headerlink, .doc h4:hover .headerlink { opacity: 1; }
+.doc p, .doc li { color: var(--ink); }
+.doc ul, .doc ol { padding-left: 1.4em; }
+.doc li { margin: 4px 0; }
+.doc strong { font-weight: 650; }
+.doc code { font-family: var(--mono); font-size: .86em; background: var(--inline-bg); padding: 2px 6px; border-radius: 5px; }
+.doc pre { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 10px;
+           padding: 16px 18px; overflow-x: auto; font-size: .86rem; line-height: 1.55; margin: 16px 0; }
+.doc pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+.copy { position: absolute; top: 8px; right: 8px; font: 600 .72rem var(--font); color: var(--code-ink);
+        background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); border-radius: 6px;
+        padding: 4px 9px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+.doc pre:hover .copy, .copy:focus { opacity: 1; }
+.table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.doc table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.doc th { text-align: left; font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+          background: var(--side); padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.doc td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.doc tr:last-child td { border-bottom: 0; }
+.doc blockquote { margin: 16px 0; padding: 12px 18px; border-left: 4px solid var(--orange);
+                  background: var(--card); border-radius: 0 10px 10px 0; color: var(--muted); }
+.doc hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+.foot { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+#top-btn { position: fixed; right: 20px; bottom: 20px; opacity: 0; pointer-events: none; transition: opacity .2s;
+           background: var(--card); }
+#top-btn.show { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: 1fr; }
+  #menu-btn { display: inline-block; }
+  .sidebar { position: fixed; top: 63px; left: 0; bottom: 0; width: min(320px, 86vw); height: auto; z-index: 15;
+             transform: translateX(-100%); transition: transform .2s; box-shadow: 4px 0 24px rgba(0,0,0,.15); }
+  body.nav-open .sidebar { transform: none; }
+  main { padding: 24px 16px 64px; }
+  .hero { padding: 20px; }
+  .hero h1 { font-size: 1.55rem; }
+  .tag { display: none; }
+}
+@media print {
+  .topbar, .sidebar, #top-btn, .copy, .headerlink { display: none !important; }
+  .layout { display: block; }
+  main { padding: 0; }
+  .doc pre { white-space: pre-wrap; }
+  .doc h2 { break-before: page; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="icon-btn" id="menu-btn" aria-label="Open navigation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  <a class="brand" href="#"><img src="data:image/png;base64,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" alt="" width="34" height="37"><span><b>Pwn</b>Broker</span></a>
+  <span class="tag">User Guide</span>
+  <div class="spacer"></div>
+  <button class="icon-btn" id="theme-btn" aria-label="Toggle dark mode" title="Toggle dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</header>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="Guide contents">
+    <input class="search" id="search" type="search" placeholder="Search sections…" aria-label="Search sections">
+    <ul id="nav">
+<li class="nav-sec"><a href="#1-installation">1. Installation</a><ul><li><a href="#requirements">Requirements</a></li><li><a href="#single-file-installer-recommended">Single-File Installer (recommended)</a></li><li><a href="#quick-install-from-source">Quick Install (from source)</a></li><li><a href="#custom-port-or-install-directory">Custom Port or Install Directory</a></li><li><a href="#service-management">Service Management</a></li><li><a href="#tls-certificate">TLS Certificate</a></li></ul></li>
+<li class="nav-sec"><a href="#2-first-login--initial-setup">2. First Login &amp; Initial Setup</a><ul><li><a href="#recommended-first-steps">Recommended First Steps</a></li></ul></li>
+<li class="nav-sec"><a href="#3-dashboard">3. Dashboard</a><ul><li><a href="#customizing-the-layout">Customizing the Layout</a></li><li><a href="#available-widgets">Available Widgets</a></li></ul></li>
+<li class="nav-sec"><a href="#4-targets">4. Targets</a><ul><li><a href="#target-types">Target Types</a></li><li><a href="#adding-a-target">Adding a Target</a></li><li><a href="#target-detail-page">Target Detail Page</a></li><li><a href="#ssh-credentials-credentialed-checks">SSH Credentials (credentialed checks)</a></li><li><a href="#deleting-a-target">Deleting a Target</a></li></ul></li>
+<li class="nav-sec"><a href="#5-assets">5. Assets</a><ul><li><a href="#asset-inventory-assets">Asset Inventory (/assets)</a></li><li><a href="#tags">Tags</a></li><li><a href="#asset-groups">Asset Groups</a></li><li><a href="#quick-scan">Quick Scan</a></li></ul></li>
+<li class="nav-sec"><a href="#6-scans">6. Scans</a><ul><li><a href="#scan-types">Scan Types</a></li><li><a href="#running-a-scan">Running a Scan</a></li><li><a href="#scan-results">Scan Results</a></li><li><a href="#marking-findings-as-remediated">Marking Findings as Remediated</a></li><li><a href="#scheduled-scans">Scheduled Scans</a></li></ul></li>
+<li class="nav-sec"><a href="#7-vulnerability-management">7. Vulnerability Management</a><ul><li><a href="#only-proven-vulnerabilities-are-counted">Only proven vulnerabilities are counted</a></li><li><a href="#credentialed-checks-ssh">Credentialed checks (SSH)</a></li><li><a href="#vuln-tickets-vulnstickets">Vuln Tickets (/vulns/tickets)</a></li><li><a href="#device-view-vulnsdevice">Device View (/vulns/device/&lt;target&gt;)</a></li><li><a href="#updating-a-ticket">Updating a Ticket</a></li></ul></li>
+<li class="nav-sec"><a href="#8-dependency-scanner">8. Dependency Scanner</a><ul><li><a href="#supported-ecosystems">Supported Ecosystems</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#running-a-dependency-scan">Running a Dependency Scan</a></li><li><a href="#results">Results</a></li></ul></li>
+<li class="nav-sec"><a href="#9-reports">9. Reports</a><ul><li><a href="#generating-a-report">Generating a Report</a></li><li><a href="#downloading-reports">Downloading Reports</a></li><li><a href="#pushing-reports-to-a-cloud-api">Pushing Reports to a Cloud API</a></li><li><a href="#scheduled-reports">Scheduled Reports</a></li><li><a href="#atlassian-integration">Atlassian Integration</a></li></ul></li>
+<li class="nav-sec"><a href="#10-threat-intelligence">10. Threat Intelligence</a><ul><li><a href="#required-api-keys">Required API Keys</a></li><li><a href="#ioc-lookup-threatlookup">IOC Lookup (/threat/lookup)</a></li><li><a href="#otx-feed-threatfeed">OTX Feed (/threat/feed)</a></li><li><a href="#soc-triage-threattriage">SOC Triage (/threat/triage)</a></li><li><a href="#subdomain-enumeration-threatsubdomains">Subdomain Enumeration (/threat/subdomains)</a></li></ul></li>
+<li class="nav-sec"><a href="#11-endpoint-agents">11. Endpoint Agents</a><ul><li><a href="#how-agents-work">How Agents Work</a></li><li><a href="#deploying-an-agent">Deploying an Agent</a></li><li><a href="#agent-alerts">Agent Alerts</a></li><li><a href="#manual-registration-advanced">Manual Registration (advanced)</a></li></ul></li>
+<li class="nav-sec"><a href="#12-grc--governance-risk--compliance">12. GRC — Governance, Risk &amp; Compliance</a><ul><li><a href="#risk-register-grcrisks">Risk Register (/grc/risks)</a></li><li><a href="#compliance-grccompliance">Compliance (/grc/compliance)</a></li><li><a href="#policies-grcpolicies">Policies (/grc/policies)</a></li></ul></li>
+<li class="nav-sec"><a href="#13-settings">13. Settings</a><ul><li><a href="#time--ntp">Time &amp; NTP</a></li><li><a href="#email--smtp">Email / SMTP</a></li><li><a href="#threat-intelligence-apis">Threat Intelligence APIs</a></li><li><a href="#atlassian-integration_1">Atlassian Integration</a></li><li><a href="#cloud-api-integration">Cloud API Integration</a></li><li><a href="#https--tls">HTTPS / TLS</a></li></ul></li>
+<li class="nav-sec"><a href="#14-user-management">14. User Management</a><ul><li><a href="#roles">Roles</a></li><li><a href="#adding-a-user">Adding a User</a></li><li><a href="#managing-existing-users">Managing Existing Users</a></li><li><a href="#profile">Profile</a></li></ul></li>
+<li class="nav-sec"><a href="#15-activity-log">15. Activity Log</a></li>
+<li class="nav-sec"><a href="#16-api-reference">16. API Reference</a><ul><li><a href="#get-apidashboardstats">GET /api/dashboard/stats</a></li><li><a href="#get-apidashboardwidgets">GET /api/dashboard/widgets</a></li><li><a href="#get-apiscansstatus">GET /api/scans/&lt;scan_id&gt;/status</a></li><li><a href="#endpoint-agent-api">Endpoint Agent API</a></li></ul></li>
+<li class="nav-sec"><a href="#17-upgrading">17. Upgrading</a></li>
+<li class="nav-sec"><a href="#18-troubleshooting">18. Troubleshooting</a><ul><li><a href="#service-wont-start">Service won't start</a></li><li><a href="#scans-stuck-in-running-state">Scans stuck in "running" state</a></li><li><a href="#os-detection-not-working">OS detection not working</a></li><li><a href="#api-keys-invalid-even-though-they-are-correct">API keys "INVALID" even though they are correct</a></li><li><a href="#timezone-not-applying-to-old-timestamps">Timezone not applying to old timestamps</a></li><li><a href="#agents-showing-as-offline-immediately">Agents showing as Offline immediately</a></li><li><a href="#permission-denied-when-setting-ntp-server">"Permission denied" when setting NTP server</a></li><li><a href="#database-locked-errors">Database locked errors</a></li></ul></li>
+    </ul>
+    <div class="no-results" id="no-results">No matching sections.</div>
+  </nav>
+  <main>
+    <article class="doc">
+      <div class="hero">
+        <h1>PwnBroker — Complete User Guide</h1>
+        <p>Install, configure and run PwnBroker — scanning, proven-exploitable vulnerability management,
+           threat intelligence and GRC on your own infrastructure.</p>
+        <div class="meta">Version 1.0.0 · Updated 2026-11-11</div>
+      </div>
+<p>PwnBroker is a self-hosted security operations platform that combines network scanning, vulnerability management, dependency auditing, threat intelligence, GRC compliance, and endpoint monitoring into a single web UI. All data stays on your infrastructure.</p>
+<h2 id="1-installation">1. Installation<a class="headerlink" href="#1-installation" title="Link to this section">#</a></h2>
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this section">#</a></h3>
+<ul>
+<li>Ubuntu 22.04 LTS or 24.04 LTS (Debian-based distros also work)</li>
+<li>2 GB RAM minimum, 4 GB recommended</li>
+<li>10 GB disk space</li>
+<li>Root / sudo access</li>
+<li>Outbound internet access (for threat intel API calls and NVD CVE lookups)</li>
+</ul>
+<h3 id="single-file-installer-recommended">Single-File Installer (recommended)<a class="headerlink" href="#single-file-installer-recommended" title="Link to this section">#</a></h3>
+<p>PWNBroker ships as one file, <code>pwnbroker-&lt;version&gt;-install.run</code>, that contains
+the signed release and everything that installs it. Download it with your
+license key and install in one go:</p>
+<pre><code class="language-bash">curl -fsS --data-binary @license.key https://pwnbroker.space:7585/updates/v1/installer -o pwnbroker-install.run
+sudo bash pwnbroker-install.run --license license.key
+</code></pre>
+<p>Before installing it verifies its own checksum (a truncated or corrupted
+download is refused) and the PWNBroker release signature (a modified file is
+refused). Options:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--license FILE</code></td>
+<td>—</td>
+<td>Install this license (otherwise upload it under user menu → License)</td>
+</tr>
+<tr>
+<td><code>--port N</code></td>
+<td>443</td>
+<td>HTTPS port</td>
+</tr>
+<tr>
+<td><code>--dir PATH</code></td>
+<td><code>/opt/PWNBroker</code></td>
+<td>Install directory</td>
+</tr>
+<tr>
+<td><code>--update-url URL</code></td>
+<td><code>https://pwnbroker.space:7585/updates</code></td>
+<td>Update server</td>
+</tr>
+<tr>
+<td><code>--check</code></td>
+<td></td>
+<td>Only verify the file</td>
+</tr>
+<tr>
+<td><code>--extract DIR</code></td>
+<td></td>
+<td>Only verify and unpack the release</td>
+</tr>
+</tbody>
+</table></div>
+<p>It needs Ubuntu 22.04+/Debian 12+ with systemd, x86_64 or arm64, 3 GB free
+disk, and internet access for OS and Python packages. Progress is shown and
+logged to <code>/var/log/pwnbroker-install.log</code>. Running a newer installer on an
+existing server upgrades it in place and keeps all data; running the same one
+again repairs the install.</p>
+<h3 id="quick-install-from-source">Quick Install (from source)<a class="headerlink" href="#quick-install-from-source" title="Link to this section">#</a></h3>
+<p><code>setup.sh</code> manages its own git checkout — grab just the script and run it, no separate clone needed:</p>
+<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/ChimneyFish/PWNBroker/main/setup.sh -o setup.sh
+sudo bash setup.sh
+</code></pre>
+<p>The script will:</p>
+<ol>
+<li>Install system packages: <code>python3</code>, <code>nmap</code>, <code>openssl</code>, <code>ufw</code>, and build tools</li>
+<li>Create a <code>pwnbroker</code> system user (no shell, no home directory)</li>
+<li>Clone (or, on re-runs, fetch + reset) the application into <code>/opt/PWNBroker</code></li>
+<li>Build a Python virtual environment and install all dependencies</li>
+<li>Grant <code>nmap</code> raw-socket capabilities (<code>cap_net_raw</code>) so OS fingerprinting works without root</li>
+<li>Generate a self-signed TLS certificate (4096-bit RSA, 10-year validity)</li>
+<li>Create <code>/opt/PWNBroker/.env</code> with a randomly generated <code>SECRET_KEY</code></li>
+<li>Install and enable a <code>systemd</code> service (<code>pwnbroker.service</code>) that starts automatically on boot</li>
+<li>Configure <code>logrotate</code> for daily log rotation with 14-day retention</li>
+<li>Open the HTTPS port in <code>ufw</code> if the firewall is active</li>
+</ol>
+<p>After the script completes you will see:</p>
+<pre><code>  Access URL:       https://&lt;server-ip&gt;
+  Default login:    admin / admin
+</code></pre>
+<h3 id="custom-port-or-install-directory">Custom Port or Install Directory<a class="headerlink" href="#custom-port-or-install-directory" title="Link to this section">#</a></h3>
+<pre><code class="language-bash">sudo PORT=8443 INSTALL_DIR=/srv/pwnbroker bash setup.sh
+</code></pre>
+<h3 id="service-management">Service Management<a class="headerlink" href="#service-management" title="Link to this section">#</a></h3>
+<pre><code class="language-bash">sudo systemctl start   pwnbroker     # start
+sudo systemctl stop    pwnbroker     # stop
+sudo systemctl restart pwnbroker     # full restart
+sudo systemctl reload  pwnbroker     # graceful zero-downtime worker reload
+sudo systemctl status  pwnbroker     # health check
+
+journalctl -u pwnbroker -f           # live log stream
+journalctl -u pwnbroker -n 100       # last 100 log lines
+</code></pre>
+<p>Application logs are also written to <code>/opt/PWNBroker/logs/</code>.</p>
+<h3 id="tls-certificate">TLS Certificate<a class="headerlink" href="#tls-certificate" title="Link to this section">#</a></h3>
+<p>The installer generates a self-signed certificate. Your browser will show a security warning — click <strong>Advanced → Proceed</strong> to continue.</p>
+<p>For production, upload a CA-signed certificate through <strong>Settings → HTTPS / TLS</strong>. Both the certificate (PEM) and private key (PEM) files are required. The service must be restarted after uploading.</p>
+<h2 id="2-first-login--initial-setup">2. First Login &amp; Initial Setup<a class="headerlink" href="#2-first-login--initial-setup" title="Link to this section">#</a></h2>
+<ol>
+<li>Navigate to <code>https://&lt;your-server-ip&gt;</code></li>
+<li>Log in with <code>admin</code> / <code>admin</code></li>
+<li>Go to <strong>Profile</strong> (bottom of the sidebar) and change your password immediately</li>
+<li>Go to <strong>Settings → Time &amp; NTP</strong> and set your timezone — all timestamps across the platform will display in this zone</li>
+<li>Add your API keys under <strong>Settings → Threat Intelligence APIs</strong> to unlock IOC lookups, OTX feeds, and SOC triage</li>
+</ol>
+<h3 id="recommended-first-steps">Recommended First Steps<a class="headerlink" href="#recommended-first-steps" title="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Change admin password</td>
+<td>Sidebar → Profile</td>
+</tr>
+<tr>
+<td>Set timezone</td>
+<td>Settings → Time &amp; NTP</td>
+</tr>
+<tr>
+<td>Add threat intel API keys</td>
+<td>Settings → Threat Intelligence APIs</td>
+</tr>
+<tr>
+<td>Add your first target</td>
+<td>Targets → New Target</td>
+</tr>
+<tr>
+<td>Run your first scan</td>
+<td>Scans → New Scan</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3-dashboard">3. Dashboard<a class="headerlink" href="#3-dashboard" title="Link to this section">#</a></h2>
+<p>The dashboard is fully customizable. All widgets pull live data from the API and refresh every 30 seconds.</p>
+<h3 id="customizing-the-layout">Customizing the Layout<a class="headerlink" href="#customizing-the-layout" title="Link to this section">#</a></h3>
+<p>Click <strong>Customize</strong> in the top-right corner to open the widget picker panel. From there you can:</p>
+<ul>
+<li><strong>Add</strong> any widget by clicking the <code>+</code> button next to it</li>
+<li><strong>Remove</strong> any widget by clicking the <code>−</code> button (or hover over a widget and click the <code>×</code> in the top-right corner)</li>
+<li><strong>Reorder</strong> widgets by dragging them to a new position (grab the <code>⠿</code> handle that appears on hover)</li>
+<li><strong>Reset</strong> to the default layout with the "Reset defaults" button</li>
+</ul>
+<p>Your layout is saved in the browser's <code>localStorage</code> and persists across page refreshes.</p>
+<h3 id="available-widgets">Available Widgets<a class="headerlink" href="#available-widgets" title="Link to this section">#</a></h3>
+<p><strong>Stat cards</strong> (small, shows a single number with a link):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Shows</th>
+<th>Links to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Scans</td>
+<td>All scans ever run</td>
+<td>Scans</td>
+</tr>
+<tr>
+<td>Running Now</td>
+<td>Active scans</td>
+<td>Scans</td>
+</tr>
+<tr>
+<td>Targets</td>
+<td>Configured scan targets</td>
+<td>Targets</td>
+</tr>
+<tr>
+<td>Critical Vulns</td>
+<td>Unresolved critical findings</td>
+<td>Vuln Management</td>
+</tr>
+<tr>
+<td>High Vulns</td>
+<td>High severity findings</td>
+<td>Vuln Management</td>
+</tr>
+<tr>
+<td>Online Agents</td>
+<td>Endpoint agents with recent heartbeat</td>
+<td>Threat Intel → Agents</td>
+</tr>
+<tr>
+<td>Assets</td>
+<td>Total discovered assets</td>
+<td>Assets</td>
+</tr>
+<tr>
+<td>Open SOC Cases</td>
+<td>Pending SOC triage cases</td>
+<td>Threat Intel → SOC Triage</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Charts</strong> (medium width):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Chart type</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Severity Breakdown</td>
+<td>Doughnut</td>
+<td>Distribution of all findings by severity</td>
+</tr>
+<tr>
+<td>Scan Trend (14d)</td>
+<td>Line</td>
+<td>Number of scans launched per day</td>
+</tr>
+<tr>
+<td>Vulns by Target</td>
+<td>Horizontal bar</td>
+<td>Top 5 targets ranked by vulnerability count</td>
+</tr>
+<tr>
+<td>Agent Health</td>
+<td>Status list</td>
+<td>Online / Offline / Unknown agent counts</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Tables &amp; Tools</strong> (full or half width):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Recent Scans</td>
+<td>Last 8 scans with status, vuln count, and date</td>
+</tr>
+<tr>
+<td>Recent Findings</td>
+<td>Last 10 vulnerabilities with severity, CVSS, and CVE</td>
+</tr>
+<tr>
+<td>Quick Actions</td>
+<td>One-click shortcuts to New Scan, SOC Triage, Add Target, IOC Lookup</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-targets">4. Targets<a class="headerlink" href="#4-targets" title="Link to this section">#</a></h2>
+<p>Targets are the hosts, IP addresses, IP ranges, or domains that PwnBroker scans and monitors.</p>
+<h3 id="target-types">Target Types<a class="headerlink" href="#target-types" title="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Example</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host</td>
+<td><code>192.168.1.100</code></td>
+<td>Single IP or hostname</td>
+</tr>
+<tr>
+<td>IP Range</td>
+<td><code>192.168.1.0/24</code></td>
+<td>CIDR range, scanned as one job</td>
+</tr>
+<tr>
+<td>Domain</td>
+<td><code>example.com</code></td>
+<td>Enables DNS/subdomain enumeration</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="adding-a-target">Adding a Target<a class="headerlink" href="#adding-a-target" title="Link to this section">#</a></h3>
+<ol>
+<li>Go to <strong>Targets → New Target</strong></li>
+<li>Enter a name, the host/IP/domain, and an optional description</li>
+<li>Click <strong>Create Target</strong></li>
+</ol>
+<h3 id="target-detail-page">Target Detail Page<a class="headerlink" href="#target-detail-page" title="Link to this section">#</a></h3>
+<p>Clicking a target shows:</p>
+<ul>
+<li><strong>Scan history</strong> for that target</li>
+<li><strong>Domain records</strong> (for domain targets) — A, AAAA, CNAME, MX, NS records discovered via crt.sh and DNSDumpster</li>
+<li><strong>DNS enumeration</strong> — click <strong>Re-Enumerate</strong> to refresh DNS records</li>
+<li>Subdomain changes are tracked: new records show as <code>new</code>, changed values as <code>changed</code>, removed entries as <code>removed</code></li>
+</ul>
+<h3 id="ssh-credentials-credentialed-checks">SSH Credentials (credentialed checks)<a class="headerlink" href="#ssh-credentials-credentialed-checks" title="Link to this section">#</a></h3>
+<p>Add an SSH login to a host or subnet target when you create it, or any time
+later with the <strong>key</strong> icon on the Targets page (filled key = a login is saved).
+Supported auth types:</p>
+<ul>
+<li><strong>Password</strong> — username + password</li>
+<li><strong>Key</strong> — paste an OpenSSH or PEM private key (Ed25519, ECDSA or RSA), with
+  its passphrase if it's encrypted</li>
+</ul>
+<p>Use <strong>Test login</strong> before saving: it logs in and shows the OS, the package
+manager it found, and whether passwordless sudo is available. Secrets are
+stored encrypted and never shown again; leave a secret blank when editing to
+keep the saved one. <strong>Remove saved credentials</strong> deletes the login.</p>
+<p>The login is used for credentialed CVE checks (see <em>Credentialed checks</em> in
+section 7), precise end-of-life checks on full scans, and remote dependency
+scans. Use a dedicated low-privilege account; everything run on the host is
+read-only. On a subnet target the login is tried on every host found; a
+target saved for an individual IP takes precedence for that IP.</p>
+<h3 id="deleting-a-target">Deleting a Target<a class="headerlink" href="#deleting-a-target" title="Link to this section">#</a></h3>
+<p>Deleting a target also deletes all associated scans, results, assets, and reports. This action cannot be undone.</p>
+<h2 id="5-assets">5. Assets<a class="headerlink" href="#5-assets" title="Link to this section">#</a></h2>
+<p>Assets are individual network devices discovered during scans. They are tracked automatically — every completed scan populates the asset inventory.</p>
+<h3 id="asset-inventory-assets">Asset Inventory (<code>/assets</code>)<a class="headerlink" href="#asset-inventory-assets" title="Link to this section">#</a></h3>
+<p>The inventory table shows every known device with its:</p>
+<ul>
+<li>IP address and hostname (editable inline)</li>
+<li>Operating system</li>
+<li>Last seen timestamp</li>
+<li>Status (Active / Inactive)</li>
+<li>Tags</li>
+<li>Open vulnerability count</li>
+<li>Parent target</li>
+</ul>
+<h3 id="tags">Tags<a class="headerlink" href="#tags" title="Link to this section">#</a></h3>
+<p>Tags let you group and filter assets. Examples: <code>production</code>, <code>dmz</code>, <code>windows</code>, <code>critical</code>.</p>
+<ul>
+<li>Create a tag with a name and hex color</li>
+<li>Assign tags to assets from the inventory or asset row</li>
+<li>Filter the inventory by tag using the tag buttons at the top</li>
+</ul>
+<h3 id="asset-groups">Asset Groups<a class="headerlink" href="#asset-groups" title="Link to this section">#</a></h3>
+<p>Groups are collections of assets that can be scanned together as a single job. Three group types:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>How assets are collected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Manual</td>
+<td>You add assets individually</td>
+</tr>
+<tr>
+<td>By Tag</td>
+<td>All assets with a chosen tag</td>
+</tr>
+<tr>
+<td>By Network</td>
+<td>All assets belonging to a target</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Creating a group</strong>: Assets → Asset Groups → New Group</p>
+<p><strong>Scanning a group</strong>: On the group detail page, click <strong>Scan Group</strong> to launch a full scan against all member assets simultaneously.</p>
+<h3 id="quick-scan">Quick Scan<a class="headerlink" href="#quick-scan" title="Link to this section">#</a></h3>
+<p>From the asset inventory, click <strong>Quick Scan</strong> on any row to immediately launch a full scan of that single asset without going through the scan wizard.</p>
+<h2 id="6-scans">6. Scans<a class="headerlink" href="#6-scans" title="Link to this section">#</a></h2>
+<p>Scans run <code>nmap</code> against targets or asset groups and enrich results with CVE data from NVD.</p>
+<h3 id="scan-types">Scan Types<a class="headerlink" href="#scan-types" title="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full</td>
+<td>Port scan + service detection + OS fingerprinting + CVE lookup</td>
+</tr>
+<tr>
+<td>Port</td>
+<td>Port scan and service detection only</td>
+</tr>
+<tr>
+<td>Web</td>
+<td>HTTP/HTTPS service checks</td>
+</tr>
+<tr>
+<td>CVE</td>
+<td>CVE lookup against already-discovered services (no new port scan)</td>
+</tr>
+<tr>
+<td>OSV</td>
+<td>Dependency vulnerability scan via SSH (see Dependency Scanner)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="running-a-scan">Running a Scan<a class="headerlink" href="#running-a-scan" title="Link to this section">#</a></h3>
+<ol>
+<li>Go to <strong>Scans → New Scan</strong></li>
+<li>Select a target or asset group</li>
+<li>Choose scan type and port range (default: 1–1024)</li>
+<li>Give it a name and click <strong>Launch Scan</strong></li>
+</ol>
+<p>The scan runs in the background. The scan detail page polls every 2.5 seconds and updates automatically when complete.</p>
+<h3 id="scan-results">Scan Results<a class="headerlink" href="#scan-results" title="Link to this section">#</a></h3>
+<p>Each scan result falls into one of these categories:</p>
+<ul>
+<li><strong>Port</strong> — open port with service, version, and protocol</li>
+<li><strong>Vulnerability</strong> — CVE-matched finding with severity, CVSS score, and remediation</li>
+<li><strong>Web Check</strong> — HTTP header findings (missing security headers, etc.)</li>
+<li><strong>Info</strong> — general host/OS information</li>
+</ul>
+<p>Findings are color-coded by severity: <strong>Critical</strong> (red) · <strong>High</strong> (orange) · <strong>Medium</strong> (yellow) · <strong>Low</strong> (blue) · <strong>Info</strong> (gray)</p>
+<h3 id="marking-findings-as-remediated">Marking Findings as Remediated<a class="headerlink" href="#marking-findings-as-remediated" title="Link to this section">#</a></h3>
+<p>On the scan detail page, click <strong>Remediate</strong> next to any finding to mark it resolved. Remediated findings are excluded from future vulnerability ticket counts.</p>
+<h3 id="scheduled-scans">Scheduled Scans<a class="headerlink" href="#scheduled-scans" title="Link to this section">#</a></h3>
+<p>Set up recurring scans using cron expressions:</p>
+<ol>
+<li>Go to <strong>Scans → Schedule New</strong></li>
+<li>Pick a target or asset group, scan type, and port range</li>
+<li>Choose how credentialed checks log in (same options as a one-off scan)</li>
+<li>Enter a cron expression (e.g., <code>0 2 * * *</code> for 2 AM daily)</li>
+<li>Click <strong>Create Schedule</strong></li>
+</ol>
+<p>Active schedules can be paused/resumed with the toggle on the Scans index page. Scheduled scans appear in the activity log when they run.</p>
+<h2 id="7-vulnerability-management">7. Vulnerability Management<a class="headerlink" href="#7-vulnerability-management" title="Link to this section">#</a></h2>
+<p>The Vuln Management module tracks findings as tickets through their remediation lifecycle.</p>
+<h3 id="only-proven-vulnerabilities-are-counted">Only proven vulnerabilities are counted<a class="headerlink" href="#only-proven-vulnerabilities-are-counted" title="Link to this section">#</a></h3>
+<p>A CVE matched from a service's version banner only says the product <em>can</em> be
+vulnerable; whether this host is depends on configuration. (Apache 2.4.49 is
+only exploitable through CVE-2021-41773 if a non-default setting allows it.)
+So every version-matched CVE is re-tested against the live service with a
+check written for that CVE, and gets one of three verdicts:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Verdict</th>
+<th>What happened</th>
+<th>Counted?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Exploitable</strong></td>
+<td>The check reproduced the issue. The proof (request + response) is on the finding.</td>
+<td>Yes — open ticket with SLA</td>
+</tr>
+<tr>
+<td><strong>Not exploitable</strong></td>
+<td>The check ran cleanly and the vulnerable behaviour wasn't there (feature disabled, fix backported, not that product).</td>
+<td>No — kept under "Not Exploitable"</td>
+</tr>
+<tr>
+<td><strong>Unverified</strong></td>
+<td>No safe check exists for this CVE, or the check couldn't complete. Each one says why.</td>
+<td>No — kept under "Unverified"</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Checks come from the nuclei template library (~4,500 CVEs), installed by
+  <code>setup.sh</code> and refreshed weekly. nmap's own vuln-script verdicts count too
+  (VULNERABLE proves, NOT VULNERABLE rules out; LIKELY VULNERABLE is not proof).</li>
+<li>Only safe checks run: never ones tagged DoS/intrusive/fuzzing, never ones
+  needing credentials, and never ones that call out to an external server —
+  no scan data leaves your network.</li>
+<li>A later scan that proves an unverified finding reopens it automatically; a
+  rescan that shows an open one is no longer exploitable (fixed, or the
+  feature turned off) closes it as Not Exploitable.</li>
+<li><strong>Verify now</strong> on the Vulnerabilities page re-tests every unverified finding
+  without a full rescan (useful after the check library updates).</li>
+<li>Dashboard, reports, exports and Jira/Confluence only include proven
+  vulnerabilities. Dependency (OSV), EOL, secrets and other non-version
+  findings are unchanged.</li>
+<li>Set <code>VULN_VERIFY=0</code> in <code>.env</code> to turn checking off (findings then stay
+  unverified).</li>
+</ul>
+<h3 id="credentialed-checks-ssh">Credentialed checks (SSH)<a class="headerlink" href="#credentialed-checks-ssh" title="Link to this section">#</a></h3>
+<p>Most version-matched CVEs have no safe remote check, so on their own they
+stay Unverified. With an SSH login, scans also look inside the host and rule
+out the ones that don't apply:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rule-out</th>
+<th>How it's checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vendor backport</strong></td>
+<td>Finds the package that owns the listening service, its exact installed version, and the vendor changelog. If the changelog lists the CVE, the fix is installed even though the banner shows the old upstream version. Ubuntu trims the on-disk changelog, so the full one for that exact version is fetched from changelogs.ubuntu.com (only the package name and version are sent).</td>
+</tr>
+<tr>
+<td><strong>Module not loaded</strong></td>
+<td>For Apache httpd (<code>apachectl -M</code>) and nginx (<code>nginx -V</code>): a CVE in a module the server doesn't load is ruled out.</td>
+</tr>
+<tr>
+<td><strong>Different OS</strong></td>
+<td>A CVE that only affects the product on Windows, on a host running Linux/Unix.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Credentialed checks only ever <strong>rule findings out</strong>. They never make a
+finding count as a vulnerability on their own; that still needs a live check
+that reproduces it. Findings they can't rule out stay Unverified with a note
+saying what was found (e.g. "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix
+listed for CVE-…").</p>
+<p>On <strong>New Scan</strong> / <strong>Schedule Scan</strong>, <em>Credentialed Checks (SSH)</em> chooses the login:</p>
+<ul>
+<li><strong>Use the target's saved SSH login</strong> (default): uses the login saved on the target.</li>
+<li><strong>Use these credentials for this scan</strong>: enter a login just for this scan
+  (stored encrypted with the scan). For a subnet or asset group it's tried on
+  every host.</li>
+<li><strong>Off</strong>: don't log in to hosts.</li>
+</ul>
+<p>Each scan shows which login it used, and adds one info row per host with how
+many CVEs were ruled out, or why the login failed. <strong>Verify now</strong> reuses each
+finding's scan login (or its target's). In a real test against stock Ubuntu
+22.04 Apache, credentialed checks ruled out 88 of 95 version-matched CVEs.</p>
+<h3 id="vuln-tickets-vulnstickets">Vuln Tickets (<code>/vulns/tickets</code>)<a class="headerlink" href="#vuln-tickets-vulnstickets" title="Link to this section">#</a></h3>
+<p>A ticket is automatically created for each unique vulnerability the first time it is found on a host. If the same CVE reappears on the same host in a later scan, the existing ticket is updated rather than duplicated.</p>
+<p><strong>Ticket statuses:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open</td>
+<td>Newly found, not yet being worked</td>
+</tr>
+<tr>
+<td>In Progress</td>
+<td>Someone is actively remediating</td>
+</tr>
+<tr>
+<td>Patched</td>
+<td>Fix confirmed</td>
+</tr>
+<tr>
+<td>Accepted Risk</td>
+<td>Risk accepted by the team</td>
+</tr>
+<tr>
+<td>False Positive</td>
+<td>Finding is wrong (marked by hand)</td>
+</tr>
+<tr>
+<td>Unverified</td>
+<td>Version match only, not proven on this host (no SLA)</td>
+</tr>
+<tr>
+<td>Not Exploitable</td>
+<td>The CVE's check ran and the issue wasn't present (no SLA)</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>SLA tracking</strong>: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.</p>
+<h3 id="device-view-vulnsdevice">Device View (<code>/vulns/device/&lt;target&gt;</code>)<a class="headerlink" href="#device-view-vulnsdevice" title="Link to this section">#</a></h3>
+<p>Shows all open tickets grouped by target with a risk heat-map. Use this view to get a per-host risk summary.</p>
+<h3 id="updating-a-ticket">Updating a Ticket<a class="headerlink" href="#updating-a-ticket" title="Link to this section">#</a></h3>
+<p>Click any ticket to open the detail panel and:</p>
+<ul>
+<li>Change status</li>
+<li>Assign to a user</li>
+<li>Add notes</li>
+<li>Record the patch date</li>
+</ul>
+<h2 id="8-dependency-scanner">8. Dependency Scanner<a class="headerlink" href="#8-dependency-scanner" title="Link to this section">#</a></h2>
+<p>The dependency scanner connects to a target over SSH, reads the installed package manifest, and cross-references it against the <a href="https://osv.dev">OSV (Open Source Vulnerabilities)</a> database.</p>
+<h3 id="supported-ecosystems">Supported Ecosystems<a class="headerlink" href="#supported-ecosystems" title="Link to this section">#</a></h3>
+<p>Python (pip), Node.js (npm), Go modules, Rust (Cargo), Ruby (Bundler), Java (Maven/Gradle), PHP (Composer), and others supported by OSV.</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this section">#</a></h3>
+<ul>
+<li>The target must have SSH enabled and credentials configured on the Target detail page</li>
+<li>Test the connection with <strong>Test SSH</strong> before running a scan</li>
+</ul>
+<h3 id="running-a-dependency-scan">Running a Dependency Scan<a class="headerlink" href="#running-a-dependency-scan" title="Link to this section">#</a></h3>
+<ol>
+<li>Go to <strong>Dependency Scanner → New Scan</strong></li>
+<li>Select a target that has SSH credentials configured</li>
+<li>Optionally specify a path on the remote host to scan (defaults to home directory)</li>
+<li>Click <strong>Launch</strong></li>
+</ol>
+<h3 id="results">Results<a class="headerlink" href="#results" title="Link to this section">#</a></h3>
+<p>Results list each vulnerable package with:</p>
+<ul>
+<li>Package name and installed version</li>
+<li>First fixed version</li>
+<li>CVE ID and CVSS score</li>
+<li>Severity badge</li>
+</ul>
+<p>Click <strong>Remediate</strong> on any row to mark it resolved.</p>
+<h2 id="9-reports">9. Reports<a class="headerlink" href="#9-reports" title="Link to this section">#</a></h2>
+<p>Reports generate PDF or HTML summaries of scan results.</p>
+<h3 id="generating-a-report">Generating a Report<a class="headerlink" href="#generating-a-report" title="Link to this section">#</a></h3>
+<ol>
+<li>Go to <strong>Reports</strong></li>
+<li>Find a completed scan in the table</li>
+<li>Click <strong>Generate</strong> and choose PDF or HTML format</li>
+</ol>
+<p>The report includes: executive summary, severity breakdown chart, full findings table with CVSS scores and remediation advice, and scan metadata.</p>
+<h3 id="downloading-reports">Downloading Reports<a class="headerlink" href="#downloading-reports" title="Link to this section">#</a></h3>
+<p>Generated reports appear in the <strong>Saved Reports</strong> table. Click <strong>Download</strong> to save the file locally.</p>
+<h3 id="pushing-reports-to-a-cloud-api">Pushing Reports to a Cloud API<a class="headerlink" href="#pushing-reports-to-a-cloud-api" title="Link to this section">#</a></h3>
+<p>If you have configured a Cloud API endpoint under <strong>Settings → Cloud API Integration</strong>, click <strong>Push</strong> next to any saved report to POST it to the endpoint. The payload includes scan metadata and optionally a base64-encoded copy of the report file.</p>
+<h3 id="scheduled-reports">Scheduled Reports<a class="headerlink" href="#scheduled-reports" title="Link to this section">#</a></h3>
+<p>Schedule automatic report delivery by email:</p>
+<ol>
+<li>Go to <strong>Reports → Schedule New</strong></li>
+<li>Select a target, cron schedule, recipients, and format</li>
+<li>Click <strong>Create Schedule</strong></li>
+</ol>
+<p>Recipients will receive an email with the report attached each time the schedule fires. SMTP must be configured under <strong>Settings → Email / SMTP</strong>.</p>
+<h3 id="atlassian-integration">Atlassian Integration<a class="headerlink" href="#atlassian-integration" title="Link to this section">#</a></h3>
+<p>If Confluence and/or Jira are configured under <strong>Settings → Atlassian</strong>:</p>
+<ul>
+<li><strong>Publish to Confluence</strong>: From the scan detail page, click <strong>Publish to Confluence</strong> to create a formatted wiki page in your configured space</li>
+<li><strong>Create Jira Tickets</strong>: From the scan detail page, click <strong>Create Jira Tickets</strong> to open issues for findings at or above your configured severity threshold</li>
+</ul>
+<h2 id="10-threat-intelligence">10. Threat Intelligence<a class="headerlink" href="#10-threat-intelligence" title="Link to this section">#</a></h2>
+<p>The Threat Intelligence module provides IOC lookups, threat feed monitoring, SOC triage workflows, subdomain enumeration, and domain-change tracking.</p>
+<h3 id="required-api-keys">Required API Keys<a class="headerlink" href="#required-api-keys" title="Link to this section">#</a></h3>
+<p>Configure all keys under <strong>Settings → Threat Intelligence APIs</strong>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OTX (AlienVault)</td>
+<td>IOC reputation, threat feed pulses</td>
+</tr>
+<tr>
+<td>AbuseIPDB</td>
+<td>IP abuse reports and confidence scores</td>
+</tr>
+<tr>
+<td>GreyNoise</td>
+<td>Internet noise classification (RIOT / mass-scanner detection)</td>
+</tr>
+<tr>
+<td>DNSDumpster</td>
+<td>Subdomain enumeration</td>
+</tr>
+<tr>
+<td>NVD</td>
+<td>CVE lookup and CVSS enrichment</td>
+</tr>
+</tbody>
+</table></div>
+<p>Click <strong>Test All Keys</strong> on the Settings page to validate each key without leaving the page.</p>
+<h3 id="ioc-lookup-threatlookup">IOC Lookup (<code>/threat/lookup</code>)<a class="headerlink" href="#ioc-lookup-threatlookup" title="Link to this section">#</a></h3>
+<p>Enter any of the following and get a multi-source reputation report:</p>
+<ul>
+<li>IPv4 / IPv6 address</li>
+<li>Domain name</li>
+<li>File hash (MD5, SHA-1, SHA-256)</li>
+<li>URL</li>
+</ul>
+<p>Results are cached for 24 hours to avoid burning API quota.</p>
+<h3 id="otx-feed-threatfeed">OTX Feed (<code>/threat/feed</code>)<a class="headerlink" href="#otx-feed-threatfeed" title="Link to this section">#</a></h3>
+<p>Displays the latest threat pulses from your AlienVault OTX subscriptions. Each pulse shows indicator counts, tags, and adversary attribution. Requires an OTX API key.</p>
+<h3 id="soc-triage-threattriage">SOC Triage (<code>/threat/triage</code>)<a class="headerlink" href="#soc-triage-threattriage" title="Link to this section">#</a></h3>
+<p>The triage queue collects IOCs that need analyst review. IOCs reach the queue either:</p>
+<ul>
+<li>Manually submitted via the Lookup page when the threat score exceeds the threshold</li>
+<li>Automatically when an endpoint agent reports a network connection to a known-malicious IP and GreyNoise or VT confirm it</li>
+</ul>
+<p><strong>Triage actions:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alert</td>
+<td>Flag as confirmed threat, add analyst notes</td>
+</tr>
+<tr>
+<td>Dismiss</td>
+<td>Mark as benign / false positive</td>
+</tr>
+</tbody>
+</table></div>
+<p>Alerted cases can be exported. Dismissed cases are removed from the active queue but retained in history.</p>
+<h3 id="subdomain-enumeration-threatsubdomains">Subdomain Enumeration (<code>/threat/subdomains</code>)<a class="headerlink" href="#subdomain-enumeration-threatsubdomains" title="Link to this section">#</a></h3>
+<p>Enter a domain to enumerate subdomains using crt.sh certificate transparency logs and DNSDumpster. Results show IP addresses, record types, and first/last seen dates.</p>
+<h2 id="11-endpoint-agents">11. Endpoint Agents<a class="headerlink" href="#11-endpoint-agents" title="Link to this section">#</a></h2>
+<p>Endpoint agents are lightweight Python scripts that run on monitored hosts. They send heartbeats and report suspicious network connections back to PwnBroker.</p>
+<h3 id="how-agents-work">How Agents Work<a class="headerlink" href="#how-agents-work" title="Link to this section">#</a></h3>
+<ol>
+<li>The agent runs as a background process (service/daemon) on the endpoint</li>
+<li>Every 60 seconds it sends a heartbeat with the host's IP, OS, and hostname</li>
+<li>It monitors active network connections and cross-checks destination IPs against your IOC database</li>
+<li>If a connection to a known-malicious IP is detected, an alert is created in PwnBroker</li>
+<li>Agents that have not sent a heartbeat in 5 minutes are marked <strong>Offline</strong></li>
+</ol>
+<h3 id="deploying-an-agent">Deploying an Agent<a class="headerlink" href="#deploying-an-agent" title="Link to this section">#</a></h3>
+<h4 id="step-1--download-the-agent-script">Step 1 — Download the agent script<a class="headerlink" href="#step-1--download-the-agent-script" title="Link to this section">#</a></h4>
+<p>Go to <strong>Threat Intel → Agents → Download Agent</strong>. The download page shows three options:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>File</th>
+<th>Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td><code>install_linux.sh</code></td>
+<td>Bash one-liner</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>install_mac.sh</code></td>
+<td>Bash one-liner</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>install_windows.ps1</code></td>
+<td>PowerShell script</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each installer downloads the Python agent, sets the server URL and registration token automatically, and installs it as a system service.</p>
+<h4 id="step-2--note-the-registration-token">Step 2 — Note the registration token<a class="headerlink" href="#step-2--note-the-registration-token" title="Link to this section">#</a></h4>
+<p>The registration token is auto-generated. Find it on the <strong>Threat Intel → Agents → Download Agent</strong> page (<code>/threat/download</code>). All agents must present this token when registering for the first time. You do not need to set it manually — it is created automatically on first use.</p>
+<h4 id="step-3--install-on-the-endpoint">Step 3 — Install on the endpoint<a class="headerlink" href="#step-3--install-on-the-endpoint" title="Link to this section">#</a></h4>
+<p><strong>Linux / macOS:</strong></p>
+<pre><code class="language-bash">curl -k https://&lt;pwnbroker-server&gt;/threat/download/script/linux | sudo bash
+</code></pre>
+<p><strong>Windows (PowerShell as Administrator):</strong></p>
+<pre><code class="language-powershell">iwr https://&lt;pwnbroker-server&gt;/threat/download/script/windows -UseBasicParsing | iex
+</code></pre>
+<h4 id="step-4--verify-registration">Step 4 — Verify registration<a class="headerlink" href="#step-4--verify-registration" title="Link to this section">#</a></h4>
+<p>The agent appears in <strong>Threat Intel → Agents</strong> within a minute of first startup. Status shows <strong>Online</strong> when heartbeats are received.</p>
+<h3 id="agent-alerts">Agent Alerts<a class="headerlink" href="#agent-alerts" title="Link to this section">#</a></h3>
+<p>When an agent detects a suspicious connection, the alert appears on:</p>
+<ul>
+<li>The agent's detail page</li>
+<li>The <strong>Threat Intel</strong> overview page</li>
+<li>The <strong>SOC Triage</strong> queue (if the threat score exceeds the threshold)</li>
+</ul>
+<p>Acknowledge alerts from the agent detail page to clear them from the active list.</p>
+<h3 id="manual-registration-advanced">Manual Registration (advanced)<a class="headerlink" href="#manual-registration-advanced" title="Link to this section">#</a></h3>
+<pre><code class="language-bash">python3 pwnbroker_agent.py --register --no-verify-ssl
+</code></pre>
+<p>This prompts for server URL and registration token, saves the config, then exits. Subsequent runs without <code>--register</code> operate in normal heartbeat mode.</p>
+<h2 id="12-grc--governance-risk--compliance">12. GRC — Governance, Risk &amp; Compliance<a class="headerlink" href="#12-grc--governance-risk--compliance" title="Link to this section">#</a></h2>
+<p>The GRC module manages risk registers, compliance frameworks, and security policies.</p>
+<h3 id="risk-register-grcrisks">Risk Register (<code>/grc/risks</code>)<a class="headerlink" href="#risk-register-grcrisks" title="Link to this section">#</a></h3>
+<p>Track risks across five categories: Technical, Operational, Compliance, Strategic, Financial.</p>
+<p><strong>Risk scoring</strong>: likelihood (1–5) × impact (1–5) = risk score (1–25)</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–5</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>6–11</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>12–19</td>
+<td>High</td>
+</tr>
+<tr>
+<td>20–25</td>
+<td>Critical</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risk statuses</strong>: Open · In Treatment · Mitigated · Accepted · Transferred · Closed</p>
+<p>Each risk can have a mitigation plan, target date, assigned owner, and optionally be linked to a specific asset. Residual likelihood and impact can be recorded after controls are applied to show risk reduction.</p>
+<h3 id="compliance-grccompliance">Compliance (<code>/grc/compliance</code>)<a class="headerlink" href="#compliance-grccompliance" title="Link to this section">#</a></h3>
+<p>PwnBroker ships with seeded compliance frameworks:</p>
+<ul>
+<li><strong>NIST CSF 2.0</strong> — Govern, Identify, Protect, Detect, Respond, Recover</li>
+<li><strong>CIS Controls v8</strong> — 18 control groups</li>
+<li><strong>ISO 27001:2022</strong> — Annex A controls</li>
+</ul>
+<p><strong>Assessing a control</strong>: Click any framework to see its controls. Click <strong>Assess</strong> on any control to record:</p>
+<ul>
+<li>Status: Compliant · Partial · Non-Compliant · Not Applicable · Not Assessed</li>
+<li>Evidence notes</li>
+<li>Next review date</li>
+</ul>
+<p><strong>Auto-assessment</strong>: Click <strong>Run Auto-Assessment</strong> to have PwnBroker automatically evaluate controls it can infer from scan data (e.g., patch status, open ports, missing headers).</p>
+<p><strong>Evidence files</strong>: Upload supporting evidence documents (PDFs, screenshots, configs) directly to a control.</p>
+<p><strong>Compliance report</strong>: Generate a PDF compliance report for any framework showing pass/fail counts and a gap summary. Useful for auditors.</p>
+<h3 id="policies-grcpolicies">Policies (<code>/grc/policies</code>)<a class="headerlink" href="#policies-grcpolicies" title="Link to this section">#</a></h3>
+<p>Maintain a library of security policies with version tracking.</p>
+<p><strong>Policy categories</strong>: Access Control · Data Classification · Incident Response · Vulnerability Management · Change Management · Acceptable Use · General</p>
+<p><strong>Policy statuses</strong>: Draft · Active · Under Review · Retired</p>
+<p>Each policy tracks the owner, approver, approval date, and next review date. Overdue review dates are highlighted in red.</p>
+<h2 id="13-settings">13. Settings<a class="headerlink" href="#13-settings" title="Link to this section">#</a></h2>
+<h3 id="time--ntp">Time &amp; NTP<a class="headerlink" href="#time--ntp" title="Link to this section">#</a></h3>
+<p><strong>Timezone</strong>: Select any IANA timezone from the dropdown. All timestamps across the entire platform — scans, findings, activity logs, SOC cases — display in this timezone. The preview updates live as you change the selection.</p>
+<p><strong>NTP Server</strong>: Enter the hostname of your NTP server (e.g., <code>pool.ntp.org</code>, <code>time.cloudflare.com</code>). PwnBroker writes this to <code>/etc/systemd/timesyncd.conf</code> and restarts the sync service. This requires the process to run as root or have <code>sudo</code> access — if it fails, the timezone is still saved and the error message shows the exact command to run manually.</p>
+<h3 id="email--smtp">Email / SMTP<a class="headerlink" href="#email--smtp" title="Link to this section">#</a></h3>
+<p>Configure outbound email for scheduled reports and alerts.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMTP Server</td>
+<td><code>smtp.gmail.com</code></td>
+</tr>
+<tr>
+<td>Port</td>
+<td><code>587</code></td>
+</tr>
+<tr>
+<td>Use STARTTLS</td>
+<td>Checked</td>
+</tr>
+<tr>
+<td>Username</td>
+<td><code>alerts@company.com</code></td>
+</tr>
+<tr>
+<td>Password</td>
+<td>App password (not your login password)</td>
+</tr>
+<tr>
+<td>From Address</td>
+<td><code>pwnbroker@company.com</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Use the <strong>Send Test Email</strong> button to verify the configuration before saving.</p>
+<h3 id="threat-intelligence-apis">Threat Intelligence APIs<a class="headerlink" href="#threat-intelligence-apis" title="Link to this section">#</a></h3>
+<p>API keys are stored in the database. Entering a key and saving replaces the existing value; leaving a field blank keeps the current key. Click <strong>Test All Keys</strong> to verify connectivity for each configured service.</p>
+<h3 id="atlassian-integration_1">Atlassian Integration<a class="headerlink" href="#atlassian-integration_1" title="Link to this section">#</a></h3>
+<p>Connect to Confluence and Jira for automated report publishing and ticket creation.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base URL</td>
+<td><code>https://yourorg.atlassian.net</code></td>
+</tr>
+<tr>
+<td>Email</td>
+<td>Your Atlassian account email</td>
+</tr>
+<tr>
+<td>API Token</td>
+<td>Generate at id.atlassian.com → Security → API tokens</td>
+</tr>
+<tr>
+<td>Confluence Space Key</td>
+<td>e.g., <code>SEC</code></td>
+</tr>
+<tr>
+<td>Parent Page ID</td>
+<td>Optional — found in the page URL</td>
+</tr>
+<tr>
+<td>Jira Project Key</td>
+<td>e.g., <code>SEC</code></td>
+</tr>
+<tr>
+<td>Issue Type</td>
+<td>Usually <code>Bug</code> or <code>Security</code></td>
+</tr>
+<tr>
+<td>Minimum Severity</td>
+<td>Only findings at or above this level create Jira tickets</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="cloud-api-integration">Cloud API Integration<a class="headerlink" href="#cloud-api-integration" title="Link to this section">#</a></h3>
+<p>Forward scan reports to an external API endpoint (e.g., a SIEM, ticketing system, or custom webhook).</p>
+<p>PwnBroker POSTs a JSON payload containing scan metadata, all findings, and optionally a base64-encoded report file. Authentication options: None, Bearer Token, or API Key header.</p>
+<h3 id="https--tls">HTTPS / TLS<a class="headerlink" href="#https--tls" title="Link to this section">#</a></h3>
+<p>Upload a CA-signed certificate to replace the self-signed one. Provide both the certificate file (PEM/CRT/CER) and the matching private key file (PEM/KEY). The pair is validated before being written to disk. Restart the service after uploading:</p>
+<pre><code class="language-bash">sudo systemctl restart pwnbroker
+</code></pre>
+<h2 id="14-user-management">14. User Management<a class="headerlink" href="#14-user-management" title="Link to this section">#</a></h2>
+<p>Users are managed under <strong>Settings → User Management</strong> (admin only).</p>
+<h3 id="roles">Roles<a class="headerlink" href="#roles" title="Link to this section">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Permissions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Admin</td>
+<td>Full access: create/delete targets, run scans, manage users and settings, generate reports</td>
+</tr>
+<tr>
+<td>User</td>
+<td>Read-only: view dashboard, scans, targets, and reports; update own profile</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="adding-a-user">Adding a User<a class="headerlink" href="#adding-a-user" title="Link to this section">#</a></h3>
+<p>Fill in username, email, temporary password, and role, then click <strong>Add User</strong>. The user can change their password under <strong>Profile</strong>.</p>
+<h3 id="managing-existing-users">Managing Existing Users<a class="headerlink" href="#managing-existing-users" title="Link to this section">#</a></h3>
+<ul>
+<li><strong>Change role</strong>: Select from the dropdown in the role column — takes effect immediately</li>
+<li><strong>Disable/Enable</strong>: Prevent login without deleting the account</li>
+<li><strong>Delete</strong>: Permanently removes the account (cannot be undone)</li>
+</ul>
+<p>You cannot change your own role or delete your own account.</p>
+<h3 id="profile">Profile<a class="headerlink" href="#profile" title="Link to this section">#</a></h3>
+<p>Each user can update their own username, email, and password under <strong>Sidebar → Profile</strong>. Admins do not need to be involved for password changes.</p>
+<h2 id="15-activity-log">15. Activity Log<a class="headerlink" href="#15-activity-log" title="Link to this section">#</a></h2>
+<p>The Activity Log (<code>/activity</code>) is an immutable audit trail of every significant action taken in PwnBroker. It is only visible to admin users.</p>
+<p>Each entry records:</p>
+<ul>
+<li>Timestamp (in the configured timezone)</li>
+<li>Actor (username or "System" for automated actions)</li>
+<li>Action type (e.g., <code>scan.created</code>, <code>user.login</code>, <code>settings.threat_save</code>)</li>
+<li>Entity name (e.g., the scan name or target)</li>
+<li>Detail string</li>
+<li>Source IP address</li>
+</ul>
+<p>The log is grouped by date. Hover over a timestamp to see the full date/time with seconds.</p>
+<p>Admins can clear the entire log with the <strong>Clear Log</strong> button. This is irreversible.</p>
+<h2 id="16-api-reference">16. API Reference<a class="headerlink" href="#16-api-reference" title="Link to this section">#</a></h2>
+<p>PwnBroker exposes a small JSON API for programmatic access. All endpoints require an authenticated session (cookie-based).</p>
+<h3 id="get-apidashboardstats"><code>GET /api/dashboard/stats</code><a class="headerlink" href="#get-apidashboardstats" title="Link to this section">#</a></h3>
+<p>Returns basic dashboard counts.</p>
+<pre><code class="language-json">{
+  &quot;total_scans&quot;: 42,
+  &quot;running_scans&quot;: 1,
+  &quot;total_targets&quot;: 8,
+  &quot;total_vulns&quot;: 137,
+  &quot;critical_vulns&quot;: 5
+}
+</code></pre>
+<h3 id="get-apidashboardwidgets"><code>GET /api/dashboard/widgets</code><a class="headerlink" href="#get-apidashboardwidgets" title="Link to this section">#</a></h3>
+<p>Returns all dashboard widget data in one call. Used by the dashboard widget system.</p>
+<pre><code class="language-json">{
+  &quot;stats&quot;: {
+    &quot;total_scans&quot;: 42,
+    &quot;running_scans&quot;: 1,
+    &quot;total_targets&quot;: 8,
+    &quot;total_assets&quot;: 64,
+    &quot;online_agents&quot;: 3,
+    &quot;open_soc&quot;: 2,
+    &quot;critical_vulns&quot;: 5,
+    &quot;high_vulns&quot;: 18,
+    &quot;medium_vulns&quot;: 61,
+    &quot;low_vulns&quot;: 48,
+    &quot;info_vulns&quot;: 5
+  },
+  &quot;severity_map&quot;: { &quot;critical&quot;: 5, &quot;high&quot;: 18, &quot;medium&quot;: 61, &quot;low&quot;: 48, &quot;info&quot;: 5 },
+  &quot;trend&quot;: {
+    &quot;labels&quot;: [&quot;Jun 04&quot;, &quot;Jun 05&quot;, &quot;...&quot;],
+    &quot;data&quot;:   [2, 0, 1, 3, &quot;...&quot;]
+  },
+  &quot;vuln_by_target&quot;: {
+    &quot;labels&quot;: [&quot;web-server&quot;, &quot;db-host&quot;],
+    &quot;data&quot;:   [42, 19]
+  },
+  &quot;agent_stats&quot;: { &quot;online&quot;: 3, &quot;offline&quot;: 1, &quot;unknown&quot;: 0 },
+  &quot;recent_scans&quot;: [ { &quot;id&quot;: 9, &quot;name&quot;: &quot;...&quot;, &quot;status&quot;: &quot;done&quot;, &quot;...&quot; } ],
+  &quot;recent_vulns&quot;: [ { &quot;severity&quot;: &quot;critical&quot;, &quot;title&quot;: &quot;...&quot;, &quot;cve_id&quot;: &quot;CVE-2024-...&quot; } ]
+}
+</code></pre>
+<h3 id="get-apiscansstatus"><code>GET /api/scans/&lt;scan_id&gt;/status</code><a class="headerlink" href="#get-apiscansstatus" title="Link to this section">#</a></h3>
+<p>Poll the live status of a running scan. Used by the scan view page.</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: 9,
+  &quot;status&quot;: &quot;running&quot;,
+  &quot;vuln_count&quot;: 12,
+  &quot;critical_count&quot;: 2,
+  &quot;duration&quot;: null
+}
+</code></pre>
+<p><code>status</code> values: <code>pending</code> · <code>running</code> · <code>done</code> · <code>failed</code></p>
+<h3 id="endpoint-agent-api">Endpoint Agent API<a class="headerlink" href="#endpoint-agent-api" title="Link to this section">#</a></h3>
+<p>These endpoints are used exclusively by the agent script.</p>
+<h4 id="post-threatapiregister"><code>POST /threat/api/register</code><a class="headerlink" href="#post-threatapiregister" title="Link to this section">#</a></h4>
+<p>Register a new agent. Requires the pre-shared registration token.</p>
+<pre><code class="language-json">// Request
+{
+  &quot;reg_token&quot;: &quot;&lt;registration-token&gt;&quot;,
+  &quot;hostname&quot;: &quot;workstation-01&quot;,
+  &quot;os&quot;: &quot;linux&quot;,
+  &quot;os_version&quot;: &quot;Ubuntu 22.04&quot;,
+  &quot;ip_address&quot;: &quot;10.0.0.45&quot;
+}
+
+// Response 200
+{
+  &quot;agent_id&quot;: &quot;abc123...&quot;,
+  &quot;token&quot;: &quot;&lt;agent-session-token&gt;&quot;
+}
+</code></pre>
+<h4 id="post-threatapiheartbeat"><code>POST /threat/api/heartbeat</code><a class="headerlink" href="#post-threatapiheartbeat" title="Link to this section">#</a></h4>
+<p>Send a periodic heartbeat with current network connections. Requires the agent's session token in the <code>X-Agent-Token</code> header.</p>
+<pre><code class="language-json">// Request body (auth via X-Agent-ID and X-Agent-Token headers)
+{
+  &quot;ip_address&quot;: &quot;10.0.0.45&quot;,
+  &quot;connections&quot;: [
+    { &quot;remote_ip&quot;: &quot;185.220.101.5&quot;, &quot;status&quot;: &quot;ESTABLISHED&quot;, &quot;pid&quot;: 1234 }
+  ]
+}
+
+// Response 200
+{ &quot;ok&quot;: true }
+</code></pre>
+<h2 id="17-upgrading">17. Upgrading<a class="headerlink" href="#17-upgrading" title="Link to this section">#</a></h2>
+<p><code>/opt/PWNBroker</code> is a live git checkout, so upgrading is a normal git pull:</p>
+<pre><code class="language-bash">cd /opt/PWNBroker
+sudo git pull
+sudo systemctl restart pwnbroker
+</code></pre>
+<p>Or re-run <code>sudo bash setup.sh</code> — it's safe and idempotent, fetching and resetting to the latest commit, updating Python dependencies, and restarting the service, without touching <code>data/</code>, <code>logs/</code>, <code>evidence_uploads/</code>, your existing <code>.env</code>, or TLS certificates.</p>
+<p>New database columns (added by migrations) are applied automatically on startup by <code>_migrate_columns()</code> in <code>app/__init__.py</code>. No manual schema changes are needed.</p>
+<h2 id="18-troubleshooting">18. Troubleshooting<a class="headerlink" href="#18-troubleshooting" title="Link to this section">#</a></h2>
+<h3 id="service-wont-start">Service won't start<a class="headerlink" href="#service-wont-start" title="Link to this section">#</a></h3>
+<pre><code class="language-bash"># Check the last 50 log lines
+journalctl -u pwnbroker -n 50
+
+# Common causes:
+# - Port already in use:     ss -tlnp | grep 443
+# - Missing .env file:       ls /opt/PWNBroker/.env
+# - Bad TLS cert:            openssl x509 -in /opt/PWNBroker/data/ssl/cert.pem -noout -text
+# - Python import error:     /opt/PWNBroker/venv/bin/python -c &quot;from app import create_app; create_app()&quot;
+</code></pre>
+<h3 id="scans-stuck-in-running-state">Scans stuck in "running" state<a class="headerlink" href="#scans-stuck-in-running-state" title="Link to this section">#</a></h3>
+<p>The scan background thread may have died. Restart the service:</p>
+<pre><code class="language-bash">sudo systemctl restart pwnbroker
+</code></pre>
+<p>Scans still marked <code>running</code> at that point were killed mid-scan, not still in progress — the app automatically sweeps any <code>running</code> scan to <code>failed</code> on every boot (<code>_recover_orphaned_scans</code> in <code>app/__init__.py</code>), so no manual database edit is needed.</p>
+<h3 id="os-detection-not-working">OS detection not working<a class="headerlink" href="#os-detection-not-working" title="Link to this section">#</a></h3>
+<p>nmap needs <code>CAP_NET_RAW</code> for <code>-O</code> (OS fingerprinting). Re-run the capability grant:</p>
+<pre><code class="language-bash">sudo setcap cap_net_raw+eip,cap_net_admin+eip $(which nmap)
+</code></pre>
+<p>Verify it worked:</p>
+<pre><code class="language-bash">getcap $(which nmap)
+# Expected: /usr/bin/nmap cap_net_admin,cap_net_raw+eip
+</code></pre>
+<h3 id="api-keys-invalid-even-though-they-are-correct">API keys "INVALID" even though they are correct<a class="headerlink" href="#api-keys-invalid-even-though-they-are-correct" title="Link to this section">#</a></h3>
+<ul>
+<li>Ensure there are no leading/trailing spaces in the key fields</li>
+<li>Some services (NVD) have rate limits — a 429 response is treated as "key accepted"</li>
+<li>Network issues (DNS, firewall) to the external APIs will show as "Network error"</li>
+</ul>
+<h3 id="timezone-not-applying-to-old-timestamps">Timezone not applying to old timestamps<a class="headerlink" href="#timezone-not-applying-to-old-timestamps" title="Link to this section">#</a></h3>
+<p>The <code>localdt</code> Jinja2 filter converts UTC datetimes at render time. All timestamps stored in the database are always UTC — only the display changes. If a page is still showing UTC, hard-refresh the browser (<code>Ctrl+Shift+R</code>) to clear cached template responses.</p>
+<h3 id="agents-showing-as-offline-immediately">Agents showing as Offline immediately<a class="headerlink" href="#agents-showing-as-offline-immediately" title="Link to this section">#</a></h3>
+<p>The agent is considered Offline if no heartbeat is received within 5 minutes. Common causes:</p>
+<ul>
+<li>The agent process is not running — check the service status on the endpoint</li>
+<li>The server URL in the agent config is wrong or not reachable from the endpoint</li>
+<li>TLS verification is failing — re-run the agent with <code>--no-verify-ssl</code> if using a self-signed cert</li>
+</ul>
+<p>Agent config file location:
+- Linux/macOS: <code>~/.pwnbroker_agent.json</code>
+- Windows: <code>%APPDATA%\pwnbroker_agent.json</code></p>
+<h3 id="permission-denied-when-setting-ntp-server">"Permission denied" when setting NTP server<a class="headerlink" href="#permission-denied-when-setting-ntp-server" title="Link to this section">#</a></h3>
+<p>PwnBroker writes to <code>/etc/systemd/timesyncd.conf</code>. If the service runs as the <code>pwnbroker</code> user (not root), this will fail. The timezone setting is always saved regardless. To apply the NTP server change manually:</p>
+<pre><code class="language-bash">sudo nano /etc/systemd/timesyncd.conf
+# Set: NTP=your.ntp.server
+
+sudo systemctl restart systemd-timesyncd
+sudo timedatectl set-ntp true
+</code></pre>
+<h3 id="database-locked-errors">Database locked errors<a class="headerlink" href="#database-locked-errors" title="Link to this section">#</a></h3>
+<p>SQLite allows only one writer at a time; the app runs it in WAL mode with a busy-timeout so concurrent reads/writes don't immediately fail, but if you still see "database is locked" errors under heavy load, consider switching to PostgreSQL:</p>
+<pre><code class="language-bash"># Install psycopg2
+/opt/PWNBroker/venv/bin/pip install psycopg2-binary
+
+# Update DATABASE_URL in /opt/PWNBroker/.env
+DATABASE_URL=postgresql://pwnbroker:password@localhost/pwnbroker
+
+# Create the database
+sudo -u postgres createuser pwnbroker
+sudo -u postgres createdb -O pwnbroker pwnbroker
+sudo -u postgres psql -c &quot;ALTER USER pwnbroker WITH PASSWORD 'password';&quot;
+
+# Restart to apply
+sudo systemctl restart pwnbroker
+</code></pre>
+<p><em>PwnBroker — built for security teams that prefer owning their own data.</em></p>
+      <div class="foot">PwnBroker 1.0.0 · © PwnBroker. All data stays on your infrastructure.</div>
+    </article>
+  </main>
+</div>
+<button class="icon-btn" id="top-btn" aria-label="Back to top">Back to top</button>
+<script>
+(function () {
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('pb-doc-theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('theme-btn').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('pb-doc-theme', next); } catch (e) {}
+  });
+
+  // Mobile nav
+  var body = document.body;
+  document.getElementById('menu-btn').addEventListener('click', function () { body.classList.toggle('nav-open'); });
+  document.getElementById('nav').addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') body.classList.remove('nav-open');
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.doc pre').forEach(function (pre) {
+    var b = document.createElement('button');
+    b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+    b.addEventListener('click', function () {
+      var txt = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
+      navigator.clipboard.writeText(txt).then(function () {
+        b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1400);
+      });
+    });
+    pre.appendChild(b);
+  });
+
+  // Scroll spy
+  var links = {};
+  document.querySelectorAll('#nav a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var heads = Array.prototype.filter.call(document.querySelectorAll('.doc h2[id], .doc h3[id]'),
+    function (h) { return links[h.id]; });
+  var current = null;
+  function spy() {
+    var y = window.scrollY + 90, hit = heads[0];
+    for (var i = 0; i < heads.length; i++) { if (heads[i].offsetTop <= y) hit = heads[i]; else break; }
+    if (!hit || hit === current) return;
+    current = hit;
+    document.querySelectorAll('#nav a.active').forEach(function (a) { a.classList.remove('active'); });
+    document.querySelectorAll('#nav .nav-sec.open').forEach(function (s) { s.classList.remove('open'); });
+    var a = links[hit.id]; a.classList.add('active');
+    var sec = a.closest('.nav-sec'); if (sec) sec.classList.add('open');
+    var side = document.getElementById('sidebar');
+    var r = a.getBoundingClientRect(), sr = side.getBoundingClientRect();
+    if (r.top < sr.top + 50 || r.bottom > sr.bottom - 20) side.scrollTop += r.top - sr.top - sr.height / 3;
+  }
+  var topBtn = document.getElementById('top-btn');
+  window.addEventListener('scroll', function () {
+    spy(); topBtn.classList.toggle('show', window.scrollY > 800);
+  }, { passive: true });
+  topBtn.addEventListener('click', function () { window.scrollTo({ top: 0 }); });
+  spy();
+
+  // Section search: filters the sidebar by heading text and section content.
+  var sections = {};
+  heads.forEach(function (h, i) {
+    var txt = h.textContent, n = h.nextElementSibling;
+    while (n && !(n.tagName === 'H2' || n.tagName === 'H3')) { txt += ' ' + n.textContent; n = n.nextElementSibling; }
+    sections[h.id] = txt.toLowerCase();
+  });
+  var side = document.getElementById('sidebar');
+  document.getElementById('search').addEventListener('input', function () {
+    var q = this.value.trim().toLowerCase(), any = false;
+    side.classList.toggle('searching', !!q);
+    document.querySelectorAll('#nav .nav-sec').forEach(function (sec) {
+      var secHit = false;
+      sec.querySelectorAll('ul a').forEach(function (a) {
+        var ok = !q || (sections[a.getAttribute('href').slice(1)] || '').indexOf(q) >= 0;
+        a.parentNode.classList.toggle('hidden', !ok); secHit = secHit || ok;
+      });
+      var own = (sections[sec.firstElementChild.getAttribute('href').slice(1)] || '').indexOf(q) >= 0;
+      sec.classList.toggle('hidden', !!q && !secHit && !own);
+      any = any || !q || secHit || own;
+    });
+    document.getElementById('no-results').style.display = any ? 'none' : 'block';
+  });
+})();
+</script>
+</body>
+</html>
