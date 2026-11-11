@@ -1,0 +1,31 @@
+# Install: copy update_server/ to /opt/pwnbroker-update-server, create a venv
+# there (python3 -m venv venv && venv/bin/pip install -r requirements.txt),
+# copy ~/.pwnbroker-license/public_key.pem to /srv/pwnbroker-updates/license_public_key.pem,
+# put a TLS cert/key in /srv/pwnbroker-updates/ssl/, then:
+#   cp pwnbroker-update-server.service /etc/systemd/system/ && systemctl enable --now pwnbroker-update-server
+[Unit]
+Description=PWNBroker update server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pwnupdates
+Group=pwnupdates
+WorkingDirectory=/opt/pwnbroker-update-server
+Environment=PWNUPD_ROOT=/srv/pwnbroker-updates
+Environment=PWNUPD_LICENSE_PUBKEY=/srv/pwnbroker-updates/license_public_key.pem
+ExecStart=/opt/pwnbroker-update-server/venv/bin/gunicorn \
+    --bind 0.0.0.0:7585 --workers 2 --threads 4 --timeout 300 \
+    --certfile /srv/pwnbroker-updates/ssl/cert.pem \
+    --keyfile  /srv/pwnbroker-updates/ssl/key.pem \
+    --access-logfile - "server:create_app()"
+Restart=on-failure
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/pwnbroker-updates
+
+[Install]
+WantedBy=multi-user.target

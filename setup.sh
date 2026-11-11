@@ -12,6 +12,10 @@ set -euo pipefail
 INSTALL_DIR="${INSTALL_DIR:-/opt/PWNBroker}"
 REPO_URL="${REPO_URL:-https://github.com/ChimneyFish/PWNBroker.git}"
 BRANCH="${BRANCH:-main}"
+# Where installs fetch signed updates from (vendor update server, port 7585).
+UPDATE_URL="${UPDATE_URL:-https://updates.example.com:7585}"
+# Directory this script was run from — a git checkout or an extracted release bundle.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${PORT:-443}"
 WEB_THREADS="${WEB_THREADS:-8}"
 SERVICE_USER=pwnbroker
@@ -90,7 +94,24 @@ step "3 / 14 — Application Files"
 # since that's who owns the checkout) && sudo systemctl restart pwnbroker.
 # Re-running this whole script does the same fetch+reset plus everything else
 # (deps, service file, etc.) in one step.
-if [[ -d "$INSTALL_DIR/.git" ]]; then
+if [[ "$SCRIPT_DIR" != "$INSTALL_DIR" && -f "$SCRIPT_DIR/app/version.py" && ! -d "$SCRIPT_DIR/.git" ]]; then
+    # Running from an extracted release bundle (how customers install): copy
+    # the release into place. Runtime state (data/, venv/, .env, …) is never
+    # part of a bundle, so an existing install's state is left untouched.
+    if [[ -e "$INSTALL_DIR" && -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" \
+          && ! -f "$INSTALL_DIR/app/version.py" ]]; then
+        die "$INSTALL_DIR exists and isn't a PWNBroker install — move it aside (or set INSTALL_DIR) before re-running."
+    fi
+    BUNDLE_VER=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$SCRIPT_DIR/app/version.py")
+    info "Installing PWNBroker $BUNDLE_VER from release bundle → $INSTALL_DIR ..."
+    mkdir -p "$INSTALL_DIR"
+    cp -a "$SCRIPT_DIR/." "$INSTALL_DIR/"
+    ok "Installed release $BUNDLE_VER"
+elif [[ -f "$INSTALL_DIR/app/version.py" && ! -d "$INSTALL_DIR/.git" ]]; then
+    # Re-run from inside an existing release install: code is managed by the
+    # updater (user menu → Updates), so just repair everything else.
+    ok "Existing release install ($(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$INSTALL_DIR/app/version.py")) — code is managed by the updater"
+elif [[ -d "$INSTALL_DIR/.git" ]]; then
     info "Existing git checkout found — updating to latest $BRANCH..."
     BEFORE=$(git -C "$INSTALL_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
     # Hash setup.sh itself before the pull below can overwrite it — bash reads
@@ -467,6 +488,9 @@ MAIL_USE_TLS=true
 MAIL_USERNAME=
 MAIL_PASSWORD=
 MAIL_DEFAULT_SENDER=
+
+# Signed automatic updates (user menu → Updates)
+PWNBROKER_UPDATE_URL=$UPDATE_URL
 EOF
     ok ".env created with random SECRET_KEY"
 else
@@ -474,6 +498,10 @@ else
     if grep -q "sqlite:///data/" "$ENV_FILE" 2>/dev/null; then
         sed -i "s|sqlite:///data/|sqlite:///$INSTALL_DIR/data/|g" "$ENV_FILE"
         info "Updated DATABASE_URL to absolute path"
+    fi
+    if ! grep -q "^PWNBROKER_UPDATE_URL=" "$ENV_FILE"; then
+        printf '\n# Signed automatic updates (user menu → Updates)\nPWNBROKER_UPDATE_URL=%s\n' "$UPDATE_URL" >> "$ENV_FILE"
+        info "Added PWNBROKER_UPDATE_URL to .env"
     fi
     ok ".env already exists — existing config preserved"
 fi
@@ -557,10 +585,55 @@ ProtectHome=true
 WantedBy=multi-user.target
 EOF
 
+# ── Updater (runs as root, separate from the sandboxed web service) ─────────
+# The web app can't modify its own code (ProtectSystem=strict). It drops a
+# request file into data/ instead; the .path unit starts the updater when one
+# appears, and the .timer checks hourly for auto-updates. The updater only
+# installs releases signed with the vendor release key.
+cat > /etc/systemd/system/pwnbroker-updater.service << EOF
+[Unit]
+Description=PwnBroker updater (signed releases)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/updater/pwnbroker_updater.py run
+Nice=10
+TimeoutStartSec=1800
+EOF
+
+cat > /etc/systemd/system/pwnbroker-updater.timer << EOF
+[Unit]
+Description=Check for PwnBroker updates hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+cat > /etc/systemd/system/pwnbroker-updater.path << EOF
+[Unit]
+Description=Run the PwnBroker updater when requested from the web UI
+
+[Path]
+PathExists=$INSTALL_DIR/data/update_request.json
+Unit=pwnbroker-updater.service
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 systemctl daemon-reload
 systemctl enable pwnbroker
+systemctl enable --now pwnbroker-updater.timer pwnbroker-updater.path >/dev/null 2>&1
 ok "Unit file written: $SERVICE_FILE"
 ok "Service enabled for autostart on boot"
+ok "Updater installed (hourly check + on-demand from user menu → Updates)"
 
 # =============================================================================
 step "13 / 14 — Log Rotation"
@@ -635,9 +708,10 @@ echo "    sudo systemctl restart pwnbroker"
 echo "    sudo systemctl reload  pwnbroker   # zero-downtime worker reload"
 echo "    sudo systemctl status  pwnbroker"
 echo ""
-echo -e "  ${B}To update to the latest code:${N}"
-echo "    sudo bash setup.sh                          # re-run this script, or"
-echo "    cd $INSTALL_DIR && sudo git pull && sudo systemctl restart pwnbroker"
+echo -e "  ${B}Updates:${N}"
+echo "    Automatic, signed releases — configure under user menu → Updates"
+echo "    sudo $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/updater/pwnbroker_updater.py install    # update now"
+echo "    sudo $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/updater/pwnbroker_updater.py rollback   # undo last update"
 echo ""
 echo -e "  ${Y}${B}Action required:${N}"
 echo -e "  ${Y}►${N} Change the default admin password immediately after first login"

@@ -93,7 +93,7 @@
           <div class="dropdown-menu dropdown-menu-end dropdown-menu-user">
             <div class="dropdown-user-info">
               <div class="font-semibold small">{{ current_user.username }}</div>
-              <div class="text-muted" style="font-size:0.7rem">{{ current_user.role }}</div>
+              <div class="text-muted" style="font-size:0.7rem">{{ current_user.role }} · v{{ app_version }}</div>
             </div>
             <div class="dropdown-divider"></div>
             <a href="{{ url_for("users.profile") }}" class="dropdown-item"><i class="bi bi-person-gear me-2"></i>Profile</a>
@@ -101,6 +101,7 @@
             <a href="{{ url_for("activity.index") }}" class="dropdown-item"><i class="bi bi-journal-text me-2"></i>Activity Log</a>
             <a href="{{ url_for("settings.index") }}" class="dropdown-item"><i class="bi bi-gear me-2"></i>Settings &amp; Users</a>
             <a href="{{ url_for("license.index") }}" class="dropdown-item"><i class="bi bi-patch-check me-2"></i>License</a>
+            <a href="{{ url_for("updates.index") }}" class="dropdown-item"><i class="bi bi-cloud-arrow-down me-2"></i>Updates</a>
             {% endif %}
             <div class="dropdown-divider"></div>
             <a href="{{ url_for("auth.logout") }}" class="dropdown-item text-danger"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>

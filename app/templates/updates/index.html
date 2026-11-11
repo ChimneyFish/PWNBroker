@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Updates — PwnBroker{% endblock %}
+{% block page_title %}Updates{% endblock %}
+
+{% block content %}
+{% set state = st.state or "never" %}
+{% set busy = state in ("checking", "installing") or pending %}
+{% set tone = {
+  "installed":  ("#15803d", "bi-check-circle"),
+  "up_to_date": ("#15803d", "bi-check-circle"),
+  "available":  ("#b45309", "bi-arrow-up-circle"),
+  "checking":   ("#13798c", "bi-arrow-repeat"),
+  "installing": ("#13798c", "bi-arrow-repeat"),
+  "rolled_back":("#c62828", "bi-arrow-counterclockwise"),
+  "error":      ("#c62828", "bi-exclamation-triangle"),
+}.get(state, ("#5b7088", "bi-info-circle")) %}
+
+{% if not updater_installed %}
+<div class="alert alert-warning">
+  <span><i class="bi bi-exclamation-triangle me-1"></i>The updater service isn't installed on this server, so
+  updates won't run. Re-run <code>sudo bash setup.sh</code> to install it.</span>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-lg-7">
+    <div class="form-card mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <h5 class="font-bold mb-0">PWNBroker {{ version }}</h5>
+        <span class="small font-semibold" style="color:{{ tone[0] }}">
+          <i class="bi {{ tone[1] }} me-1"></i>{{ state|replace("_", " ")|capitalize if state != "never" else "Not checked yet" }}
+        </span>
+      </div>
+      {% if pending %}
+        <p class="mb-2"><i class="bi bi-hourglass-split me-1"></i>Request queued ({{ pending.action|replace("_", " ") }}) — waiting for the updater…</p>
+      {% elif st.message %}
+        <p class="mb-2">{{ st.message }}</p>
+      {% endif %}
+      {% if st.last_check %}<p class="text-muted small mb-4">Last checked {{ st.last_check }} UTC</p>{% endif %}
+
+      {% if st.available %}
+      <div class="mb-4" style="border:1px solid var(--border-color);border-radius:8px;padding:1rem;background:rgba(11,42,79,0.03)">
+        <div class="font-semibold mb-1">Version {{ st.available.version }}{% if st.available.released %} <span class="text-muted small">· released {{ st.available.released[:10] }}</span>{% endif %}</div>
+        {% if st.available.changelog %}<pre class="small mb-0" style="white-space:pre-wrap;font-family:inherit">{{ st.available.changelog }}</pre>{% endif %}
+      </div>
+      {% endif %}
+
+      <div class="flex gap-2">
+        <form method="POST" action="{{ url_for('updates.check') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-secondary" {{ "disabled" if busy }}><i class="bi bi-arrow-repeat me-1"></i>Check now</button>
+        </form>
+        {% if st.available %}
+        <form method="POST" action="{{ url_for('updates.install') }}"
+              onsubmit="return confirm({{ ('Install version ' ~ st.available.version ~ ' now? PWNBroker will restart and running scans will be interrupted.')|tojson|forceescape }})">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-primary" {{ "disabled" if busy }}><i class="bi bi-download me-1"></i>Install {{ st.available.version }} now</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if st.history %}
+    <div class="form-card mb-4">
+      <h5 class="font-bold mb-4">History</h5>
+      <table class="table table-sm mb-0">
+        <tbody>
+        {% for h in st.history %}
+          <tr>
+            <td class="text-muted small" style="white-space:nowrap">{{ h.at }}</td>
+            <td class="small">{{ h.message }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-5">
+    <div class="form-card mb-4">
+      <h5 class="font-bold mb-4">Automatic updates</h5>
+      <form method="POST" action="{{ url_for('updates.save_settings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="flex items-center gap-2 mb-4">
+          <input type="checkbox" name="auto_update" {{ "checked" if settings.auto_update }}>
+          <span>Install updates automatically</span>
+        </label>
+        <div class="mb-4">
+          <label class="form-label">Maintenance window (server local time)</label>
+          <div class="flex items-center gap-2">
+            <select name="window_start" class="form-select">
+              {% for h in range(24) %}<option value="{{ h }}" {{ "selected" if h == settings.window_start }}>{{ "%02d:00"|format(h) }}</option>{% endfor %}
+            </select>
+            <span>to</span>
+            <select name="window_end" class="form-select">
+              {% for h in range(24) %}<option value="{{ h }}" {{ "selected" if h == settings.window_end }}>{{ "%02d:00"|format(h) }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="text-muted small mt-1">Updates wait for running scans to finish. PWNBroker is offline for about a minute while it restarts.</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Release channel</label>
+          <select name="channel" class="form-select">
+            <option value="stable" {{ "selected" if settings.channel == "stable" }}>Stable</option>
+            <option value="beta" {{ "selected" if settings.channel == "beta" }}>Beta (early access)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary">Save</button>
+      </form>
+    </div>
+
+    <div class="form-card mb-4">
+      <h5 class="font-bold mb-2">Offline update</h5>
+      <p class="text-muted small mb-4">For servers without internet access: upload a <code>.pwnupdate</code> bundle.
+        Its signature is verified before anything is installed.</p>
+      <form method="POST" action="{{ url_for('updates.offline') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="file" name="bundle" accept=".pwnupdate" class="form-control mb-4">
+        <button class="btn btn-outline-secondary" {{ "disabled" if busy }}><i class="bi bi-upload me-1"></i>Upload &amp; install</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if busy %}
+<script>setTimeout(() => location.reload(), 5000);</script>
+{% endif %}
+{% endblock %}

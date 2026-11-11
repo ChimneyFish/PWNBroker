@@ -34,3 +34,6 @@ app/static/agent/PwnBrokerAgentSetup.exe
 
 # Per-user Claude Code permissions — local only
 .claude/settings.local.json
+
+# Built releases (tools/release/build_release.py)
+/releases_out/
