@@ -58,20 +58,36 @@ machine:
 
 ```bash
 scp -r update_server ~/.pwnbroker-license/public_key.pem root@pwnbroker.space:/root/
-ssh root@pwnbroker.space bash /root/update_server/install_update_server.sh --email you@example.com
+ssh -t root@pwnbroker.space bash /root/update_server/install_update_server.sh
 ```
 
-The script does the following:
-- installs the packages and creates the `pwnupdates` user
-- installs the server into `/opt/pwnbroker-update-server`, with data in `/srv/pwnbroker-updates`
-- gets a Let's Encrypt certificate, which renews automatically (port 80 must be reachable for this)
-- installs and starts the `pwnbroker-update-server` systemd service on port 7585
-- opens the firewall and checks `https://pwnbroker.space:7585/updates/v1/health`
+Keep the `-t`: the script asks for your **Spaceship SSL Manager token** (from
+the Spaceship dashboard).
+
+```
+customers ──https :7585──▶ nginx ──http 127.0.0.1:7586──▶ update server (gunicorn)
+Spaceship ──http  :80 ───▶ nginx (domain validation)
+```
+
+The script:
+- installs the packages, nginx and the `pwnupdates` user, and puts the server in
+  `/opt/pwnbroker-update-server` with its data in `/srv/pwnbroker-updates`
+- runs Spaceship's SSL Manager installer, which registers with your token and
+  installs your signed certificate into nginx, then keeps renewing it
+- points port 7585 at that certificate with `pwnbroker-updates-certsync`; a
+  timer re-runs it every 6 hours, so renewals are picked up automatically
+- opens ports 80 and 7585 in ufw/firewalld and checks
+  `https://pwnbroker.space:7585/updates/v1/health`
+
+If Spaceship is still validating the domain when the script finishes, port 7585
+turns on by itself once the certificate arrives. To force a check, run
+`sudo pwnbroker-updates-certsync`. Ports 80 and 7585 must also be open in any
+cloud-provider firewall.
 
 To update the server code, copy the folder again and re-run the script.
-Re-running keeps releases and check-ins. `--help` lists the options;
-`--self-signed` is for testing only, since customers would then need
-`PWNBROKER_UPDATE_CA` in their `.env`.
+Re-running keeps releases, check-ins and certificates. Other certificate
+options: `--ssl letsencrypt` or `--ssl self-signed` (testing only; customers
+would then need `PWNBROKER_UPDATE_CA`). See `--help`.
 
 Server files in `/srv/pwnbroker-updates/`:
 - `yanked.txt`: versions to stop offering
