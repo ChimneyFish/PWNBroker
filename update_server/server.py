@@ -17,6 +17,8 @@ The server never signs anything: releases arrive pre-signed, so a compromise
 of this box can't push malicious code to customers (installs verify the
 release signature with a key this server doesn't have).
 
+Customers reach it at https://pwnbroker.space:7585/updates.
+
 Run:  gunicorn -b 0.0.0.0:7585 --certfile cert.pem --keyfile key.pem 'server:create_app()'
 """
 import base64
@@ -35,6 +37,22 @@ from cryptography.hazmat.primitives import serialization
 from flask import Flask, abort, jsonify, request, send_file
 
 TOKEN_TTL = 3600
+# Customers use https://pwnbroker.space:7585/updates, so routes are
+# served under this prefix. They also answer at / so a reverse proxy that
+# strips the prefix still works. Override with PWNUPD_PREFIX.
+DEFAULT_PREFIX = "/updates"
+
+
+class _PrefixMiddleware:
+    def __init__(self, wsgi_app, prefix):
+        self.wsgi_app, self.prefix = wsgi_app, prefix.rstrip("/")
+
+    def __call__(self, environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        if self.prefix and (path == self.prefix or path.startswith(self.prefix + "/")):
+            environ["SCRIPT_NAME"] = environ.get("SCRIPT_NAME", "") + self.prefix
+            environ["PATH_INFO"] = path[len(self.prefix):] or "/"
+        return self.wsgi_app(environ, start_response)
 CHANNEL_ACCESS = {"stable": ("stable",), "beta": ("stable", "beta")}
 
 
@@ -47,8 +65,10 @@ def _unb64(s):
     return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
 
 
-def create_app(root=None, license_public_key_pem=None):
+def create_app(root=None, license_public_key_pem=None, prefix=None):
     app = Flask(__name__)
+    app.wsgi_app = _PrefixMiddleware(app.wsgi_app, prefix if prefix is not None
+                                     else os.environ.get("PWNUPD_PREFIX", DEFAULT_PREFIX))
     root = root or os.environ.get("PWNUPD_ROOT", "/srv/pwnbroker-updates")
     rel_dir = os.path.join(root, "releases")
     os.makedirs(rel_dir, exist_ok=True)

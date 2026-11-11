@@ -52,7 +52,7 @@ _RELEASE_PUBLIC_KEY_PEM = """-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAMmlMkCCvulXgVyvT52pFoo+N7YP+6x1nniCm3zERAwo=
 -----END PUBLIC KEY-----
 """
-DEFAULT_UPDATE_URL = "https://updates.example.com:7585"   # overridden by PWNBROKER_UPDATE_URL in .env
+DEFAULT_UPDATE_URL = "https://pwnbroker.space:7585/updates"   # overridden by PWNBROKER_UPDATE_URL in .env
 CHANNELS = ("stable", "beta")
 KEEP_BACKUPS = 3
 HEALTH_TIMEOUT = 180

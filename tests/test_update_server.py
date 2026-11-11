@@ -113,3 +113,11 @@ def test_checkins_recorded(srv):
     row = sqlite3.connect(os.path.join(root, "checkins.db")).execute(
         "SELECT customer, version, install_id FROM checkins").fetchone()
     assert row == ("Acme", "1.0.0", "ID1")
+
+
+def test_routes_served_under_url_prefix(tmp_path):
+    c = upd.create_app(root=str(tmp_path), license_public_key_pem=TEST_PUBLIC_PEM,
+                       prefix="/updates").test_client()
+    assert c.get("/updates/v1/health").get_json() == {"ok": True}
+    assert c.get("/v1/health").get_json() == {"ok": True}
+    assert c.get("/updatesX/v1/health").status_code == 404

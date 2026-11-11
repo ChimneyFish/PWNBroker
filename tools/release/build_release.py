@@ -5,7 +5,7 @@
     build  [--channel C]       package the committed HEAD as a signed release
            [--notes TEXT | --notes-file F] [--bump major|minor|patch]
     publish VERSION DEST       rsync a built release to the update server,
-                               e.g. root@updates.example.com:/srv/pwnbroker-updates/releases/
+                               e.g. root@pwnbroker.space:/srv/pwnbroker-updates/releases/
     verify DIR                 check a built release's signature and hash
 
 Output goes to releases_out/<version>/ (git-ignored):

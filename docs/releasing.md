@@ -1,6 +1,7 @@
 # Releases & automatic updates (vendor runbook)
 
-Installs update themselves from **your update server on port 7585**. Only
+Installs update themselves from **your update server at
+`https://pwnbroker.space:7585/updates`**. Only
 releases signed with your release key are ever installed, and only installs
 with an active license receive them.
 
@@ -29,7 +30,7 @@ with the release key.
 ```bash
 git commit ...                                      # releases are built from committed HEAD only
 python tools/release/build_release.py build --bump minor --notes-file CHANGES.md
-python tools/release/build_release.py publish 1.1.0 root@updates.yourhost:/srv/pwnbroker-updates/releases/
+python tools/release/build_release.py publish 1.1.0 root@pwnbroker.space:/srv/pwnbroker-updates/releases/
 ```
 
 - `--bump major|minor|patch` updates `app/version.py`, commits, and tags `vX.Y.Z`.
@@ -45,31 +46,32 @@ python tools/release/build_release.py publish 1.1.0 root@updates.yourhost:/srv/p
   `releases_out/<version>/pwnbroker-<version>.pwnupdate`. They upload it under
   user menu → Updates.
 - **New customer install:** send the release tarball. They run
-  `mkdir pwnbroker && tar xzf pwnbroker-X.Y.Z.tar.gz -C pwnbroker && sudo UPDATE_URL=https://updates.yourhost:7585 bash pwnbroker/setup.sh`.
+  `mkdir pwnbroker && tar xzf pwnbroker-X.Y.Z.tar.gz -C pwnbroker && sudo bash pwnbroker/setup.sh`.
 
 `publish` uploads `manifest.sig` last. The server ignores a release directory
 until that file exists, so a half-uploaded release is never offered.
 
 ## Update server setup (once)
 
+Point the `pwnbroker.space` A record at the server first. Then, from your dev
+machine:
+
 ```bash
-sudo useradd --system --home /srv/pwnbroker-updates pwnupdates
-sudo mkdir -p /srv/pwnbroker-updates/{releases,ssl} /opt/pwnbroker-update-server
-sudo cp update_server/{server.py,requirements.txt} /opt/pwnbroker-update-server/
-sudo python3 -m venv /opt/pwnbroker-update-server/venv
-sudo /opt/pwnbroker-update-server/venv/bin/pip install -r /opt/pwnbroker-update-server/requirements.txt
-sudo cp ~/.pwnbroker-license/public_key.pem /srv/pwnbroker-updates/license_public_key.pem
-# TLS cert for the hostname customers use → /srv/pwnbroker-updates/ssl/{cert,key}.pem
-sudo chown -R pwnupdates: /srv/pwnbroker-updates
-sudo cp update_server/pwnbroker-update-server.service /etc/systemd/system/
-sudo systemctl enable --now pwnbroker-update-server
-sudo ufw allow 7585/tcp
-curl https://updates.yourhost:7585/v1/health
+scp -r update_server ~/.pwnbroker-license/public_key.pem root@pwnbroker.space:/root/
+ssh root@pwnbroker.space bash /root/update_server/install_update_server.sh --email you@example.com
 ```
 
-Use a CA-signed certificate (for example Let's Encrypt) so installs can verify
-it out of the box. For a self-signed cert, customers set
-`PWNBROKER_UPDATE_CA=/path/to/cert.pem` in their `.env`.
+The script does the following:
+- installs the packages and creates the `pwnupdates` user
+- installs the server into `/opt/pwnbroker-update-server`, with data in `/srv/pwnbroker-updates`
+- gets a Let's Encrypt certificate, which renews automatically (port 80 must be reachable for this)
+- installs and starts the `pwnbroker-update-server` systemd service on port 7585
+- opens the firewall and checks `https://pwnbroker.space:7585/updates/v1/health`
+
+To update the server code, copy the folder again and re-run the script.
+Re-running keeps releases and check-ins. `--help` lists the options;
+`--self-signed` is for testing only, since customers would then need
+`PWNBROKER_UPDATE_CA` in their `.env`.
 
 Server files in `/srv/pwnbroker-updates/`:
 - `yanked.txt`: versions to stop offering

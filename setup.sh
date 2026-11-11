@@ -13,7 +13,7 @@ INSTALL_DIR="${INSTALL_DIR:-/opt/PWNBroker}"
 REPO_URL="${REPO_URL:-https://github.com/ChimneyFish/PWNBroker.git}"
 BRANCH="${BRANCH:-main}"
 # Where installs fetch signed updates from (vendor update server, port 7585).
-UPDATE_URL="${UPDATE_URL:-https://updates.example.com:7585}"
+UPDATE_URL="${UPDATE_URL:-https://pwnbroker.space:7585/updates}"
 # Directory this script was run from — a git checkout or an extracted release bundle.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${PORT:-443}"
