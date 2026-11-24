@@ -163,6 +163,26 @@ def test_unhealthy_update_rolls_back_code_and_database(install):
     assert u.calls[-1] == "start"
 
 
+def test_cve_mirror_not_backed_up_and_survives_rollback(install):
+    """The CVE mirror is huge and re-downloadable: skip it in the pre-update
+    backup, and don't delete its WAL when rolling scanner.db back."""
+    u, d, tmp = install
+    u.healthy = False
+    (d / "data" / "cve_mirror.db").write_text("mirror")
+    (d / "data" / "cve_mirror.db-wal").write_text("mirror wal")
+    (d / "data" / "cve_mirror_tmp").mkdir()
+    raw, sig, arc = make_release(str(tmp), "1.1.0", NEW_FILES)
+    with pytest.raises(pu.UpdateError):
+        u.install(raw, sig, arc)
+    backup = next((tmp / "backups").iterdir())
+    with tarfile.open(backup / "data.tar.gz") as t:
+        names = t.getnames()
+    assert "data/scanner.db" in names
+    assert not any(n.startswith("data/cve_mirror") for n in names)
+    assert (d / "data" / "cve_mirror.db").read_text() == "mirror"
+    assert (d / "data" / "cve_mirror.db-wal").read_text() == "mirror wal"
+
+
 def test_offline_bundle(install):
     u, d, tmp = install
     raw, sig, arc = make_release(str(tmp), "1.1.0", NEW_FILES)

@@ -33,9 +33,11 @@ PwnBroker is a self-hosted security operations platform that combines network sc
 
 - Ubuntu 22.04 LTS or 24.04 LTS (Debian-based distros also work)
 - 2 GB RAM minimum, 4 GB recommended
-- 10 GB disk space
+- 10 GB disk space, plus a few GB for the local CVE database
 - Root / sudo access
-- Outbound internet access (for threat intel API calls and NVD CVE lookups)
+- Outbound HTTPS access for threat intel API calls and the CVE database
+  downloads (`nvd.nist.gov`, `api.github.com`, `github.com`,
+  `raw.githubusercontent.com`)
 
 ### Single-File Installer (recommended)
 
@@ -294,7 +296,10 @@ From the asset inventory, click **Quick Scan** on any row to immediately launch 
 
 ## 6. Scans
 
-Scans run `nmap` against targets or asset groups and enrich results with CVE data from NVD.
+Scans run `nmap` against targets or asset groups and match each service
+against PwnBroker's own CVE database, a local copy of NVD and CVE.org (see
+[CVE Database](#cve-database-cve-db)). Scans don't query NVD per service, so
+they aren't slowed down by NVD's rate limits.
 
 ### Scan Types
 
@@ -348,7 +353,7 @@ Active schedules can be paused/resumed with the toggle on the Scans index page. 
 
 The Vuln Management module tracks findings as tickets through their remediation lifecycle.
 
-### Only proven vulnerabilities are counted
+### Exploitable, Unverified and ruled-out findings
 
 A CVE matched from a service's version banner only says the product *can* be
 vulnerable; whether this host is depends on configuration. (Apache 2.4.49 is
@@ -358,9 +363,14 @@ check written for that CVE, and gets one of three verdicts:
 
 | Verdict | What happened | Counted? |
 |---|---|---|
-| **Exploitable** | The check reproduced the issue. The proof (request + response) is on the finding. | Yes — open ticket with SLA |
+| **Exploitable** | The check reproduced the issue. The proof (request + response) is on the finding. | Yes — open ticket with SLA, labelled **Exploitable** |
+| **Unverified** | No safe check exists for this CVE, or the check couldn't complete. Each one says why. | Yes — open ticket with SLA, labelled with an amber **Unverified** badge |
 | **Not exploitable** | The check ran cleanly and the vulnerable behaviour wasn't there (feature disabled, fix backported, not that product). | No — kept under "Not Exploitable" |
-| **Unverified** | No safe check exists for this CVE, or the check couldn't complete. Each one says why. | No — kept under "Unverified" |
+
+Most CVEs have no safe remote check, so most version matches will be
+Unverified. They still count: a host running a version with a known critical
+CVE is a finding until something rules it out. The badge tells you which ones
+have proof and which ones are a version match only.
 
 - Checks come from the nuclei template library (~4,500 CVEs), installed by
   `setup.sh` and refreshed weekly. nmap's own vuln-script verdicts count too
@@ -368,16 +378,22 @@ check written for that CVE, and gets one of three verdicts:
 - Only safe checks run: never ones tagged DoS/intrusive/fuzzing, never ones
   needing credentials, and never ones that call out to an external server —
   no scan data leaves your network.
-- A later scan that proves an unverified finding reopens it automatically; a
+- A later scan that proves an unverified finding relabels it Exploitable; a
   rescan that shows an open one is no longer exploitable (fixed, or the
   feature turned off) closes it as Not Exploitable.
 - **Verify now** on the Vulnerabilities page re-tests every unverified finding
   without a full rescan (useful after the check library updates).
-- Dashboard, reports, exports and Jira/Confluence only include proven
-  vulnerabilities. Dependency (OSV), EOL, secrets and other non-version
-  findings are unchanged.
+- Dashboard, reports, exports and Jira/Confluence count Exploitable and
+  Unverified findings, and leave out Not Exploitable ones. The Unverified
+  badge appears in the web UI; reports don't mark it yet. Dependency (OSV),
+  EOL, secrets and other non-version findings are unchanged.
+- The Vulnerabilities page shows how many findings are unverified; the link
+  opens the ticket list filtered to them (`/vulns/tickets?status=unverified`).
 - Set `VULN_VERIFY=0` in `.env` to turn checking off (findings then stay
-  unverified).
+  Unverified).
+- Upgrading from a release that hid unverified findings moves them back into
+  the counts automatically on first start; their tickets become Open with the
+  Unverified label.
 
 ### Credentialed checks (SSH)
 
@@ -423,8 +439,10 @@ A ticket is automatically created for each unique vulnerability the first time i
 | Patched | Fix confirmed |
 | Accepted Risk | Risk accepted by the team |
 | False Positive | Finding is wrong (marked by hand) |
-| Unverified | Version match only, not proven on this host (no SLA) |
 | Not Exploitable | The CVE's check ran and the issue wasn't present (no SLA) |
+
+Unverified is a label, not a status: an unverified ticket is Open (or In
+Progress, etc.) with an SLA like any other, plus the amber Unverified badge.
 
 **SLA tracking**: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.
 
@@ -529,7 +547,7 @@ Configure all keys under **Settings → Threat Intelligence APIs**.
 | AbuseIPDB | IP abuse reports and confidence scores |
 | GreyNoise | Internet noise classification (RIOT / mass-scanner detection) |
 | DNSDumpster | Subdomain enumeration |
-| NVD | CVE lookup and CVSS enrichment |
+| NVD (optional) | Only used for live NVD lookups before the CVE Database finishes its first download, or if it's turned off. The CVE Database itself needs no key. |
 
 Click **Test All Keys** on the Settings page to validate each key without leaving the page.
 
@@ -563,6 +581,79 @@ The triage queue collects IOCs that need analyst review. IOCs reach the queue ei
 | Dismiss | Mark as benign / false positive |
 
 Alerted cases can be exported. Dismissed cases are removed from the active queue but retained in history.
+
+### CVE Database (`/cve-db`)
+
+PwnBroker keeps its own copy of the public CVE lists and matches scans
+against it, instead of asking NVD about every service it finds. Open it from
+**Threat Intel → CVE Database**.
+
+**Where the data comes from:**
+
+| Source | What it adds |
+|---|---|
+| NVD (JSON 2.0 data feeds) | CVSS scores, CWE, and NVD's analysed list of affected products and version ranges |
+| CVE.org (the official CVE List, `cvelistV5`) | Every published CVE as soon as it's assigned, with the affected versions the reporting vendor gave |
+
+NVD's analysed version ranges are used when they exist. For CVEs NVD hasn't
+analysed yet (its backlog), the vendor's own affected-version data from
+CVE.org is used, so new CVEs still match.
+
+**Keeping it current:**
+
+- The first download starts about 2 minutes after the service starts and
+  takes a while (it fetches every CVE since 2002). Until it finishes, scans
+  fall back to live NVD API lookups.
+- After that, it fetches only what changed, every 2 hours by default. If it
+  falls too far behind (for example after the server was off), it downloads
+  everything again on its own.
+- No API key is needed. Only public data is downloaded; nothing about your
+  network or scans is sent.
+
+**The page shows:**
+
+- Status of each source: when it last synced, how many CVEs it holds, and
+  any error.
+- How many CVEs are waiting on NVD analysis (the backlog).
+- **Sync now** (admin): fetch changes immediately.
+- **Full re-download** (admin): rebuild from scratch. Use this if the
+  database is damaged or deleted.
+- A search box: search by CVE ID, product name (for example `openssh` or
+  `dnsmasq`), or words from a description, and open any CVE to see its
+  description, scores, affected products, and upstream references.
+
+**Settings** (in `.env`):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `CVE_MIRROR_SYNC` | `1` | `0` turns automatic syncing off (Sync now still works) |
+| `CVE_MIRROR_SYNC_HOURS` | `2` | Hours between update checks |
+| `CVE_MIRROR_DATABASE_URL` | `sqlite:///…/data/cve_mirror.db` | Where the CVE database is stored. It's kept separate from the main database. |
+
+### Palo Alto Firewalls (`/threat/paloalto`)
+
+PwnBroker can pull threat logs from PAN-OS firewalls over the firewall's XML
+API. Public IPs that show up in those logs are queued for SOC triage.
+
+**Adding a firewall** (admin): click **Add Firewall** and enter a name, the
+management hostname or IP, and either an API key or a username and password
+(PwnBroker uses them once to generate a key and doesn't store the password).
+Untick *Verify TLS certificate* only for a firewall with a self-signed
+certificate you trust.
+
+**Polling:** every enabled firewall is polled every 5 minutes for threat logs
+newer than the last one received. On a firewall's page, **Test Connection**
+checks the API key and **Poll Now** fetches immediately. If the firewall
+can't be reached, both wait up to about 12 seconds before reporting the
+error, and the firewall is marked **Error** with the reason on its page.
+
+**Log retention:** by default, received threat logs are kept forever. To
+limit that, enter a number of days under **Threat Log Retention** on the Palo
+Alto page and click **Save** (admin). Logs older than that, by the
+firewall's own timestamp, are deleted right away and then once a day. Clear
+the box and save to go back to keeping logs forever. SOC cases keep their own
+copy of the log details, so expiring logs never empties a case. Deleting a
+firewall deletes all of its logs.
 
 ### Subdomain Enumeration (`/threat/subdomains`)
 
@@ -920,6 +1011,11 @@ sudo systemctl restart pwnbroker
 Or re-run `sudo bash setup.sh` — it's safe and idempotent, fetching and resetting to the latest commit, updating Python dependencies, and restarting the service, without touching `data/`, `logs/`, `evidence_uploads/`, your existing `.env`, or TLS certificates.
 
 New database columns (added by migrations) are applied automatically on startup by `_migrate_columns()` in `app/__init__.py`. No manual schema changes are needed.
+
+Automatic updates back up `data/` before installing, and restore it if the new
+version fails to start. The CVE database (`data/cve_mirror.db`) is left out of
+that backup because it's large and can be rebuilt: if it ever needs
+replacing, use **Full re-download** on the CVE Database page.
 
 ---
 

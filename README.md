@@ -41,9 +41,10 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 | Module | Capabilities |
 |---|---|
 | **Network Scanning** | nmap-powered port, service, OS, and CVE scans with CIDR and asset-group targeting |
+| **CVE Database** | Local mirror of NVD + CVE.org, synced every 2 hours; scans match against it instead of the rate-limited NVD API. Matches that can't be proven are counted and labelled **Unverified** |
 | **Vulnerability Management** | Ticket-based remediation workflow with SLA tracking, assignees, and auto-dedup |
 | **Dependency Scanner** | SSH into hosts (password, RSA, Ed25519, or ECDSA key auth), pull package manifests, cross-reference OSV — Python, npm, Go, Rust, Ruby, Java, PHP, and more |
-| **Threat Intelligence** | Multi-source IOC lookups (OTX, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed |
+| **Threat Intelligence** | Multi-source IOC lookups (OTX, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed, Palo Alto (PAN-OS) threat-log ingestion with configurable retention |
 | **Endpoint Agents** | Lightweight Python agent watches outbound connections in real time and fires alerts to the SOC queue |
 | **CVE Enrichment** | EPSS scores, NVD CVSS v3 vectors, CWE IDs, and MITRE ATT&CK technique mapping — refreshed nightly |
 | **GRC** | Risk register (5×5 heat-map), NIST CSF 2.0 / CIS Controls v8 / ISO 27001:2022 compliance tracking, policy library, evidence file uploads, audit-ready PDF exports |
@@ -66,16 +67,16 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 
 - **OS**: Ubuntu 22.04 LTS or 24.04 LTS (Debian 11/12 also works)
 - **RAM**: 2 GB minimum, 4 GB recommended
-- **Disk**: 10 GB free
+- **Disk**: 10 GB free, plus a few GB for the local CVE database
 - **Access**: root / sudo for initial setup
-- **Network**: outbound HTTPS for threat intel API calls and NVD CVE lookups
+- **Network**: outbound HTTPS for threat intel API calls and CVE database syncs (`nvd.nist.gov`, `api.github.com`, `github.com`, `raw.githubusercontent.com`)
 - **Python**: 3.11+ (3.13 tested)
 
 Optional API keys (all free tiers available):
 
 | Service | Key env / setting |
 |---|---|
-| [NVD](https://nvd.nist.gov/developers/request-an-api-key) | `NVD_API_KEY` — 10× higher rate limit |
+| [NVD](https://nvd.nist.gov/developers/request-an-api-key) | `NVD_API_KEY` — only used for live lookups before the local CVE database finishes its first sync |
 | [AlienVault OTX](https://otx.alienvault.com) | IOC lookups, threat feed |
 | [AbuseIPDB](https://www.abuseipdb.com) | IP abuse confidence scores |
 | [GreyNoise](https://www.greynoise.io) | Internet noise / mass-scanner classification |
@@ -161,9 +162,12 @@ All runtime configuration lives in `.env` at the project root (or the install di
 SECRET_KEY=<randomly generated 64-char hex string>
 DATABASE_URL=sqlite:////opt/PWNBroker/data/scanner.db
 
-# ── Optional: CVE lookups ─────────────────────────────────────────────────────
+# ── Optional: CVE database ───────────────────────────────────────────────────
+# Scans match against a local mirror of NVD + CVE.org (data/cve_mirror.db).
+# CVE_MIRROR_SYNC=1          # 0 = no automatic syncs
+# CVE_MIRROR_SYNC_HOURS=2
+# Only used for live NVD lookups until the mirror's first sync finishes.
 # Free key at https://nvd.nist.gov/developers/request-an-api-key
-# Without key: 5 req/30s   With key: 50 req/30s
 NVD_API_KEY=
 
 # ── Optional: Email (can also be set in the web UI) ──────────────────────────

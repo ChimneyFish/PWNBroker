@@ -145,10 +145,10 @@ main { padding: 36px 56px 80px; min-width: 0; }
 <li class="nav-sec"><a href="#4-targets">4. Targets</a><ul><li><a href="#target-types">Target Types</a></li><li><a href="#adding-a-target">Adding a Target</a></li><li><a href="#target-detail-page">Target Detail Page</a></li><li><a href="#ssh-credentials-credentialed-checks">SSH Credentials (credentialed checks)</a></li><li><a href="#deleting-a-target">Deleting a Target</a></li></ul></li>
 <li class="nav-sec"><a href="#5-assets">5. Assets</a><ul><li><a href="#asset-inventory-assets">Asset Inventory (/assets)</a></li><li><a href="#tags">Tags</a></li><li><a href="#asset-groups">Asset Groups</a></li><li><a href="#quick-scan">Quick Scan</a></li></ul></li>
 <li class="nav-sec"><a href="#6-scans">6. Scans</a><ul><li><a href="#scan-types">Scan Types</a></li><li><a href="#running-a-scan">Running a Scan</a></li><li><a href="#scan-results">Scan Results</a></li><li><a href="#marking-findings-as-remediated">Marking Findings as Remediated</a></li><li><a href="#scheduled-scans">Scheduled Scans</a></li></ul></li>
-<li class="nav-sec"><a href="#7-vulnerability-management">7. Vulnerability Management</a><ul><li><a href="#only-proven-vulnerabilities-are-counted">Only proven vulnerabilities are counted</a></li><li><a href="#credentialed-checks-ssh">Credentialed checks (SSH)</a></li><li><a href="#vuln-tickets-vulnstickets">Vuln Tickets (/vulns/tickets)</a></li><li><a href="#device-view-vulnsdevice">Device View (/vulns/device/&lt;target&gt;)</a></li><li><a href="#updating-a-ticket">Updating a Ticket</a></li></ul></li>
+<li class="nav-sec"><a href="#7-vulnerability-management">7. Vulnerability Management</a><ul><li><a href="#exploitable-unverified-and-ruled-out-findings">Exploitable, Unverified and ruled-out findings</a></li><li><a href="#credentialed-checks-ssh">Credentialed checks (SSH)</a></li><li><a href="#vuln-tickets-vulnstickets">Vuln Tickets (/vulns/tickets)</a></li><li><a href="#device-view-vulnsdevice">Device View (/vulns/device/&lt;target&gt;)</a></li><li><a href="#updating-a-ticket">Updating a Ticket</a></li></ul></li>
 <li class="nav-sec"><a href="#8-dependency-scanner">8. Dependency Scanner</a><ul><li><a href="#supported-ecosystems">Supported Ecosystems</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#running-a-dependency-scan">Running a Dependency Scan</a></li><li><a href="#results">Results</a></li></ul></li>
 <li class="nav-sec"><a href="#9-reports">9. Reports</a><ul><li><a href="#generating-a-report">Generating a Report</a></li><li><a href="#downloading-reports">Downloading Reports</a></li><li><a href="#pushing-reports-to-a-cloud-api">Pushing Reports to a Cloud API</a></li><li><a href="#scheduled-reports">Scheduled Reports</a></li><li><a href="#atlassian-integration">Atlassian Integration</a></li></ul></li>
-<li class="nav-sec"><a href="#10-threat-intelligence">10. Threat Intelligence</a><ul><li><a href="#required-api-keys">Required API Keys</a></li><li><a href="#ioc-lookup-threatlookup">IOC Lookup (/threat/lookup)</a></li><li><a href="#otx-feed-threatfeed">OTX Feed (/threat/feed)</a></li><li><a href="#soc-triage-threattriage">SOC Triage (/threat/triage)</a></li><li><a href="#subdomain-enumeration-threatsubdomains">Subdomain Enumeration (/threat/subdomains)</a></li></ul></li>
+<li class="nav-sec"><a href="#10-threat-intelligence">10. Threat Intelligence</a><ul><li><a href="#required-api-keys">Required API Keys</a></li><li><a href="#ioc-lookup-threatlookup">IOC Lookup (/threat/lookup)</a></li><li><a href="#otx-feed-threatfeed">OTX Feed (/threat/feed)</a></li><li><a href="#soc-triage-threattriage">SOC Triage (/threat/triage)</a></li><li><a href="#cve-database-cve-db">CVE Database (/cve-db)</a></li><li><a href="#palo-alto-firewalls-threatpaloalto">Palo Alto Firewalls (/threat/paloalto)</a></li><li><a href="#subdomain-enumeration-threatsubdomains">Subdomain Enumeration (/threat/subdomains)</a></li></ul></li>
 <li class="nav-sec"><a href="#11-endpoint-agents">11. Endpoint Agents</a><ul><li><a href="#how-agents-work">How Agents Work</a></li><li><a href="#deploying-an-agent">Deploying an Agent</a></li><li><a href="#agent-alerts">Agent Alerts</a></li><li><a href="#manual-registration-advanced">Manual Registration (advanced)</a></li></ul></li>
 <li class="nav-sec"><a href="#12-grc--governance-risk--compliance">12. GRC — Governance, Risk &amp; Compliance</a><ul><li><a href="#risk-register-grcrisks">Risk Register (/grc/risks)</a></li><li><a href="#compliance-grccompliance">Compliance (/grc/compliance)</a></li><li><a href="#policies-grcpolicies">Policies (/grc/policies)</a></li></ul></li>
 <li class="nav-sec"><a href="#13-settings">13. Settings</a><ul><li><a href="#time--ntp">Time &amp; NTP</a></li><li><a href="#email--smtp">Email / SMTP</a></li><li><a href="#threat-intelligence-apis">Threat Intelligence APIs</a></li><li><a href="#atlassian-integration_1">Atlassian Integration</a></li><li><a href="#cloud-api-integration">Cloud API Integration</a></li><li><a href="#https--tls">HTTPS / TLS</a></li></ul></li>
@@ -165,7 +165,7 @@ main { padding: 36px 56px 80px; min-width: 0; }
       <div class="hero">
         <h1>PwnBroker — Complete User Guide</h1>
         <p>Install, configure and run PwnBroker — scanning, proven-exploitable vulnerability management, threat intelligence and GRC on your own infrastructure.</p>
-        <div class="meta">Version 1.0.0 · Updated 2026-11-11</div>
+        <div class="meta">Version 1.0.0 · Updated 2026-11-24</div>
       </div>
 <p>PwnBroker is a self-hosted security operations platform that combines network scanning, vulnerability management, dependency auditing, threat intelligence, GRC compliance, and endpoint monitoring into a single web UI. All data stays on your infrastructure.</p>
 <h2 id="1-installation">1. Installation<a class="headerlink" href="#1-installation" title="Link to this section">#</a></h2>
@@ -173,9 +173,11 @@ main { padding: 36px 56px 80px; min-width: 0; }
 <ul>
 <li>Ubuntu 22.04 LTS or 24.04 LTS (Debian-based distros also work)</li>
 <li>2 GB RAM minimum, 4 GB recommended</li>
-<li>10 GB disk space</li>
+<li>10 GB disk space, plus a few GB for the local CVE database</li>
 <li>Root / sudo access</li>
-<li>Outbound internet access (for threat intel API calls and NVD CVE lookups)</li>
+<li>Outbound HTTPS access for threat intel API calls and the CVE database
+  downloads (<code>nvd.nist.gov</code>, <code>api.github.com</code>, <code>github.com</code>,
+  <code>raw.githubusercontent.com</code>)</li>
 </ul>
 <h3 id="single-file-installer-recommended">Single-File Installer (recommended)<a class="headerlink" href="#single-file-installer-recommended" title="Link to this section">#</a></h3>
 <p>PWNBroker ships as one file, <code>pwnbroker-&lt;version&gt;-install.run</code>, that contains
@@ -542,7 +544,10 @@ target saved for an individual IP takes precedence for that IP.</p>
 <h3 id="quick-scan">Quick Scan<a class="headerlink" href="#quick-scan" title="Link to this section">#</a></h3>
 <p>From the asset inventory, click <strong>Quick Scan</strong> on any row to immediately launch a full scan of that single asset without going through the scan wizard.</p>
 <h2 id="6-scans">6. Scans<a class="headerlink" href="#6-scans" title="Link to this section">#</a></h2>
-<p>Scans run <code>nmap</code> against targets or asset groups and enrich results with CVE data from NVD.</p>
+<p>Scans run <code>nmap</code> against targets or asset groups and match each service
+against PwnBroker's own CVE database, a local copy of NVD and CVE.org (see
+<a href="#cve-database-cve-db">CVE Database</a>). Scans don't query NVD per service, so
+they aren't slowed down by NVD's rate limits.</p>
 <h3 id="scan-types">Scan Types<a class="headerlink" href="#scan-types" title="Link to this section">#</a></h3>
 <div class="table-wrap"><table>
 <thead>
@@ -605,7 +610,7 @@ target saved for an individual IP takes precedence for that IP.</p>
 <p>Active schedules can be paused/resumed with the toggle on the Scans index page. Scheduled scans appear in the activity log when they run.</p>
 <h2 id="7-vulnerability-management">7. Vulnerability Management<a class="headerlink" href="#7-vulnerability-management" title="Link to this section">#</a></h2>
 <p>The Vuln Management module tracks findings as tickets through their remediation lifecycle.</p>
-<h3 id="only-proven-vulnerabilities-are-counted">Only proven vulnerabilities are counted<a class="headerlink" href="#only-proven-vulnerabilities-are-counted" title="Link to this section">#</a></h3>
+<h3 id="exploitable-unverified-and-ruled-out-findings">Exploitable, Unverified and ruled-out findings<a class="headerlink" href="#exploitable-unverified-and-ruled-out-findings" title="Link to this section">#</a></h3>
 <p>A CVE matched from a service's version banner only says the product <em>can</em> be
 vulnerable; whether this host is depends on configuration. (Apache 2.4.49 is
 only exploitable through CVE-2021-41773 if a non-default setting allows it.)
@@ -623,20 +628,24 @@ check written for that CVE, and gets one of three verdicts:</p>
 <tr>
 <td><strong>Exploitable</strong></td>
 <td>The check reproduced the issue. The proof (request + response) is on the finding.</td>
-<td>Yes — open ticket with SLA</td>
+<td>Yes — open ticket with SLA, labelled <strong>Exploitable</strong></td>
+</tr>
+<tr>
+<td><strong>Unverified</strong></td>
+<td>No safe check exists for this CVE, or the check couldn't complete. Each one says why.</td>
+<td>Yes — open ticket with SLA, labelled with an amber <strong>Unverified</strong> badge</td>
 </tr>
 <tr>
 <td><strong>Not exploitable</strong></td>
 <td>The check ran cleanly and the vulnerable behaviour wasn't there (feature disabled, fix backported, not that product).</td>
 <td>No — kept under "Not Exploitable"</td>
 </tr>
-<tr>
-<td><strong>Unverified</strong></td>
-<td>No safe check exists for this CVE, or the check couldn't complete. Each one says why.</td>
-<td>No — kept under "Unverified"</td>
-</tr>
 </tbody>
 </table></div>
+<p>Most CVEs have no safe remote check, so most version matches will be
+Unverified. They still count: a host running a version with a known critical
+CVE is a finding until something rules it out. The badge tells you which ones
+have proof and which ones are a version match only.</p>
 <ul>
 <li>Checks come from the nuclei template library (~4,500 CVEs), installed by
   <code>setup.sh</code> and refreshed weekly. nmap's own vuln-script verdicts count too
@@ -644,16 +653,22 @@ check written for that CVE, and gets one of three verdicts:</p>
 <li>Only safe checks run: never ones tagged DoS/intrusive/fuzzing, never ones
   needing credentials, and never ones that call out to an external server —
   no scan data leaves your network.</li>
-<li>A later scan that proves an unverified finding reopens it automatically; a
+<li>A later scan that proves an unverified finding relabels it Exploitable; a
   rescan that shows an open one is no longer exploitable (fixed, or the
   feature turned off) closes it as Not Exploitable.</li>
 <li><strong>Verify now</strong> on the Vulnerabilities page re-tests every unverified finding
   without a full rescan (useful after the check library updates).</li>
-<li>Dashboard, reports, exports and Jira/Confluence only include proven
-  vulnerabilities. Dependency (OSV), EOL, secrets and other non-version
-  findings are unchanged.</li>
+<li>Dashboard, reports, exports and Jira/Confluence count Exploitable and
+  Unverified findings, and leave out Not Exploitable ones. The Unverified
+  badge appears in the web UI; reports don't mark it yet. Dependency (OSV),
+  EOL, secrets and other non-version findings are unchanged.</li>
+<li>The Vulnerabilities page shows how many findings are unverified; the link
+  opens the ticket list filtered to them (<code>/vulns/tickets?status=unverified</code>).</li>
 <li>Set <code>VULN_VERIFY=0</code> in <code>.env</code> to turn checking off (findings then stay
-  unverified).</li>
+  Unverified).</li>
+<li>Upgrading from a release that hid unverified findings moves them back into
+  the counts automatically on first start; their tickets become Open with the
+  Unverified label.</li>
 </ul>
 <h3 id="credentialed-checks-ssh">Credentialed checks (SSH)<a class="headerlink" href="#credentialed-checks-ssh" title="Link to this section">#</a></h3>
 <p>Most version-matched CVEs have no safe remote check, so on their own they
@@ -730,15 +745,13 @@ finding's scan login (or its target's). In a real test against stock Ubuntu
 <td>Finding is wrong (marked by hand)</td>
 </tr>
 <tr>
-<td>Unverified</td>
-<td>Version match only, not proven on this host (no SLA)</td>
-</tr>
-<tr>
 <td>Not Exploitable</td>
 <td>The CVE's check ran and the issue wasn't present (no SLA)</td>
 </tr>
 </tbody>
 </table></div>
+<p>Unverified is a label, not a status: an unverified ticket is Open (or In
+Progress, etc.) with an SLA like any other, plus the amber Unverified badge.</p>
 <p><strong>SLA tracking</strong>: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.</p>
 <h3 id="device-view-vulnsdevice">Device View (<code>/vulns/device/&lt;target&gt;</code>)<a class="headerlink" href="#device-view-vulnsdevice" title="Link to this section">#</a></h3>
 <p>Shows all open tickets grouped by target with a risk heat-map. Use this view to get a per-host risk summary.</p>
@@ -831,8 +844,8 @@ finding's scan login (or its target's). In a real test against stock Ubuntu
 <td>Subdomain enumeration</td>
 </tr>
 <tr>
-<td>NVD</td>
-<td>CVE lookup and CVSS enrichment</td>
+<td>NVD (optional)</td>
+<td>Only used for live NVD lookups before the CVE Database finishes its first download, or if it's turned off. The CVE Database itself needs no key.</td>
 </tr>
 </tbody>
 </table></div>
@@ -874,6 +887,102 @@ finding's scan login (or its target's). In a real test against stock Ubuntu
 </tbody>
 </table></div>
 <p>Alerted cases can be exported. Dismissed cases are removed from the active queue but retained in history.</p>
+<h3 id="cve-database-cve-db">CVE Database (<code>/cve-db</code>)<a class="headerlink" href="#cve-database-cve-db" title="Link to this section">#</a></h3>
+<p>PwnBroker keeps its own copy of the public CVE lists and matches scans
+against it, instead of asking NVD about every service it finds. Open it from
+<strong>Threat Intel → CVE Database</strong>.</p>
+<p><strong>Where the data comes from:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NVD (JSON 2.0 data feeds)</td>
+<td>CVSS scores, CWE, and NVD's analysed list of affected products and version ranges</td>
+</tr>
+<tr>
+<td>CVE.org (the official CVE List, <code>cvelistV5</code>)</td>
+<td>Every published CVE as soon as it's assigned, with the affected versions the reporting vendor gave</td>
+</tr>
+</tbody>
+</table></div>
+<p>NVD's analysed version ranges are used when they exist. For CVEs NVD hasn't
+analysed yet (its backlog), the vendor's own affected-version data from
+CVE.org is used, so new CVEs still match.</p>
+<p><strong>Keeping it current:</strong></p>
+<ul>
+<li>The first download starts about 2 minutes after the service starts and
+  takes a while (it fetches every CVE since 2002). Until it finishes, scans
+  fall back to live NVD API lookups.</li>
+<li>After that, it fetches only what changed, every 2 hours by default. If it
+  falls too far behind (for example after the server was off), it downloads
+  everything again on its own.</li>
+<li>No API key is needed. Only public data is downloaded; nothing about your
+  network or scans is sent.</li>
+</ul>
+<p><strong>The page shows:</strong></p>
+<ul>
+<li>Status of each source: when it last synced, how many CVEs it holds, and
+  any error.</li>
+<li>How many CVEs are waiting on NVD analysis (the backlog).</li>
+<li><strong>Sync now</strong> (admin): fetch changes immediately.</li>
+<li><strong>Full re-download</strong> (admin): rebuild from scratch. Use this if the
+  database is damaged or deleted.</li>
+<li>A search box: search by CVE ID, product name (for example <code>openssh</code> or
+  <code>dnsmasq</code>), or words from a description, and open any CVE to see its
+  description, scores, affected products, and upstream references.</li>
+</ul>
+<p><strong>Settings</strong> (in <code>.env</code>):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CVE_MIRROR_SYNC</code></td>
+<td><code>1</code></td>
+<td><code>0</code> turns automatic syncing off (Sync now still works)</td>
+</tr>
+<tr>
+<td><code>CVE_MIRROR_SYNC_HOURS</code></td>
+<td><code>2</code></td>
+<td>Hours between update checks</td>
+</tr>
+<tr>
+<td><code>CVE_MIRROR_DATABASE_URL</code></td>
+<td><code>sqlite:///…/data/cve_mirror.db</code></td>
+<td>Where the CVE database is stored. It's kept separate from the main database.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="palo-alto-firewalls-threatpaloalto">Palo Alto Firewalls (<code>/threat/paloalto</code>)<a class="headerlink" href="#palo-alto-firewalls-threatpaloalto" title="Link to this section">#</a></h3>
+<p>PwnBroker can pull threat logs from PAN-OS firewalls over the firewall's XML
+API. Public IPs that show up in those logs are queued for SOC triage.</p>
+<p><strong>Adding a firewall</strong> (admin): click <strong>Add Firewall</strong> and enter a name, the
+management hostname or IP, and either an API key or a username and password
+(PwnBroker uses them once to generate a key and doesn't store the password).
+Untick <em>Verify TLS certificate</em> only for a firewall with a self-signed
+certificate you trust.</p>
+<p><strong>Polling:</strong> every enabled firewall is polled every 5 minutes for threat logs
+newer than the last one received. On a firewall's page, <strong>Test Connection</strong>
+checks the API key and <strong>Poll Now</strong> fetches immediately. If the firewall
+can't be reached, both wait up to about 12 seconds before reporting the
+error, and the firewall is marked <strong>Error</strong> with the reason on its page.</p>
+<p><strong>Log retention:</strong> by default, received threat logs are kept forever. To
+limit that, enter a number of days under <strong>Threat Log Retention</strong> on the Palo
+Alto page and click <strong>Save</strong> (admin). Logs older than that, by the
+firewall's own timestamp, are deleted right away and then once a day. Clear
+the box and save to go back to keeping logs forever. SOC cases keep their own
+copy of the log details, so expiring logs never empties a case. Deleting a
+firewall deletes all of its logs.</p>
 <h3 id="subdomain-enumeration-threatsubdomains">Subdomain Enumeration (<code>/threat/subdomains</code>)<a class="headerlink" href="#subdomain-enumeration-threatsubdomains" title="Link to this section">#</a></h3>
 <p>Enter a domain to enumerate subdomains using crt.sh certificate transparency logs and DNSDumpster. Results show IP addresses, record types, and first/last seen dates.</p>
 <h2 id="11-endpoint-agents">11. Endpoint Agents<a class="headerlink" href="#11-endpoint-agents" title="Link to this section">#</a></h2>
@@ -1225,6 +1334,10 @@ sudo systemctl restart pwnbroker
 </code></pre>
 <p>Or re-run <code>sudo bash setup.sh</code> — it's safe and idempotent, fetching and resetting to the latest commit, updating Python dependencies, and restarting the service, without touching <code>data/</code>, <code>logs/</code>, <code>evidence_uploads/</code>, your existing <code>.env</code>, or TLS certificates.</p>
 <p>New database columns (added by migrations) are applied automatically on startup by <code>_migrate_columns()</code> in <code>app/__init__.py</code>. No manual schema changes are needed.</p>
+<p>Automatic updates back up <code>data/</code> before installing, and restore it if the new
+version fails to start. The CVE database (<code>data/cve_mirror.db</code>) is left out of
+that backup because it's large and can be rebuilt: if it ever needs
+replacing, use <strong>Full re-download</strong> on the CVE Database page.</p>
 <h2 id="18-troubleshooting">18. Troubleshooting<a class="headerlink" href="#18-troubleshooting" title="Link to this section">#</a></h2>
 <h3 id="service-wont-start">Service won't start<a class="headerlink" href="#service-wont-start" title="Link to this section">#</a></h3>
 <pre><code class="language-bash"># Check the last 50 log lines

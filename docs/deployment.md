@@ -13,7 +13,7 @@ This covers what's specific to running PwnBroker in production — for installat
 
 `run.py` launches gunicorn with **one worker process** and multiple threads (`WEB_THREADS`, default 8), not multiple workers. This is deliberate, not a resource constraint:
 
-- APScheduler's background jobs (scan-due checks, report sends, domain monitoring, CVE enrichment, the Palo Alto firewall poller) run in-process. With more than one worker, every scheduled job fires once per worker — duplicate scans, duplicate report emails, duplicate firewall polls.
+- APScheduler's background jobs (scan-due checks, report sends, domain monitoring, CVE enrichment, CVE database sync, the Palo Alto firewall poller and its log-retention purge) run in-process. With more than one worker, every scheduled job fires once per worker — duplicate scans, duplicate report emails, duplicate firewall polls.
 - The login rate limiter (Flask-Limiter) uses in-memory storage, which is only accurate within a single process.
 
 Threads still give real request concurrency for this app's workload (DB queries, subprocess calls to `nmap` that release the GIL while blocked). If you need more raw throughput than one process can give, the actual jobs to move are the APScheduler-driven ones (into their own process with a shared lock or external scheduler) and the rate limiter (into a shared backend like Redis) — don't just bump `--workers` without doing that first.
@@ -39,6 +39,8 @@ API keys (`ThreatConfig`), Palo Alto firewall credentials, and `Target` SSH cred
 SQLite, tuned for concurrent access: WAL journal mode, `synchronous=NORMAL`, and a 30s busy-timeout (`app/__init__.py`'s `_tune_sqlite`). This assumes single-instance deployment — there's no clustering story for SQLite, and none is planned; a real multi-instance deployment would need a networked database instead.
 
 Schema changes ship as additive columns picked up by `_migrate_columns()` in `app/__init__.py` (no Alembic) — they run automatically on every boot.
+
+The CVE database is a second SQLite file, `data/cve_mirror.db` (SQLAlchemy bind `cvemirror`, override with `CVE_MIRROR_DATABASE_URL`). It's kept apart from `scanner.db` so a multi-hour bulk import never holds the main database's write lock. It holds only public NVD/CVE.org data, so it doesn't need backing up — the updater's pre-update backup skips it, and **CVE Database → Full re-download** rebuilds it. Syncs take an exclusive lock on `data/cve_mirror.lock` and download into `data/cve_mirror_tmp/` (the systemd sandbox only lets the service write under `data/`).
 
 ## Logging & health
 

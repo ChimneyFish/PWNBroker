@@ -80,6 +80,15 @@ def parse_version(v):
     return tuple(int(x) for x in m.groups())
 
 
+# Left out of the pre-update backup (and so left alone on rollback): logs, the
+# updater's own state, and things that are re-downloaded on demand. The CVE
+# mirror (cve_mirror.db + its WAL/lock/download scratch) is a multi-GB copy
+# of NVD + CVE.org — backing it up on every update would cost minutes and
+# disk for data "CVE Database → Full re-download" rebuilds anyway.
+_BACKUP_SKIP = ("data/logs", "data/.update", "data/nuclei-templates", "data/nuclei-home",
+                "data/cve_mirror")
+
+
 def _preserved(rel):
     rel = rel.strip("/")
     return any(rel == p or rel.startswith(p + "/") for p in PRESERVE)
@@ -316,8 +325,7 @@ class Updater:
                 t.add(self._p(rel), arcname=rel, recursive=False)
         with tarfile.open(os.path.join(d, "data.tar.gz"), "w:gz") as t:
             t.add(self.data, arcname="data",
-                  filter=lambda ti: None if ti.name.startswith(
-                      ("data/logs", "data/.update", "data/nuclei-templates", "data/nuclei-home")) else ti)
+                  filter=lambda ti: None if ti.name.startswith(_BACKUP_SKIP) else ti)
         meta = {"from_version": self.current_version(), "to_version": to_version,
                 "created": _now().isoformat(timespec="seconds"),
                 "requirements_sha256": self._requirements_hash()}
@@ -358,7 +366,8 @@ class Updater:
                 pass
         with tarfile.open(os.path.join(backup, "code.tar.gz")) as t:
             self._extract(t, self.dir)
-        db_files = [f for f in os.listdir(self.data) if f.endswith(("-wal", "-shm"))]
+        db_files = [f for f in os.listdir(self.data) if f.endswith(("-wal", "-shm"))
+                    and not ("data/" + f).startswith(_BACKUP_SKIP)]
         for f in db_files:
             os.remove(os.path.join(self.data, f))
         with tarfile.open(os.path.join(backup, "data.tar.gz")) as t:
