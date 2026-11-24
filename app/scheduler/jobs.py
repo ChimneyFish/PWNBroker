@@ -57,6 +57,16 @@ def register_jobs(app):
         minutes=5,
         replace_existing=True,
     )
+    # Palo Alto threat log retention — daily. Deliberately not license-gated:
+    # it only deletes data the admin asked to expire.
+    scheduler.add_job(
+        id="purge_paloalto_logs",
+        func=_run_paloalto_retention,
+        args=[app],
+        trigger="interval",
+        hours=24,
+        replace_existing=True,
+    )
     # Vuln management <-> threat intel correlation — every 15 minutes.
     # Runs after both the CVE enrichment (KEV/EPSS) and PaloAlto polling jobs
     # have had a chance to populate the data it correlates against.
@@ -325,6 +335,40 @@ def _run_paloalto_poll(app):
                 poll_paloalto_firewall(fw)
             except Exception as e:
                 app.logger.error(f"Palo Alto poll failed for {fw.name}: {e}")
+
+
+def _run_paloalto_retention(app):
+    with app.app_context():
+        try:
+            from ..models import ThreatConfig
+            cfg = ThreatConfig.query.first()
+            days = cfg.paloalto_retention_days if cfg else None
+            if days:
+                n = purge_paloalto_logs(days)
+                if n:
+                    app.logger.info(f"Palo Alto retention: deleted {n} threat logs older than {days} days")
+        except Exception as e:
+            app.logger.error(f"Palo Alto retention purge failed: {e}")
+
+
+def purge_paloalto_logs(days):
+    """Delete PAN-OS threat logs older than `days` days and return how many.
+
+    Age is the firewall's own timestamp (time_generated), falling back to when
+    PwnBroker received the entry. SOC cases keep their own copy of the log
+    details, so expiring logs never empties an existing case.
+    """
+    from datetime import timedelta
+    from sqlalchemy import func
+    from ..models import PaloAltoThreatLog
+    if not days or days < 1:
+        return 0
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=int(days))
+    age = func.coalesce(PaloAltoThreatLog.time_generated, PaloAltoThreatLog.created_at)
+    n = (PaloAltoThreatLog.query.filter(age < cutoff)
+         .delete(synchronize_session=False))
+    db.session.commit()
+    return n
 
 
 def poll_paloalto_firewall(fw):

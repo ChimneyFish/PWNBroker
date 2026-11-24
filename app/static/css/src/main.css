@@ -88,6 +88,13 @@
     @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-[0.68rem] font-bold uppercase tracking-wide;
     background: rgba(122,143,170,0.15); color: var(--color-muted);
   }
+  /* A solid bg-* (no bg-opacity-*) badge was muted-grey text on a grey/colour
+     fill — e.g. "Enabled" on the Palo Alto page read as a blank grey block.
+     :where() keeps this at .badge's specificity so an explicit text-* class
+     on the badge still wins. */
+  .badge:where(.bg-danger, .bg-secondary, .bg-warning, .bg-success, .bg-info, .bg-primary):where(:not([class*="bg-opacity-"])) {
+    color: #fff;
+  }
 
   /* ── Alerts ──────────────────────────────────────────────────────────── */
   .alert, .alert-success, .alert-danger, .alert-warning, .alert-info, .alert-primary {

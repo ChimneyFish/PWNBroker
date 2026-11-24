@@ -82,6 +82,32 @@
   </div>
 </div>
 
+<div class="form-card mb-6" id="log-retention">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h6 class="font-bold mb-1"><i class="bi bi-hourglass-split me-2" style="color:var(--accent)"></i>Threat Log Retention</h6>
+      <div class="small text-muted">
+        {% if retention_days %}Logs older than <strong>{{ retention_days }} days</strong> are deleted daily.
+        {% else %}Logs are currently <strong>kept forever</strong>.{% endif %}
+        {{ total_logs }} stored{% if oldest_log %}, oldest from {{ oldest_log | localdt('%Y-%m-%d') }}{% endif %}.
+        SOC cases keep their own copy of the details, so expiring logs doesn't empty them.
+      </div>
+    </div>
+    {% if current_user.is_admin %}
+    <form method="POST" action="{{ url_for('threat.paloalto_retention') }}" class="flex items-end gap-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="form-label small mb-1" for="retention_days">Keep logs for (days)</label>
+        <input type="number" min="1" max="3650" name="retention_days" id="retention_days"
+               class="form-control form-control-sm" style="width:10rem"
+               value="{{ retention_days or '' }}" placeholder="Forever">
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 <div class="data-table" id="fw-table">
   <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">Registered Firewalls</span>

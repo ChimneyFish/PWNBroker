@@ -423,6 +423,7 @@ class ThreatConfig(db.Model):
     phishtank_api_key       = db.Column(EncryptedString)
     socradar_api_key        = db.Column(EncryptedString)  # stored for future use — no lookup wired yet
     registration_token      = db.Column(db.String(128))   # pre-shared secret for agent registration
+    paloalto_retention_days = db.Column(db.Integer)       # delete PAN-OS threat logs older than this; NULL = keep forever
     updated_at              = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 

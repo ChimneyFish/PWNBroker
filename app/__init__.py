@@ -351,6 +351,7 @@ def _migrate_columns(app):
             ("verification_evidence", "TEXT"),
         ],
         "threat_configs": [
+            ("paloalto_retention_days", "INTEGER"),
             ("securitytrails_api_key",  "VARCHAR(512)"),
             ("greynoise_api_key",       "VARCHAR(512)"),  # legacy — no longer read by app code
             ("dnsdumpster_api_key",     "VARCHAR(512)"),

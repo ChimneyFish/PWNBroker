@@ -76,7 +76,7 @@
   <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
-        <span class="badge" style="background:#c26a00;font-size:0.75rem">OTX</span>
+        <span class="badge" style="background:#c26a00;color:#fff;font-size:0.75rem">OTX</span>
         <span class="font-semibold">AlienVault OTX</span>
         {% if result.otx %}
           {% if result.otx.error %}<span class="badge bg-secondary ms-auto">Error</span>
@@ -139,7 +139,7 @@
   <div class="col-md-6">
     <div class="form-card h-full">
       <div class="flex items-center gap-2 mb-4">
-        <span class="badge" style="background:#c0392b;font-size:0.75rem">ABUSE</span>
+        <span class="badge" style="background:#c0392b;color:#fff;font-size:0.75rem">ABUSE</span>
         <span class="font-semibold">AbuseIPDB</span>
         {% if result.abuse %}
           {% if result.abuse.verdict == "malicious" %}<span class="badge bg-danger ms-auto">Malicious</span>
@@ -192,7 +192,7 @@
 <div class="data-table mb-6">
   <div class="section-header px-4 pt-4 pb-2">
     <span class="section-title">
-      <span class="badge me-2" style="background:#7c3aed">pulseDrive</span>
+      <span class="badge me-2" style="background:#7c3aed;color:#fff">pulseDrive</span>
       Additional Sources
     </span>
   </div>
@@ -237,7 +237,7 @@
   <div class="data-table">
     <div class="section-header px-4 pt-4 pb-2">
       <span class="section-title">
-        <span class="badge me-2" style="background:#c26a00">OTX</span>
+        <span class="badge me-2" style="background:#c26a00;color:#fff">OTX</span>
         {{ result.otx.pulse_count }} Threat Pulse{{ 's' if result.otx.pulse_count != 1 }} mentioning
         <span class="font-monospace" style="color:var(--accent)">{{ result.indicator }}</span>
       </span>

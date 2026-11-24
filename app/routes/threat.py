@@ -500,8 +500,33 @@ def paloalto_list():
     error_count = sum(1 for fw in firewalls if fw.status == "error")
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     logs_today  = PaloAltoThreatLog.query.filter(PaloAltoThreatLog.created_at >= today_start).count()
+    cfg         = ThreatConfig.query.first()
     return render_template("threat/paloalto.html", firewalls=firewalls,
-                           error_count=error_count, logs_today=logs_today)
+                           error_count=error_count, logs_today=logs_today,
+                           retention_days=cfg.paloalto_retention_days if cfg else None,
+                           total_logs=PaloAltoThreatLog.query.count(),
+                           oldest_log=db.session.query(db.func.min(PaloAltoThreatLog.time_generated)).scalar())
+
+
+@threat_bp.route("/paloalto/retention", methods=["POST"])
+@login_required
+@admin_required
+def paloalto_retention():
+    raw = request.form.get("retention_days", "").strip()
+    if raw and (not raw.isdigit() or not 1 <= int(raw) <= 3650):
+        flash("Retention must be a whole number of days between 1 and 3650, or blank to keep logs forever.", "danger")
+        return redirect(url_for("threat.paloalto_list"))
+    cfg = _get_cfg()
+    cfg.paloalto_retention_days = int(raw) if raw else None
+    db.session.commit()
+    if not raw:
+        flash("Palo Alto threat logs will be kept forever.", "success")
+    else:
+        from ..scheduler.jobs import purge_paloalto_logs
+        n = purge_paloalto_logs(cfg.paloalto_retention_days)
+        flash(f"Palo Alto threat logs are now kept for {raw} days"
+              + (f" — {n} older log{'s' if n != 1 else ''} deleted." if n else "."), "success")
+    return redirect(url_for("threat.paloalto_list"))
 
 
 @threat_bp.route("/paloalto/add", methods=["POST"])
