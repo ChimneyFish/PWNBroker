@@ -36,6 +36,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'data', 'scanner.db')}"
     )
+    # Local CVE mirror (NVD + CVE.org) — its own database so bulk syncs never
+    # contend with the app's main write lock. See app/cve_mirror/.
+    SQLALCHEMY_BINDS = {
+        "cvemirror": os.environ.get(
+            "CVE_MIRROR_DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'data', 'cve_mirror.db')}"
+        ),
+    }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # `timeout` (busy-wait before "database is locked") is a sqlite3-only connect
     # arg — only set it when we're actually on sqlite, so a future DATABASE_URL
@@ -71,6 +78,15 @@ class Config:
     NUCLEI_TEMPLATES_DIR = os.environ.get("NUCLEI_TEMPLATES_DIR", "")  # default: data/nuclei-templates
     NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     NVD_CPE_API_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
+    # Local CVE mirror sources. Scans read CVEs from the mirror; the live NVD
+    # API above is only a fallback until the first full sync has completed.
+    CVE_MIRROR_SYNC = os.environ.get("CVE_MIRROR_SYNC", "1")           # 0 = never sync
+    CVE_MIRROR_SYNC_HOURS = int(os.environ.get("CVE_MIRROR_SYNC_HOURS", "2"))
+    NVD_FEED_URL = os.environ.get("NVD_FEED_URL", "https://nvd.nist.gov/feeds/json/cve/2.0")
+    CVEORG_RELEASES_API = os.environ.get(
+        "CVEORG_RELEASES_API", "https://api.github.com/repos/CVEProject/cvelistV5/releases/latest")
+    CVEORG_DELTA_LOG_URL = os.environ.get(
+        "CVEORG_DELTA_LOG_URL", "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/deltaLog.json")
 
     # Scheduler
     SCHEDULER_API_ENABLED = False

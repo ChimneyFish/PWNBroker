@@ -40,3 +40,6 @@ app/static/agent/PwnBrokerAgentSetup.exe
 
 # Built releases (tools/release/build_release.py)
 /releases_out/
+data/cve_mirror.db*
+data/cve_mirror_tmp/
+data/cve_mirror.lock

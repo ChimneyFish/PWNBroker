@@ -327,9 +327,10 @@ class TestMatchConfidenceBadge:
         tickets_body = tickets_resp.data.decode()
         assert tickets_resp.status_code == 200
         assert "CVE-2021-0003" in tickets_body and "CVE-2021-0004" in tickets_body
-        # ...but they aren't open tickets
+        # ...and they're open tickets, carrying the Unverified label
         open_body = admin_client.get("/vulns/tickets?status=open").data.decode()
-        assert "CVE-2021-0003" not in open_body and "CVE-2021-0004" not in open_body
+        assert "CVE-2021-0003" in open_body and "CVE-2021-0004" in open_body
+        assert open_body.count(">Unverified") >= 2
 
 
 class TestEnrichScanCves:

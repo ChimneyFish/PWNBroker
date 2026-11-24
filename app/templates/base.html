@@ -62,13 +62,14 @@
         </div>
 
         <div class="topnav-item dropdown">
-          <a href="#" class="topnav-link dropdown-toggle {% if 'threat' in (request.endpoint or '') %}active{% endif %}" data-toggle="dropdown">
+          <a href="#" class="topnav-link dropdown-toggle {% if 'threat' in (request.endpoint or '') or 'cve_db' in (request.endpoint or '') %}active{% endif %}" data-toggle="dropdown">
             Threat Intel <i class="bi bi-chevron-down topnav-caret"></i>
           </a>
           <div class="dropdown-menu">
             <a href="{{ url_for("threat.index") }}" class="dropdown-item"><i class="bi bi-grid me-2"></i>Overview</a>
             <a href="{{ url_for("threat.lookup") }}" class="dropdown-item"><i class="bi bi-search me-2"></i>IOC Lookup</a>
             <a href="{{ url_for("threat.feed") }}" class="dropdown-item"><i class="bi bi-rss me-2"></i>OTX Feed</a>
+            <a href="{{ url_for("cve_db.index") }}" class="dropdown-item"><i class="bi bi-database me-2"></i>CVE Database</a>
             <a href="{{ url_for("threat.triage") }}" class="dropdown-item"><i class="bi bi-shield-check me-2"></i>SOC Triage</a>
             <a href="{{ url_for("threat.agents_list") }}" class="dropdown-item"><i class="bi bi-pc-display-horizontal me-2"></i>Agents</a>
             <a href="{{ url_for("threat.paloalto_list") }}" class="dropdown-item"><i class="bi bi-hdd-network me-2"></i>Palo Alto</a>

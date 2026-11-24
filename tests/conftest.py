@@ -21,6 +21,9 @@ class TestConfig(Config):
 @pytest.fixture()
 def app(tmp_path):
     TestConfig.SQLALCHEMY_DATABASE_URI = f"sqlite:///{tmp_path / 'test.db'}"
+    TestConfig.SQLALCHEMY_BINDS = {"cvemirror": f"sqlite:///{tmp_path / 'cve_mirror.db'}"}
+    TestConfig.CVE_MIRROR_SYNC = "0"
+    TestConfig.CVE_MIRROR_WORK_DIR = str(tmp_path)
     lic_dir = tmp_path / "license"
     lic_dir.mkdir()
     (lic_dir / "license.key").write_text(make_license(days=365))

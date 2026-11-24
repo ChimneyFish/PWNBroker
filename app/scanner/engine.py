@@ -618,6 +618,11 @@ def run_scan(scan_id: int, app=None):
 
                 db.session.bulk_save_objects(results)
                 scan.status = "done"
+                # Commit before enrichment: enrich_scan_cves writes through its
+                # own app context/session, and SQLite allows one writer — with
+                # this transaction still open it waited out the lock timeout
+                # and failed ("database is locked") on every scan with CVEs.
+                db.session.commit()
 
                 new_cve_ids = [r.cve_id for r in results if getattr(r, "cve_id", None)]
                 if new_cve_ids:

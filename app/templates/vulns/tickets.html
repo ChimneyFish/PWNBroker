@@ -40,10 +40,11 @@
 <div class="form-card mb-6 small text-muted">
   {% if status_filter == 'unverified' %}
   <i class="bi bi-question-circle text-warning me-1"></i>
-  These were matched from a service's <strong>version banner only</strong>. Nothing has shown they're
-  exploitable on these hosts (the vulnerable feature may be disabled or the fix backported), so they
-  don't count as open and have no SLA. Each one says why it couldn't be tested. Any that a later scan
-  proves move to Open automatically. Adding SSH credentials to a target lets scans rule out many of
+  These were matched from a service's <strong>version banner only</strong>. They're open vulnerabilities
+  with an SLA like any other, labelled <strong>Unverified</strong> because no active check has proven them
+  on these hosts yet (the vulnerable feature may be disabled or the fix backported). Each one says why it
+  couldn't be tested. A later scan that proves one drops the label; one that rules it out moves it to
+  Not Exploitable. Adding SSH credentials to a target lets scans rule out many of
   these (vendor backports, modules not loaded).
   {% else %}
   <i class="bi bi-shield-check me-1"></i>
@@ -184,7 +185,6 @@
             <option value="patched">Patched</option>
             <option value="accepted_risk">Accepted Risk</option>
             <option value="false_positive">False Positive</option>
-            <option value="unverified">Unverified</option>
             <option value="not_exploitable">Not Exploitable</option>
           </select>
         </div>

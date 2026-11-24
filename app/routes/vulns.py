@@ -23,11 +23,11 @@ def _derive_vuln_name(r):
 
 
 def _proof_status(r):
-    """Ticket status a finding should have based on what was proven.
-    Findings that are only inferred (version banner / heuristic) don't become
-    actionable tickets until an active check confirms them."""
-    if r.is_inferred and r.verification_status != "confirmed":
-        return "not_exploitable" if r.verification_status == "not_exploitable" else "unverified"
+    """Ticket status a finding should have. Unproven version matches are
+    open tickets like any other (labelled Unverified in the UI); only ones an
+    active check ruled out become "not_exploitable"."""
+    if r.is_inferred and r.verification_status == "not_exploitable":
+        return "not_exploitable"
     return "patched" if r.is_remediated else "open"
 
 
@@ -43,6 +43,15 @@ def _apply_newer_evidence(t, r, now):
     to note a ruled-out result. Returns True if the ticket changed."""
     if not r.is_inferred and r.verification_status != "confirmed":
         return False
+    if r.verification_status not in ("confirmed", "not_exploitable"):
+        # Still unproven: no new evidence. Only a legacy "unverified" ticket
+        # moves — unverified findings are open tickets now.
+        if t.status != "unverified":
+            return False
+        sla = _SLA_DAYS.get(r.severity, 90)
+        t.status, t.scan_result_id = "open", r.id
+        t.sla_days, t.due_date = sla, (t.opened_at or now) + timedelta(days=sla)
+        return True
     new = _proof_status(r)
     if new == "open" and t.status in ("unverified", "not_exploitable"):
         sla = _SLA_DAYS.get(r.severity, 90)
@@ -66,9 +75,9 @@ def _apply_newer_evidence(t, r, now):
 
 def _auto_sync():
     """Create VulnTickets for vulnerability ScanResults not yet tracked,
-    deduplicating by device+vuln. Version-only CVE matches get an
-    "unverified"/"not_exploitable" ticket (not counted as open) unless an
-    active check proved them; newer proof updates the existing ticket."""
+    deduplicating by device+vuln. Version-only CVE matches get an open
+    ticket labelled Unverified, or a "not_exploitable" one if an active check
+    ruled them out; newer proof updates the existing ticket."""
     now = datetime.now(timezone.utc)
 
     by_key = {}   # (target, host, vuln-key) → ticket (dedup)
@@ -196,7 +205,7 @@ def index():
             row["patched"] += 1
 
     device_rows = sorted(by_device.values(), key=lambda x: x["open"], reverse=True)
-    unverified      = sum(1 for t in tickets if t.status == "unverified")
+    unverified      = sum(1 for t in tickets if t.is_unverified)
     not_exploitable = sum(1 for t in tickets if t.status == "not_exploitable")
 
     return render_template("vulns/index.html",
@@ -234,7 +243,7 @@ def tickets():
     sev_f    = request.args.get("severity", "")
 
     q = VulnTicket.query
-    if status_f == "open":
+    if status_f in ("open", "unverified"):
         q = q.filter(VulnTicket.status.in_(["open", "in_progress"]))
     elif status_f != "all":
         q = q.filter_by(status=status_f)
@@ -242,6 +251,8 @@ def tickets():
         q = q.filter_by(severity=sev_f)
 
     all_tickets = q.order_by(VulnTicket.due_date.asc()).all()
+    if status_f == "unverified":
+        all_tickets = [t for t in all_tickets if t.is_unverified]
     users       = User.query.order_by(User.username).all()
 
     # Build enrichment lookup keyed by cve_id
@@ -365,7 +376,8 @@ def reverify():
     if _verify_state["running"]:
         flash("Verification is already running.", "info")
         return redirect(url_for("vulns.index"))
-    ids = [t.id for t in VulnTicket.query.filter_by(status="unverified").all()]
+    ids = [t.id for t in VulnTicket.query.filter(VulnTicket.status.in_(["open", "in_progress"])).all()
+           if t.is_unverified]
     if not ids:
         flash("Nothing to verify — there are no unverified findings.", "info")
         return redirect(url_for("vulns.index"))

@@ -70,11 +70,11 @@
 <div class="form-card mb-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="small">
-      <div class="font-semibold mb-1"><i class="bi bi-funnel me-1"></i>Only proven vulnerabilities are counted above</div>
+      <div class="font-semibold mb-1"><i class="bi bi-funnel me-1"></i>Verification status</div>
       <div class="text-muted">
-        Version-matched CVEs are tested against the live service before they become tickets.
+        Version-matched CVEs are tested against the live service where a safe check exists.
         <a href="{{ url_for('vulns.tickets') }}?status=unverified">{{ total_unverified }} unverified</a>
-        (no safe check, or the check was inconclusive) ·
+        (counted above and labelled Unverified — no safe check, or the check was inconclusive) ·
         <a href="{{ url_for('vulns.tickets') }}?status=not_exploitable">{{ total_not_exploitable }} ruled out</a>
         (checked: not exploitable).
       </div>

@@ -164,13 +164,19 @@ class Scan(db.Model):
 
     @property
     def vuln_count(self):
-        """Proven/actionable vulnerabilities only. Version-only CVE matches
-        are stored as result_type "unverified" / "not_exploitable"."""
+        """Vulnerabilities, proven or not. Unproven version matches count too
+        (labelled Unverified); only ruled-out ones ("not_exploitable") don't."""
         return self.results.filter_by(result_type="vulnerability").count()
 
     @property
     def unverified_count(self):
-        return self.results.filter_by(result_type="unverified").count()
+        """Vulnerabilities matched from a version banner that no active check
+        has proven yet — counted in vuln_count, labelled Unverified."""
+        return self.results.filter(
+            ScanResult.result_type == "vulnerability",
+            ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")),
+            ScanResult.verification_status.notin_(("confirmed", "not_exploitable")),
+        ).count()
 
     @property
     def not_exploitable_count(self):
@@ -641,11 +647,12 @@ class VulnTicket(db.Model):
     scan_type      = db.Column(db.String(20))            # host | dependency
     status         = db.Column(db.String(20), default="open")
     # open | in_progress | patched | accepted_risk | false_positive
-    # | unverified       version-matched only, no proof it's exploitable here
     # | not_exploitable  an active check showed the vulnerable behaviour absent
-    # The last two are kept for reference but are not actionable: they don't
-    # count as open, carry no SLA, and reopen automatically if a later scan
-    # proves the issue.
+    #                    (kept for reference: not open, no SLA; reopens if a
+    #                    later scan proves the issue)
+    # Version-matched findings nothing has proven yet are ordinary "open"
+    # tickets; see is_unverified. ("unverified" is a legacy status, migrated
+    # to "open" at startup.)
     sla_days       = db.Column(db.Integer)
     due_date       = db.Column(db.DateTime)
     opened_at      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -670,6 +677,14 @@ class VulnTicket(db.Model):
     @property
     def is_unproven(self):
         return self.status in ("unverified", "not_exploitable")
+
+    @property
+    def is_unverified(self):
+        """An actionable ticket from a version match that no active check has
+        proven or ruled out — shown with an Unverified label."""
+        r = self.scan_result
+        return (self.status in ("open", "in_progress") and r is not None and r.is_inferred
+                and r.verification_status not in ("confirmed", "not_exploitable"))
 
     @property
     def sla_status(self):
@@ -874,6 +889,88 @@ class CpeCveCache(db.Model):
             fetched = fetched.replace(tzinfo=timezone.utc)
         max_age = timedelta(hours=24) if self.lookup_type == "keyword" else timedelta(days=7)
         return datetime.now(timezone.utc) - fetched > max_age
+
+
+# ── Local CVE mirror (NVD + CVE.org) ──────────────────────────────────────────
+# Lives in its own database (bind "cvemirror", data/cve_mirror.db by default):
+# ~300k CVEs and millions of CPE match rows, fully rebuildable from upstream,
+# and bulk-written by the sync job — kept out of scanner.db so a sync never
+# holds the app's main write lock. See app/cve_mirror/.
+
+class MirrorCve(db.Model):
+    """One row per CVE id, merged from both upstreams. NVD-owned and
+    CVE.org-owned columns are written independently (each source's upsert only
+    touches its own columns), so neither sync clobbers the other."""
+    __bind_key__       = "cvemirror"
+    __tablename__      = "mirror_cves"
+    cve_id             = db.Column(db.String(32), primary_key=True)
+    state              = db.Column(db.String(16), default="PUBLISHED")   # PUBLISHED | REJECTED
+    published          = db.Column(db.DateTime)
+    # NVD (nvd.nist.gov JSON 2.0)
+    in_nvd             = db.Column(db.Boolean, default=False)
+    nvd_status         = db.Column(db.String(32))      # Analyzed | Awaiting Analysis | Rejected | ...
+    nvd_last_modified  = db.Column(db.DateTime)
+    nvd_description    = db.Column(db.Text)
+    nvd_cvss_v3        = db.Column(db.Float)
+    nvd_cvss_v3_vector = db.Column(db.String(100))
+    nvd_cvss_v2        = db.Column(db.Float)
+    nvd_severity       = db.Column(db.String(16))
+    cwe_ids            = db.Column(db.Text)            # JSON list
+    nvd_has_config     = db.Column(db.Boolean, default=False)  # NVD has analysed affected CPEs
+    references         = db.Column(db.Text)            # JSON list of URLs (capped)
+    # CVE.org (CVEProject/cvelistV5 — the CNA's own record)
+    in_cveorg          = db.Column(db.Boolean, default=False)
+    cveorg_updated     = db.Column(db.DateTime)
+    assigner           = db.Column(db.String(64))
+    cna_description    = db.Column(db.Text)
+    cna_cvss           = db.Column(db.Float)
+    cna_cvss_vector    = db.Column(db.String(100))
+    cna_severity       = db.Column(db.String(16))
+
+    @property
+    def description(self):
+        return self.nvd_description or self.cna_description or ""
+
+    @property
+    def cvss_score(self):
+        if self.nvd_cvss_v3 is not None:
+            return self.nvd_cvss_v3
+        if self.cna_cvss is not None:
+            return self.cna_cvss
+        return self.nvd_cvss_v2
+
+
+class MirrorCpeMatch(db.Model):
+    """One affected-product criterion for a CVE. source='nvd' rows come from
+    NVD's analysed configurations; source='cveorg' rows from the CNA/ADP
+    `affected` blocks, used only for CVEs NVD hasn't analysed yet."""
+    __bind_key__  = "cvemirror"
+    __tablename__ = "mirror_cpe_matches"
+    id            = db.Column(db.Integer, primary_key=True)
+    cve_id        = db.Column(db.String(32), nullable=False, index=True)
+    source        = db.Column(db.String(8), nullable=False)     # nvd | cveorg
+    part          = db.Column(db.String(1))                      # a | o | h
+    vendor        = db.Column(db.String(128), nullable=False)
+    product       = db.Column(db.String(128), nullable=False)
+    version       = db.Column(db.String(64))                     # exact version, "*" = range/all
+    v_start_incl  = db.Column(db.String(64))
+    v_start_excl  = db.Column(db.String(64))
+    v_end_incl    = db.Column(db.String(64))
+    v_end_excl    = db.Column(db.String(64))
+    __table_args__ = (db.Index("ix_mirror_cpe_vp", "vendor", "product"),
+                      db.Index("ix_mirror_cpe_product", "product"))
+
+
+class MirrorSyncState(db.Model):
+    __bind_key__   = "cvemirror"
+    __tablename__  = "mirror_sync_state"
+    source         = db.Column(db.String(16), primary_key=True)   # nvd | cveorg
+    last_full_at   = db.Column(db.DateTime)
+    last_sync_at   = db.Column(db.DateTime)    # last successful sync of any kind
+    cursor         = db.Column(db.String(64))  # nvd: modified-feed sha256 | cveorg: last dateUpdated seen
+    status         = db.Column(db.String(16), default="never")   # never | running | ok | error
+    message        = db.Column(db.Text)
+    records        = db.Column(db.Integer, default=0)
 
 
 # ── GRC ───────────────────────────────────────────────────────────────────────

@@ -66,6 +66,37 @@ def fetch_epss(cve_ids: list[str]) -> dict[str, dict]:
 
 # ── NVD ──────────────────────────────────────────────────────────────────────
 
+def mirror_nvd_record(cve_id: str) -> dict:
+    """Same shape as fetch_nvd(), served from the local CVE mirror
+    (app/cve_mirror) — {} if the mirror doesn't have the CVE yet."""
+    try:
+        from ..cve_mirror.query import get_cve
+        r = get_cve(cve_id)
+    except Exception:
+        return {}
+    if not r or not (r.get("in_nvd") or r.get("in_cveorg")):
+        return {}
+    try:
+        cwes = json.loads(r.get("cwe_ids") or "[]")
+    except ValueError:
+        cwes = []
+    published = r.get("published")
+    if isinstance(published, str):
+        try:
+            published = datetime.fromisoformat(published)
+        except ValueError:
+            published = None
+    return {
+        "cvss_v3":     r.get("nvd_cvss_v3") if r.get("nvd_cvss_v3") is not None else r.get("cna_cvss"),
+        "cvss_v3_vec": r.get("nvd_cvss_v3_vector") or r.get("cna_cvss_vector"),
+        "cvss_v2":     r.get("nvd_cvss_v2"),
+        "severity":    r.get("nvd_severity") or r.get("cna_severity"),
+        "cwe_ids":     cwes,
+        "description": r.get("nvd_description") or r.get("cna_description") or "",
+        "published":   published,
+    }
+
+
 def fetch_nvd(cve_id: str, api_key: str | None = None) -> dict:
     """
     Fetch NVD data for a single CVE.
@@ -343,7 +374,12 @@ def enrich_all_cves(app=None):
         stale = []
         for cve_id in all_cves:
             e = CVEEnrichment.query.filter_by(cve_id=cve_id).first()
-            if not e or not e.epss_fetched_at or e.epss_fetched_at < cutoff:
+            # SQLite hands DateTime columns back naive (UTC); comparing one
+            # to the aware cutoff raised TypeError and killed the whole job.
+            fetched = e.epss_fetched_at if e else None
+            if fetched is not None and fetched.tzinfo is None:
+                fetched = fetched.replace(tzinfo=timezone.utc)
+            if not fetched or fetched < cutoff:
                 stale.append(cve_id)
 
         if not stale:
@@ -376,8 +412,11 @@ def enrich_all_cves(app=None):
             e.attack_techniques = json.dumps(techs) if techs else "[]"
             e.attack_fetched_at = now
 
-            # NVD
-            nvd = fetch_nvd(cve_id, nvd_key)
+            # NVD — from the local mirror when it has the CVE, else the API
+            nvd = mirror_nvd_record(cve_id)
+            from_mirror = bool(nvd)
+            if not nvd:
+                nvd = fetch_nvd(cve_id, nvd_key)
             if nvd:
                 e.cvss_v3        = nvd.get("cvss_v3")
                 e.cvss_v3_vector = nvd.get("cvss_v3_vec")
@@ -389,7 +428,8 @@ def enrich_all_cves(app=None):
                 e.nvd_fetched_at = now
 
             db.session.commit()
-            time.sleep(delay)
+            if not from_mirror:
+                time.sleep(delay)
 
         log.info("CVE enrichment complete.")
 

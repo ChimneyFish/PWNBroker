@@ -376,6 +376,20 @@ def lookup_cves_for_service(product: str, version: str = "", max_results: int = 
     if not product or product in ("unknown", ""):
         return []
 
+    # Local NVD + CVE.org mirror (app/cve_mirror) is the CVE source once its
+    # first full sync has completed; the live NVD API below is only the
+    # bootstrap fallback until then.
+    try:
+        from ..cve_mirror import query as mirror
+        if mirror.is_ready():
+            results, used_cpe = mirror.lookup_service(product, version, _cpe22_to_23(cpe) if cpe else "")
+            for r in results:
+                r["cpe"] = used_cpe
+            return results
+    except Exception as e:
+        log.warning("CVE mirror lookup failed for %s %s, falling back to the NVD API: %s",
+                    product, version, e)
+
     # nmap reports its own `cpe` field in CPE 2.2 URI-binding format
     # ("cpe:/a:vendor:product:version"), but NVD's `cpeName` query parameter
     # requires the CPE 2.3 formatted string — passed through unconverted it

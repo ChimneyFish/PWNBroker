@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}CVE Database — PwnBroker{% endblock %}
+{% block page_title %}CVE Database{% endblock %}
+{% block header_actions %}
+  {% if current_user.is_admin %}
+  <form method="post" action="{{ url_for('cve_db.sync') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary btn-sm" id="sync-btn"><i class="bi bi-arrow-repeat me-1"></i>Sync now</button>
+  </form>
+  <form method="post" action="{{ url_for('cve_db.sync') }}" class="d-inline ms-1">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="full" value="1">
+    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Re-download everything from NVD and CVE.org">Full re-download</button>
+  </form>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<p class="text-muted small mb-4" style="max-width:60rem">
+  PWNBroker's own copy of the <strong>NVD</strong> (nvd.nist.gov) and <strong>CVE.org</strong> (the official CVE List)
+  databases. Scans match discovered services against this local copy instead of querying NVD for each service.
+  It syncs every few hours. CVE.org records fill in CVEs that NVD hasn't analysed yet.
+</p>
+
+{% if not st.ready %}
+<div class="alert alert-warning small" id="not-ready">
+  The first full download hasn't finished yet. Until it does, scans fall back to querying the NVD API directly.
+  The first sync downloads about 1&nbsp;GB and takes 10–30 minutes.
+</div>
+{% endif %}
+
+<div class="row g-3 mb-6">
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">CVEs held</div>
+    <div class="font-semibold" id="st-total">{{ "{:,}".format(st.total) }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">Awaiting NVD analysis</div>
+    <div class="font-semibold" id="st-backlog" title="Published CVEs with no NVD product data yet — matched from the CNA's CVE.org record instead">{{ "{:,}".format(st.nvd_backlog) }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">Rejected</div>
+    <div class="font-semibold text-muted" id="st-rejected">{{ "{:,}".format(st.rejected) }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">Product criteria</div>
+    <div class="font-semibold" id="st-cpe">{{ "{:,}".format(st.cpe_rows) }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">Newest CVE published</div>
+    <div class="font-semibold" id="st-newest">{{ (st.newest or "—")[:10] }}</div></div></div>
+</div>
+
+<div class="data-table mb-6">
+  <table class="table table-dark">
+    <thead><tr><th>Source</th><th>Status</th><th>Records</th><th>Last sync</th><th>Last full download</th><th>Detail</th></tr></thead>
+    <tbody>
+      {% for key, label in [("nvd", "NVD — nvd.nist.gov"), ("cveorg", "CVE.org — CVE List (cvelistV5)")] %}
+      {% set s = st.sources[key] %}
+      <tr>
+        <td class="font-semibold">{{ label }}</td>
+        <td><span class="badge-status status-{{ {'ok':'done','running':'running','error':'failed'}.get(s.status, 'pending') }}" id="src-{{ key }}-status">{{ s.status.upper() }}</span></td>
+        <td id="src-{{ key }}-records">{{ "{:,}".format(s.records or 0) }}</td>
+        <td class="small js-time" data-ts="{{ s.last_sync_at or '' }}">{{ s.last_sync_at or "never" }}</td>
+        <td class="small js-time" data-ts="{{ s.last_full_at or '' }}">{{ s.last_full_at or "never" }}</td>
+        <td class="small text-muted" id="src-{{ key }}-msg">{{ (st.progress.get(key) or {}).get('step') or s.message or "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="section-header"><span class="section-title">Search</span></div>
+<form method="get" class="mb-4 d-flex gap-2" style="max-width:40rem">
+  <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="CVE-2021-41773, a product (openssh, dnsmasq) or words from a description">
+  <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i></button>
+</form>
+
+{% if q %}
+<div class="data-table">
+  <table class="table table-dark table-hover">
+    <thead><tr><th>CVE</th><th>CVSS</th><th>Published</th><th>NVD status</th><th>Description</th></tr></thead>
+    <tbody>
+    {% for r in results %}
+      {% set score = r.nvd_cvss_v3 if r.nvd_cvss_v3 is not none else (r.cna_cvss if r.cna_cvss is not none else r.nvd_cvss_v2) %}
+      <tr>
+        <td class="font-monospace text-nowrap"><a href="{{ url_for('cve_db.detail', cve_id=r.cve_id) }}">{{ r.cve_id }}</a>
+          {% if r.state == 'REJECTED' %}<span class="badge bg-secondary ms-1">Rejected</span>{% endif %}</td>
+        <td>{{ score if score is not none else "—" }}</td>
+        <td class="small text-nowrap">{{ (r.published|string)[:10] if r.published else "—" }}</td>
+        <td class="small">{{ r.nvd_status or ("CVE.org only" if r.in_cveorg else "—") }}</td>
+        <td class="small">{{ ((r.nvd_description or r.cna_description or "")[:220]) }}{% if (r.nvd_description or r.cna_description or "")|length > 220 %}…{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="text-muted">No CVEs match “{{ q }}”.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>
+(function () {
+  document.querySelectorAll('.js-time').forEach(function (el) {
+    if (el.dataset.ts) el.textContent = new Date(el.dataset.ts).toLocaleString();
+  });
+  var running = {{ 'true' if (st.progress or st.sources.nvd.status == 'running' or st.sources.cveorg.status == 'running') else 'false' }};
+  if (!running) return;
+  var timer = setInterval(function () {
+    fetch("{{ url_for('cve_db.status_json') }}", {credentials: 'same-origin'})
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        ['nvd', 'cveorg'].forEach(function (k) {
+          var src = s.sources[k], p = s.progress[k];
+          document.getElementById('src-' + k + '-status').textContent = src.status.toUpperCase();
+          document.getElementById('src-' + k + '-records').textContent = (src.records || 0).toLocaleString();
+          document.getElementById('src-' + k + '-msg').textContent = (p && p.step) || src.message || '';
+        });
+        document.getElementById('st-total').textContent = s.total.toLocaleString();
+        var busy = Object.keys(s.progress).length || s.sources.nvd.status === 'running' || s.sources.cveorg.status === 'running';
+        if (!busy) { clearInterval(timer); location.reload(); }
+      }).catch(function () {});
+  }, 5000);
+})();
+</script>
+{% endblock %}

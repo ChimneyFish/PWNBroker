@@ -216,7 +216,7 @@ class TestVerifyResultsWithCreds:
         fixed, other = rows
         assert fixed.result_type == "not_exploitable" and fixed.verification_status == "not_exploitable"
         assert fixed.evidence["method"] == "ssh" and fixed.evidence["target"] == "audit@10.0.0.9:22"
-        assert other.result_type == "unverified"
+        assert other.result_type == "vulnerability" and other.verification_status == "unconfirmed"
         assert "no vendor fix listed" in other.evidence["credentialed"]
         assert summary["not_exploitable"] == 1 and summary["unconfirmed"] == 1
         assert summary["credentialed"][0]["ok"] and summary["credentialed"][0]["ruled_out"] == 1
@@ -229,7 +229,8 @@ class TestVerifyResultsWithCreds:
             with patch.object(ssh_verify, "Session", side_effect=Exception("Authentication failed.")), \
                  patch("app.scanner.verify.nuclei_bin", return_value=None):
                 summary = verify_results(rows, creds_of=lambda r: creds)
-        assert all(r.result_type == "unverified" for r in rows)
+        assert all(r.result_type == "vulnerability" and r.verification_status == "unconfirmed"
+                   for r in rows)
         assert "couldn't log in as audit: Authentication failed." in rows[0].evidence["credentialed"]
         assert summary["credentialed"][0] == {"host": "10.0.0.9", "ok": False, "error": "Authentication failed.",
                                               "user": "audit", "ruled_out": 0, "checked": 2}

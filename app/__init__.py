@@ -59,6 +59,7 @@ def create_app(config_class=Config):
     from .routes.email_security import email_security_bp
     from .routes.license import license_bp
     from .routes.updates import updates_bp
+    from .routes.cve_db import cve_db_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -82,6 +83,7 @@ def create_app(config_class=Config):
     app.register_blueprint(email_security_bp)
     app.register_blueprint(license_bp)
     app.register_blueprint(updates_bp)
+    app.register_blueprint(cve_db_bp)
 
     from . import licensing
     licensing.init_app(app)
@@ -420,39 +422,29 @@ def _migrate_columns(app):
 
 
 def _migrate_unproven_tickets(app):
-    """Tickets auto-created from version-only CVE matches before exploit
-    verification existed are moved to "unverified", so they stop counting as
-    open until a scan proves them. Only untouched tickets move (still "open",
-    unassigned, no notes); the note added here makes this run once per ticket,
-    so a ticket someone deliberately reopens stays open."""
-    from .models import ScanResult, VulnTicket
-    # Findings: version-only matches leave result_type "vulnerability" so
-    # counts, reports and integrations only see proven ones.
-    for status, rtype in (("not_exploitable", "not_exploitable"), (None, "unverified")):
-        q = ScanResult.query.filter(
-            ScanResult.result_type == "vulnerability",
-            ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")))
-        q = (q.filter(ScanResult.verification_status == status) if status
-             else q.filter(ScanResult.verification_status.notin_(("confirmed", "not_exploitable"))))
-        n = q.update({ScanResult.result_type: rtype}, synchronize_session=False)
-        if n:
-            app.logger.info("Reclassified %d version-only findings as %s", n, rtype)
+    """Unproven version-matched findings are vulnerabilities (labelled
+    Unverified in the UI), not a separate class. Older releases stored them
+    as result_type "unverified" and gave their tickets status "unverified"
+    (not counted, no SLA); fold both back in. Idempotent: does nothing once
+    no such rows remain."""
+    from datetime import timedelta
+    from .models import ScanResult, VulnTicket, _SLA_DAYS
+    n = (ScanResult.query.filter(ScanResult.result_type == "unverified")
+         .update({ScanResult.result_type: "vulnerability"}, synchronize_session=False))
+    if n:
+        app.logger.info("Reclassified %d unverified findings as vulnerabilities", n)
     db.session.commit()
 
-    q = (VulnTicket.query.join(ScanResult, VulnTicket.scan_result_id == ScanResult.id)
-         .filter(VulnTicket.status == "open", VulnTicket.assigned_to.is_(None),
-                 VulnTicket.notes.is_(None),
-                 ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")),
-                 ScanResult.verification_status != "confirmed"))
     moved = 0
-    for t in q.all():
-        t.status = "unverified"
-        t.notes = ("[system] Moved to Unverified: this was matched from the service's version "
-                   "banner only. It reopens automatically if a scan proves it exploitable.")
+    for t in VulnTicket.query.filter(VulnTicket.status == "unverified").all():
+        sla = _SLA_DAYS.get(t.severity, 90)
+        t.status, t.sla_days = "open", sla
+        if t.opened_at:
+            t.due_date = t.opened_at + timedelta(days=sla)
         moved += 1
     if moved:
         db.session.commit()
-        app.logger.info("Moved %d version-only vuln tickets to unverified", moved)
+        app.logger.info("Moved %d unverified vuln tickets to open (labelled Unverified)", moved)
 
 
 def _migrate_indexes(app):

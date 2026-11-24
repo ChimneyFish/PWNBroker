@@ -259,14 +259,14 @@ def _summarise(entries):
 # ── public API ───────────────────────────────────────────────────────────────
 
 def classify(r):
-    """Set result_type from the verdict. Only proven (or non-inferred)
-    findings are stored as "vulnerability" — so every count, report, export
-    and integration that looks at vulnerabilities sees real ones only.
-    Unproven version matches are "unverified"; ruled-out ones "not_exploitable"."""
+    """Set result_type from the verdict. Proven findings and unproven version
+    matches are both "vulnerability" — an unproven one is still a vulnerability,
+    just labelled Unverified (verification_status "unconfirmed") in the UI.
+    Only findings an active check ruled out become "not_exploitable"."""
     if getattr(r, "result_type", None) not in VULN_TYPES or not r.is_inferred:
         return r
-    r.result_type = {CONFIRMED: "vulnerability", NOT_EXPLOITABLE: "not_exploitable"}.get(
-        r.verification_status, "unverified")
+    r.result_type = ("not_exploitable" if r.verification_status == NOT_EXPLOITABLE
+                     else "vulnerability")
     return r
 
 

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ r.cve_id }} — CVE Database — PwnBroker{% endblock %}
+{% block page_title %}{{ r.cve_id }}{% endblock %}
+{% block header_actions %}
+  <a href="{{ url_for('cve_db.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>CVE Database</a>
+{% endblock %}
+
+{% block content %}
+{% set score = r.nvd_cvss_v3 if r.nvd_cvss_v3 is not none else (r.cna_cvss if r.cna_cvss is not none else r.nvd_cvss_v2) %}
+<div class="row g-3 mb-4">
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">CVSS</div>
+    <div class="font-semibold">{{ score if score is not none else "—" }} {{ (r.nvd_severity or r.cna_severity or "")|title }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">State</div>
+    <div class="font-semibold">{{ r.state|title }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">NVD status</div>
+    <div class="font-semibold">{{ r.nvd_status or "Not in NVD yet" }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">Published</div>
+    <div class="font-semibold">{{ (r.published|string)[:10] if r.published else "—" }}</div></div></div>
+  <div class="col-auto"><div class="stat-card"><div class="stat-label">CNA</div>
+    <div class="font-semibold">{{ r.assigner or "—" }}</div></div></div>
+</div>
+
+<p style="max-width:60rem">{{ r.nvd_description or r.cna_description }}</p>
+{% if r.nvd_cvss_v3_vector or r.cna_cvss_vector %}
+<p class="small text-muted font-monospace">{{ r.nvd_cvss_v3_vector or r.cna_cvss_vector }}</p>
+{% endif %}
+{% if cwes %}<p class="small">Weaknesses: {{ cwes|join(", ") }}</p>{% endif %}
+<p class="small">
+  <a href="https://nvd.nist.gov/vuln/detail/{{ r.cve_id }}" target="_blank" rel="noopener">NVD</a> ·
+  <a href="https://www.cve.org/CVERecord?id={{ r.cve_id }}" target="_blank" rel="noopener">CVE.org</a>
+</p>
+
+<div class="section-header"><span class="section-title">Affected products ({{ matches|length }})</span></div>
+<div class="data-table mb-4" style="overflow-x:auto">
+  <table class="table table-dark">
+    <thead><tr><th>Source</th><th>Vendor</th><th>Product</th><th>Version</th><th>From</th><th>Up to</th></tr></thead>
+    <tbody>
+    {% for m in matches %}
+      <tr>
+        <td class="small">{{ "NVD" if m.source == "nvd" else "CVE.org" }}</td>
+        <td class="font-monospace small">{{ m.vendor }}</td>
+        <td class="font-monospace small">{{ m.product }}</td>
+        <td class="font-monospace small">{{ m.version if m.version not in ("*", None) else "any" }}</td>
+        <td class="font-monospace small">{% if m.v_start_incl %}≥ {{ m.v_start_incl }}{% elif m.v_start_excl %}&gt; {{ m.v_start_excl }}{% endif %}</td>
+        <td class="font-monospace small">{% if m.v_end_excl %}&lt; {{ m.v_end_excl }}{% elif m.v_end_incl %}≤ {{ m.v_end_incl }}{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-muted">No affected-product data from NVD or the CNA yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if refs %}
+<div class="section-header"><span class="section-title">References</span></div>
+<ul class="small">
+  {% for u in refs %}<li><a href="{{ u }}" target="_blank" rel="noopener noreferrer">{{ u }}</a></li>{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

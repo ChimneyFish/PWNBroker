@@ -86,6 +86,21 @@ def register_jobs(app):
         minutes=10,
         replace_existing=True,
     )
+    # Local CVE mirror (NVD + CVE.org) — first run does the full download a
+    # couple of minutes after startup, then incremental syncs.
+    if str(app.config.get("CVE_MIRROR_SYNC", "1")).lower() not in ("0", "false", "no", "off"):
+        from datetime import timedelta
+        scheduler.add_job(
+            id="sync_cve_mirror",
+            func=licensed_job(app, _run_cve_mirror_sync),
+            args=[app],
+            trigger="interval",
+            hours=max(1, int(app.config.get("CVE_MIRROR_SYNC_HOURS", 2))),
+            next_run_time=datetime.now(timezone.utc) + timedelta(minutes=2),
+            max_instances=1,
+            coalesce=True,
+            replace_existing=True,
+        )
     # Exploit-verification checks (nuclei templates) — new CVE checks are
     # published daily; refresh weekly so new CVEs can be proven/ruled out.
     scheduler.add_job(
@@ -96,6 +111,19 @@ def register_jobs(app):
         days=7,
         replace_existing=True,
     )
+
+
+def _run_cve_mirror_sync(app):
+    from ..cve_mirror.sync import run_sync, SyncBusy
+    try:
+        results = run_sync(app)
+        failed = {k: v for k, v in results.items() if isinstance(v, Exception)}
+        if failed:
+            app.logger.warning("CVE mirror sync: %s failed: %s", ", ".join(failed), failed)
+    except SyncBusy:
+        pass
+    except Exception as e:
+        app.logger.error(f"CVE mirror sync failed: {e}")
 
 
 def _run_update_verification_checks(app):
