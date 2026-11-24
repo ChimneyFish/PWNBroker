@@ -350,6 +350,13 @@ def _migrate_columns(app):
             ("verification_status", "VARCHAR(20) DEFAULT 'unconfirmed'"),
             ("verification_evidence", "TEXT"),
         ],
+        "endpoint_agents": [
+            ("agent_version",       "VARCHAR(20)"),
+            ("inventory",           "TEXT"),
+            ("inventory_at",        "DATETIME"),
+            ("inventory_ips",       "VARCHAR(1024)"),
+            ("inventory_requested", "BOOLEAN DEFAULT 0"),
+        ],
         "threat_configs": [
             ("paloalto_retention_days", "INTEGER"),
             ("securitytrails_api_key",  "VARCHAR(512)"),

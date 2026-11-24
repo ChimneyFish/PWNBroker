@@ -175,7 +175,7 @@ class Scan(db.Model):
         return self.results.filter(
             ScanResult.result_type == "vulnerability",
             ScanResult.match_confidence.in_(("cpe", "keyword", "heuristic")),
-            ScanResult.verification_status.notin_(("confirmed", "not_exploitable")),
+            ScanResult.verification_status.notin_(("confirmed", "installed", "not_exploitable")),
         ).count()
 
     @property
@@ -222,7 +222,9 @@ class ScanResult(db.Model):
     #   not_exploitable  the check ran cleanly; vulnerable behaviour absent
     #   unconfirmed      no safe check exists, or it was inconclusive
     # verification_evidence holds the JSON proof/explanation for the verdict.
-    verification_status = db.Column(db.String(20), default="unconfirmed")  # unconfirmed | confirmed | not_exploitable
+    # installed: an agent/SSH check showed the unpatched vulnerable package is
+    #            installed and serving the port (shown as "Confirmed").
+    verification_status = db.Column(db.String(20), default="unconfirmed")  # unconfirmed | confirmed | installed | not_exploitable
     verification_evidence = db.Column(db.Text)
     raw_data = db.Column(db.Text)
 
@@ -231,6 +233,34 @@ class ScanResult(db.Model):
         """True for findings that only *suggest* a vulnerability (version
         banner / heuristic) and need an active check to prove it."""
         return self.match_confidence in ("cpe", "keyword", "heuristic")
+
+    @property
+    def verification_label(self):
+        """'Exploitable' / 'Unverified' / 'Not exploitable' for version-matched
+        CVE findings, None for findings that were never a guess (ports, web
+        checks, dependency scans…). Reports and integrations use this so they
+        match the badge in the web UI (vulns/_verification.html)."""
+        if self.verification_status == "confirmed":
+            return "Exploitable"
+        if self.verification_status == "installed":
+            return "Confirmed"
+        if self.verification_status == "not_exploitable":
+            return "Not exploitable"
+        if self.is_inferred:
+            return "Unverified"
+        return None
+
+    @property
+    def verification_note(self):
+        """One-line reason behind verification_label (from the evidence)."""
+        ev = self.evidence
+        if isinstance(ev, dict) and ev.get("detail"):
+            return str(ev["detail"])
+        return {"Exploitable": "An active check reproduced this against the live service.",
+                "Confirmed": "The vulnerable package version is installed on the host with no vendor fix.",
+                "Unverified": "Matched from the service's version only; no check has proven or ruled it out on this host.",
+                "Not exploitable": "An active check showed the vulnerable behaviour is not present."
+                }.get(self.verification_label)
 
     @property
     def evidence(self):
@@ -439,6 +469,14 @@ class EndpointAgent(db.Model):
     status        = db.Column(db.String(20), default="unknown")   # online | offline | unknown
     last_seen     = db.Column(db.DateTime)
     registered_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    agent_version = db.Column(db.String(20))
+    # Read-only host inventory the agent sends (packages, listeners, vendor
+    # changelog CVE entries, web-server modules) — used to verify scan
+    # findings on this host without an SSH login. See scanner/agent_facts.py.
+    inventory           = db.Column(db.Text)
+    inventory_at        = db.Column(db.DateTime)
+    inventory_ips       = db.Column(db.String(1024))   # " ip1 ip2 " — for host matching
+    inventory_requested = db.Column(db.Boolean, default=False)
     alerts        = db.relationship("AgentAlert", backref="agent", lazy="dynamic",
                                     cascade="all, delete-orphan")
 
@@ -685,7 +723,7 @@ class VulnTicket(db.Model):
         proven or ruled out — shown with an Unverified label."""
         r = self.scan_result
         return (self.status in ("open", "in_progress") and r is not None and r.is_inferred
-                and r.verification_status not in ("confirmed", "not_exploitable"))
+                and r.verification_status not in ("confirmed", "installed", "not_exploitable"))
 
     @property
     def sla_status(self):

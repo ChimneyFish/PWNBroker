@@ -11,9 +11,14 @@ on the target, or entered for the scan) this module logs in and looks:
   * for Apache httpd / nginx: which modules are actually loaded / compiled in.
     If the CVE is in a module this server doesn't load → not exploitable.
 
-Credentialed checks only ever *rule findings out* (or add context). They never
-prove a finding exploitable — that still needs a live check (verify.py) — so
-a finding they can't rule out stays Unverified, now with what was learned.
+Credentialed checks rule findings out, or — when the package that owns the
+listening process is installed, its full vendor changelog lists no fix for the
+CVE, and nothing else rules it out — mark it "installed" (shown as Confirmed:
+the vulnerable code is on the host and serving the port). They never mark a
+finding Exploitable; that still needs a live check (verify.py).
+
+The same checks run against an endpoint agent's inventory (agent_facts.py)
+instead of an SSH login when the host has a PwnBroker agent installed.
 
 Everything run on the host is read-only (dpkg-query/rpm, reading files under
 /usr/share/doc, `ss`, `apachectl -M`, `nginx -V`). `sudo -n` is tried as a
@@ -450,6 +455,29 @@ def _windows_only(desc):
     return bool(_ON_WINDOWS_RE.search(desc)) and not _OTHER_OS_RE.search(desc)
 
 
+_LISTENER = "owns the process listening on this port"
+
+
+def _upstream(pkg_version):
+    """Upstream part of a deb/rpm version: 1:8.9p1-3ubuntu0.10 → 8.9p1,
+    2.4.57-5.el9 → 2.4.57, 1.18.0+dfsg-1 → 1.18.0."""
+    v = pkg_version.split(":", 1)[-1]
+    v = v.rsplit("-", 1)[0] if "-" in v else v
+    return re.split(r"[+~]", v, maxsplit=1)[0]
+
+
+def _same_upstream(pkg_version, cpe):
+    """False only when the CPE the CVE was matched on names a different
+    version than the installed package (e.g. the package was upgraded after
+    the scan) — then "installed" would be claiming the wrong build."""
+    bits = cpe.split(":")
+    ver = bits[5] if cpe.startswith("cpe:2.3") and len(bits) > 5 else (bits[4] if len(bits) > 4 else "")
+    if not ver or ver in ("*", "-"):
+        return True
+    up = _upstream(pkg_version).lower()
+    return up == ver.lower() or up.startswith(ver.lower()) or ver.lower().startswith(up)
+
+
 def evaluate_host(facts, findings, hints):
     """Apply credentialed checks to one host's findings → [(r, status, detail, extra)]."""
     out = []
@@ -459,7 +487,7 @@ def evaluate_host(facts, findings, hints):
         key = (r.port, hint)
         if key not in pkg_cache:
             pkg, exe = facts.listener_package(r.port) if r.port else (None, None)
-            how = "owns the process listening on this port" if pkg else None
+            how = _LISTENER if pkg else None
             if not pkg:
                 pkg = _fallback_packages(facts, hint)
                 how = "matches the detected product" if pkg else None
@@ -479,7 +507,8 @@ def evaluate_host(facts, findings, hints):
                          "package": f"{pkg} {inst[0]}"}))
             continue
 
-        if facts.kernel and _windows_only(getattr(r, "description", "")):
+        if (facts.kernel and not facts.kernel.lower().startswith("windows")
+                and _windows_only(getattr(r, "description", ""))):
             out.append((r, "not_exploitable",
                         f"This CVE only affects the product on Windows; this host runs "
                         f"{facts.kernel} ({facts.os}).", {"package": f"{pkg} {inst[0]}" if inst else None}))
@@ -488,6 +517,15 @@ def evaluate_host(facts, findings, hints):
         ruled_out, mod_note = _module_verdict(facts, r, hint)
         if ruled_out:
             out.append((r, "not_exploitable", mod_note, {"package": f"{pkg} {inst[0]}" if inst else None}))
+            continue
+
+        if (inst and complete and cve and how == _LISTENER
+                and _same_upstream(inst[0], getattr(r, "cpe", "") or "")):
+            out.append((r, "installed",
+                        f"Confirmed on the host: {pkg} {inst[0]} owns the process listening on port "
+                        f"{r.port}, and its full vendor changelog lists no fix for {cve}."
+                        + (f" ({mod_note}.)" if mod_note else ""),
+                        {"package": f"{pkg} {inst[0]}", "executable": exe}))
             continue
 
         if inst:
@@ -503,48 +541,79 @@ def evaluate_host(facts, findings, hints):
     return out
 
 
-def verify_with_ssh(todo, creds_of, summary, hints=None):
-    """Second pass for findings the live checks couldn't settle. Mutates
-    each ScanResult's verdict/evidence; returns a per-host status list."""
-    from .verify import UNCONFIRMED, NOT_EXPLOITABLE, evidence
+def verify_credentialed(todo, creds_of, summary, hints=None):
+    """Second pass for findings the live checks couldn't settle, using the
+    host's PwnBroker agent inventory when it has one, else an SSH login
+    (`creds_of(result)` → Creds or None). Mutates each ScanResult's
+    verdict/evidence; returns a per-host status list."""
+    from .verify import UNCONFIRMED, NOT_EXPLOITABLE, INSTALLED, evidence
+    from .agent_facts import facts_for_host
     hints = hints or {}
     by_host = {}
+    agent_cache = {}
     for r in todo:
         if r.verification_status != UNCONFIRMED or not r.host:
             continue
-        c = creds_of(r)
+        if r.host not in agent_cache:
+            agent_cache[r.host] = facts_for_host(r.host)
+        af = agent_cache[r.host]
+        if af is not None:
+            by_host.setdefault((r.host, "agent"), (af, []))[1].append(r)
+            continue
+        c = creds_of(r) if creds_of else None
         if c:
             by_host.setdefault((r.host, c.label), (c, []))[1].append(r)
 
     report = []
-    for (host, _), (creds, findings) in by_host.items():
+    for (host, _), (source, findings) in by_host.items():
+        via_agent = not isinstance(source, Creds)
         try:
-            with Session(creds) as s:
-                facts = HostFacts(s)
+            if via_agent:
+                facts = source
                 verdicts = evaluate_host(facts, findings, hints)
+            else:
+                with Session(source) as s:
+                    facts = HostFacts(s)
+                    verdicts = evaluate_host(facts, findings, hints)
         except Exception as e:
             msg = str(e) or e.__class__.__name__
+            who = f"the agent on {host}" if via_agent else source.ssh_username
             log.warning("credentialed check of %s failed: %s", host, msg)
-            report.append({"host": host, "ok": False, "error": msg, "user": creds.ssh_username,
-                           "ruled_out": 0, "checked": len(findings)})
+            report.append({"host": host, "ok": False, "error": msg, "user": who,
+                           "via": "agent" if via_agent else "ssh",
+                           "ruled_out": 0, "confirmed": 0, "checked": len(findings)})
             for r in findings:
-                _add_note(r, f"Credentialed check couldn't log in as {creds.ssh_username}: {msg}.")
+                _add_note(r, (f"Agent check failed: {msg}." if via_agent else
+                              f"Credentialed check couldn't log in as {source.ssh_username}: {msg}."))
             continue
 
-        ruled = 0
+        method = "agent" if via_agent else "ssh"
+        check = "endpoint agent inventory" if via_agent else "credentialed check"
+        label = facts.label if via_agent else source.label
+        ruled = confirmed = 0
         for r, status, detail, extra in verdicts:
-            if status == NOT_EXPLOITABLE:
-                ruled += 1
-                r.verification_status = NOT_EXPLOITABLE
-                r.verification_evidence = evidence("ssh", "credentialed check", NOT_EXPLOITABLE,
-                                                   detail, target=creds.label, **extra)
+            if status in (NOT_EXPLOITABLE, INSTALLED):
+                if status == NOT_EXPLOITABLE:
+                    ruled += 1
+                else:
+                    confirmed += 1
+                r.verification_status = status
+                r.verification_evidence = evidence(method, check, status, detail,
+                                                   target=label, **extra)
                 summary[UNCONFIRMED] -= 1
-                summary[NOT_EXPLOITABLE] += 1
+                summary[status] = summary.get(status, 0) + 1
             else:
-                _add_note(r, detail)
-        report.append({"host": host, "ok": True, "user": creds.ssh_username, "os": facts.os,
-                       "ruled_out": ruled, "checked": len(findings)})
+                _add_note(r, detail if not via_agent else detail.replace(
+                    "Credentialed check:", "Agent check:", 1))
+        report.append({"host": host, "ok": True, "via": method,
+                       "user": facts.label if via_agent else source.ssh_username,
+                       "os": facts.os, "ruled_out": ruled, "confirmed": confirmed,
+                       "checked": len(findings)})
     return report
+
+
+# Old name, kept for callers/tests that only ever used SSH.
+verify_with_ssh = verify_credentialed
 
 
 def _add_note(r, note):

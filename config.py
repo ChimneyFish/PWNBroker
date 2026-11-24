@@ -80,6 +80,8 @@ class Config:
     NVD_CPE_API_URL = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
     # Local CVE mirror sources. Scans read CVEs from the mirror; the live NVD
     # API above is only a fallback until the first full sync has completed.
+    # Endpoint-agent host inventories older than this aren't used to verify findings.
+    AGENT_INVENTORY_MAX_AGE_DAYS = int(os.environ.get("AGENT_INVENTORY_MAX_AGE_DAYS", "7"))
     CVE_MIRROR_SYNC = os.environ.get("CVE_MIRROR_SYNC", "1")           # 0 = never sync
     CVE_MIRROR_SYNC_HOURS = int(os.environ.get("CVE_MIRROR_SYNC_HOURS", "2"))
     NVD_FEED_URL = os.environ.get("NVD_FEED_URL", "https://nvd.nist.gov/feeds/json/cve/2.0")

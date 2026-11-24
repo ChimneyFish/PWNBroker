@@ -41,11 +41,11 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 | Module | Capabilities |
 |---|---|
 | **Network Scanning** | nmap-powered port, service, OS, and CVE scans with CIDR and asset-group targeting |
-| **CVE Database** | Local mirror of NVD + CVE.org, synced every 2 hours; scans match against it instead of the rate-limited NVD API. Matches that can't be proven are counted and labelled **Unverified** |
+| **CVE Database** | Local mirror of NVD + CVE.org, synced every 2 hours; scans match against it instead of the rate-limited NVD API. Each match is labelled **Exploitable** (live check), **Confirmed** (agent/SSH found the unpatched package) or **Unverified** |
 | **Vulnerability Management** | Ticket-based remediation workflow with SLA tracking, assignees, and auto-dedup |
 | **Dependency Scanner** | SSH into hosts (password, RSA, Ed25519, or ECDSA key auth), pull package manifests, cross-reference OSV — Python, npm, Go, Rust, Ruby, Java, PHP, and more |
 | **Threat Intelligence** | Multi-source IOC lookups (OTX, AbuseIPDB, GreyNoise), SOC triage queue, OTX pulse feed, Palo Alto (PAN-OS) threat-log ingestion with configurable retention |
-| **Endpoint Agents** | Lightweight Python agent watches outbound connections in real time and fires alerts to the SOC queue |
+| **Endpoint Agents** | Lightweight Python agent watches outbound connections in real time and fires alerts to the SOC queue, and sends a read-only host inventory that confirms or rules out every scan finding on that host — no SSH login needed |
 | **CVE Enrichment** | EPSS scores, NVD CVSS v3 vectors, CWE IDs, and MITRE ATT&CK technique mapping — refreshed nightly |
 | **GRC** | Risk register (5×5 heat-map), NIST CSF 2.0 / CIS Controls v8 / ISO 27001:2022 compliance tracking, policy library, evidence file uploads, audit-ready PDF exports |
 | **Reports** | PDF and HTML scan reports, scheduled email delivery, Confluence publish, Jira ticket creation, Cloud API push |

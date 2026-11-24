@@ -1,4 +1,5 @@
 import base64
+from html import escape as _e
 import requests
 from datetime import datetime, timezone
 
@@ -6,6 +7,10 @@ from datetime import datetime, timezone
 def _auth_header(email, api_token):
     token = base64.b64encode(f"{email}:{api_token}".encode()).decode()
     return {"Authorization": f"Basic {token}", "Content-Type": "application/json", "Accept": "application/json"}
+
+
+_VERIFY_COLOR = {"Exploitable": "#de350b", "Confirmed": "#c2410c", "Unverified": "#b45309",
+                 "Not exploitable": "#6b778c"}
 
 
 def _build_page_body(scan):
@@ -26,27 +31,31 @@ def _build_page_body(scan):
     def vuln_rows():
         rows = ""
         for r in sorted(vulns, key=lambda x: ["critical","high","medium","low","info"].index(x.severity) if x.severity in ["critical","high","medium","low","info"] else 5):
-            cve = f'<a href="https://nvd.nist.gov/vuln/detail/{r.cve_id}">{r.cve_id}</a>' if r.cve_id else "—"
+            cve = (f'<a href="https://nvd.nist.gov/vuln/detail/{_e(r.cve_id)}">{_e(r.cve_id)}</a>'
+                   if r.cve_id else "—")
+            vl = r.verification_label
+            vtag = (f' <strong><span style="color:{_VERIFY_COLOR[vl]}">[{vl.upper()}]</span></strong>'
+                    if vl else "")
             rows += f"""<tr>
               <td>{sev_badge(r.severity)}</td>
-              <td>{r.title or '—'}</td>
-              <td>{r.host or '—'}</td>
+              <td>{_e(r.title or '—')}{vtag}</td>
+              <td>{_e(r.host or '—')}</td>
               <td>{cve}</td>
               <td>{r.cvss_score or '—'}</td>
-              <td>{(r.description or '')[:200]}</td>
+              <td>{_e((r.description or '')[:200])}</td>
             </tr>"""
         return rows or "<tr><td colspan='6'>No vulnerabilities found.</td></tr>"
 
     def port_rows():
         rows = ""
         for r in ports:
-            rows += f"<tr><td>{r.host or '—'}</td><td>{r.port}/{r.protocol}</td><td>{r.service or '—'}</td></tr>"
+            rows += f"<tr><td>{_e(r.host or '—')}</td><td>{r.port}/{_e(r.protocol or '')}</td><td>{_e(r.service or '—')}</td></tr>"
         return rows or "<tr><td colspan='3'>No open ports found.</td></tr>"
 
     def web_rows():
         rows = ""
         for r in web_checks:
-            rows += f"<tr><td>{sev_badge(r.severity)}</td><td>{r.title or '—'}</td><td>{(r.description or '')[:200]}</td></tr>"
+            rows += f"<tr><td>{sev_badge(r.severity)}</td><td>{_e(r.title or '—')}</td><td>{_e((r.description or '')[:200])}</td></tr>"
         return rows or "<tr><td colspan='3'>No web issues found.</td></tr>"
 
     completed = scan.completed_at.strftime("%Y-%m-%d %H:%M UTC") if scan.completed_at else "N/A"
@@ -54,8 +63,8 @@ def _build_page_body(scan):
 
     return f"""
 <h1>PwnBroker Security Scan Report</h1>
-<p><strong>Scan:</strong> {scan.name}<br/>
-<strong>Target:</strong> {scan.target.host}<br/>
+<p><strong>Scan:</strong> {_e(scan.name)}<br/>
+<strong>Target:</strong> {_e(scan.target.host)}<br/>
 <strong>Type:</strong> {scan.scan_type}<br/>
 <strong>Completed:</strong> {completed}<br/>
 <strong>Generated:</strong> {generated}</p>
@@ -64,6 +73,9 @@ def _build_page_body(scan):
 <table>
 <tr><th>Category</th><th>Count</th></tr>
 <tr><td>Total Vulnerabilities</td><td>{len(vulns)}</td></tr>
+<tr><td>Proven exploitable</td><td>{sum(1 for v in vulns if v.verification_label == 'Exploitable')}</td></tr>
+<tr><td>Confirmed installed on the host</td><td>{sum(1 for v in vulns if v.verification_label == 'Confirmed')}</td></tr>
+<tr><td>Unverified (version match only)</td><td>{sum(1 for v in vulns if v.verification_label == 'Unverified')}</td></tr>
 <tr><td><span style="color:#de350b">Critical</span></td><td>{sum(1 for v in vulns if v.severity=='critical')}</td></tr>
 <tr><td><span style="color:#ff8b00">High</span></td><td>{sum(1 for v in vulns if v.severity=='high')}</td></tr>
 <tr><td><span style="color:#ffab00">Medium</span></td><td>{sum(1 for v in vulns if v.severity=='medium')}</td></tr>

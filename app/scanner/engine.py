@@ -260,19 +260,29 @@ def _append_port_results(results, scan_id, ports, do_cve=False):
 
 
 def _credentialed_report(scan_id, report):
-    """One info row per host summarising what the SSH checks did."""
+    """One info row per host summarising what the agent / SSH checks did."""
     rows = []
     for h in report or []:
+        agent = h.get("via") == "agent"
         if h["ok"]:
-            title = f"Credentialed checks: ruled out {h['ruled_out']} of {h['checked']} unverified CVEs"
-            desc = (f"Logged in to {h['host']} as {h['user']} ({h.get('os') or 'unknown OS'}) and checked "
-                    f"installed package versions, vendor changelogs (backported fixes) and loaded modules. "
-                    f"{h['ruled_out']} version-matched CVE(s) were ruled out; the rest stay Unverified "
-                    f"with what the check found.")
+            confirmed = h.get("confirmed", 0)
+            title = (f"{'Agent' if agent else 'Credentialed'} checks: {confirmed} confirmed installed, "
+                     f"{h['ruled_out']} ruled out, of {h['checked']} unverified CVEs")
+            how = (f"Used the PwnBroker agent's inventory of {h['host']} ({h['user']}, "
+                   f"{h.get('os') or 'unknown OS'})" if agent else
+                   f"Logged in to {h['host']} as {h['user']} ({h.get('os') or 'unknown OS'})")
+            desc = (f"{how} to check installed package versions, vendor changelogs (backported fixes) "
+                    f"and loaded modules. {confirmed} CVE(s) are confirmed: the unpatched vulnerable "
+                    f"package is installed and serving the port. {h['ruled_out']} were ruled out. "
+                    f"The rest stay Unverified with what the check found.")
+        elif agent:
+            title = f"Agent checks failed on {h['host']}"
+            desc = f"The agent's inventory for {h['host']} couldn't be used: {h['error']}."
         else:
             title = f"Credentialed checks failed on {h['host']}"
             desc = (f"Couldn't log in to {h['host']} as {h['user']}: {h['error']}. "
-                    f"Fix the SSH credentials on the target or the scan and rescan, or use Verify now.")
+                    f"Fix the SSH credentials on the target or the scan and rescan, or use Verify now. "
+                    f"Or install the PwnBroker agent on the host — no login needed.")
         rows.append(ScanResult(scan_id=scan_id, result_type="info", host=h["host"],
                                severity="info", title=title, description=desc))
     return rows

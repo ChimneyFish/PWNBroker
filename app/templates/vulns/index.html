@@ -66,13 +66,16 @@
   </div>
 </div>
 
-{% if total_unverified or total_not_exploitable or verify_state.running or verify_state.summary or verify_state.error %}
+{% if total_unverified or total_confirmed or total_not_exploitable or verify_state.running or verify_state.summary or verify_state.error %}
 <div class="form-card mb-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="small">
       <div class="font-semibold mb-1"><i class="bi bi-funnel me-1"></i>Verification status</div>
       <div class="text-muted">
-        Version-matched CVEs are tested against the live service where a safe check exists.
+        Version-matched CVEs are tested against the live service where a safe check exists, and
+        checked on the host itself through the PwnBroker agent or an SSH login.
+        <a href="{{ url_for('vulns.tickets') }}?status=confirmed">{{ total_confirmed }} confirmed</a>
+        (the vulnerable package is installed, no vendor fix) ·
         <a href="{{ url_for('vulns.tickets') }}?status=unverified">{{ total_unverified }} unverified</a>
         (counted above and labelled Unverified — no safe check, or the check was inconclusive) ·
         <a href="{{ url_for('vulns.tickets') }}?status=not_exploitable">{{ total_not_exploitable }} ruled out</a>
@@ -84,13 +87,14 @@
       <div class="text-danger mt-1">Last verification failed: {{ verify_state.error }}</div>
       {% elif verify_state.summary %}
       <div class="text-muted mt-1">Last verification: {{ verify_state.summary.confirmed }} proven exploitable,
+        {{ verify_state.summary.installed or 0 }} confirmed installed,
         {{ verify_state.summary.not_exploitable }} ruled out, {{ verify_state.summary.unconfirmed }} still unverified.
         {%- set cred = verify_state.summary.credentialed or [] %}
         {%- if cred %}
         {%- set cred_ok = cred | selectattr('ok') | list %}
-        Credentialed checks logged in to {{ cred_ok | length }} of {{ cred | length }} host{{ 's' if cred | length != 1 }}
+        Host checks (agent or SSH) covered {{ cred_ok | length }} of {{ cred | length }} host{{ 's' if cred | length != 1 }}
         and ruled out {{ cred_ok | sum(attribute='ruled_out') }}.
-        {%- for h in cred if not h.ok %}<div class="text-danger">SSH login to {{ h.host }} failed: {{ h.error }}</div>{% endfor %}
+        {%- for h in cred if not h.ok %}<div class="text-danger">{{ 'Agent check' if h.via == 'agent' else 'SSH login' }} for {{ h.host }} failed: {{ h.error }}</div>{% endfor %}
         {%- endif %}</div>
       {% endif %}
     </div>

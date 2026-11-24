@@ -364,13 +364,25 @@ check written for that CVE, and gets one of three verdicts:
 | Verdict | What happened | Counted? |
 |---|---|---|
 | **Exploitable** | The check reproduced the issue. The proof (request + response) is on the finding. | Yes — open ticket with SLA, labelled **Exploitable** |
-| **Unverified** | No safe check exists for this CVE, or the check couldn't complete. Each one says why. | Yes — open ticket with SLA, labelled with an amber **Unverified** badge |
+| **Confirmed** | The PwnBroker agent or an SSH login showed the package serving the port is the vulnerable version, and its vendor changelog lists no fix. | Yes — open ticket with SLA, labelled with an orange **Confirmed** badge |
+| **Unverified** | Nothing could prove or rule it out on this host: no safe live check exists, and there's no agent or SSH login. Each one says why. | Yes — open ticket with SLA, labelled with an amber **Unverified** badge |
 | **Not exploitable** | The check ran cleanly and the vulnerable behaviour wasn't there (feature disabled, fix backported, not that product). | No — kept under "Not Exploitable" |
 
-Most CVEs have no safe remote check, so most version matches will be
-Unverified. They still count: a host running a version with a known critical
-CVE is a finding until something rules it out. The badge tells you which ones
-have proof and which ones are a version match only.
+Most CVEs have no safe remote check, so without an agent or SSH login most
+version matches will be Unverified. They still count: a host running a version
+with a known critical CVE is a finding until something rules it out. The badge
+tells you how much proof each one has.
+
+**Exploitable vs Confirmed:** Exploitable means the flaw was triggered over the
+network. Confirmed means the vulnerable, unpatched code is installed and
+serving the port, but not that the flaw is reachable in this host's
+configuration. Treat both as real; Exploitable is the more urgent.
+
+**To verify every finding on a host, install the PwnBroker agent on it** (see
+[Endpoint Agents](#11-endpoint-agents)). The agent's host inventory settles
+almost every version-matched CVE: each one is ruled out (vendor backport,
+module not loaded, wrong OS) or Confirmed. What stays Unverified is listed
+with the reason, for example a service that isn't from a system package.
 
 - Checks come from the nuclei template library (~4,500 CVEs), installed by
   `setup.sh` and refreshed weekly. nmap's own vuln-script verdicts count too
@@ -395,11 +407,13 @@ have proof and which ones are a version match only.
   the counts automatically on first start; their tickets become Open with the
   Unverified label.
 
-### Credentialed checks (SSH)
+### Host checks (agent or SSH)
 
 Most version-matched CVEs have no safe remote check, so on their own they
-stay Unverified. With an SSH login, scans also look inside the host and rule
-out the ones that don't apply:
+stay Unverified. When a host has the PwnBroker agent installed, or a scan has
+an SSH login for it, PwnBroker also looks inside the host. The agent is used
+when it has sent an inventory in the last 7 days; otherwise the SSH login is
+used. Both run the same checks. They rule out the CVEs that don't apply:
 
 | Rule-out | How it's checked |
 |---|---|
@@ -407,11 +421,19 @@ out the ones that don't apply:
 | **Module not loaded** | For Apache httpd (`apachectl -M`) and nginx (`nginx -V`): a CVE in a module the server doesn't load is ruled out. |
 | **Different OS** | A CVE that only affects the product on Windows, on a host running Linux/Unix. |
 
-Credentialed checks only ever **rule findings out**. They never make a
-finding count as a vulnerability on their own; that still needs a live check
-that reproduces it. Findings they can't rule out stay Unverified with a note
-saying what was found (e.g. "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix
-listed for CVE-…").
+If none of those apply, the finding is **Confirmed** when all of these hold:
+
+- the package that owns the process listening on the finding's port was
+  identified (the agent always sees this; an SSH login needs root or
+  passwordless sudo),
+- its full vendor changelog was available and lists no fix for the CVE, and
+- the installed version matches the version the CVE was matched on (so an
+  upgrade since the scan isn't mistaken for the old build).
+
+Anything else stays Unverified with a note saying what was found (e.g.
+"apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix listed for CVE-…", when the
+package was only guessed from the product name). Host checks never mark a
+finding **Exploitable**; that still needs a live check that reproduces it.
 
 On **New Scan** / **Schedule Scan**, *Credentialed Checks (SSH)* chooses the login:
 
@@ -419,7 +441,8 @@ On **New Scan** / **Schedule Scan**, *Credentialed Checks (SSH)* chooses the log
 - **Use these credentials for this scan**: enter a login just for this scan
   (stored encrypted with the scan). For a subnet or asset group it's tried on
   every host.
-- **Off**: don't log in to hosts.
+- **Off**: don't log in to hosts. (A host's agent is still used; it needs
+  no login.)
 
 Each scan shows which login it used, and adds one info row per host with how
 many CVEs were ruled out, or why the login failed. **Verify now** reuses each
@@ -439,10 +462,14 @@ A ticket is automatically created for each unique vulnerability the first time i
 | Patched | Fix confirmed |
 | Accepted Risk | Risk accepted by the team |
 | False Positive | Finding is wrong (marked by hand) |
-| Not Exploitable | The CVE's check ran and the issue wasn't present (no SLA) |
+| Not Exploitable | A check ruled it out: the live check ran clean, or the host check found the fix or the module isn't loaded (no SLA) |
 
-Unverified is a label, not a status: an unverified ticket is Open (or In
-Progress, etc.) with an SLA like any other, plus the amber Unverified badge.
+Exploitable, Confirmed and Unverified are labels, not statuses: those tickets
+are Open (or In Progress, etc.) with an SLA like any other. The ticket list's
+**Confirmed** and **Unverified** filters show each group. When newer proof
+arrives for a ticket someone is already working (an Unverified finding becomes
+Confirmed or Exploitable), the ticket keeps its status and assignee, switches
+to the stronger label, and gets a note.
 
 **SLA tracking**: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.
 
@@ -663,7 +690,7 @@ Enter a domain to enumerate subdomains using crt.sh certificate transparency log
 
 ## 11. Endpoint Agents
 
-Endpoint agents are lightweight Python scripts that run on monitored hosts. They send heartbeats and report suspicious network connections back to PwnBroker.
+Endpoint agents are lightweight Python scripts that run on monitored hosts. They send heartbeats, report suspicious network connections, and send a host inventory that PwnBroker uses to verify scan findings.
 
 ### How Agents Work
 
@@ -672,6 +699,64 @@ Endpoint agents are lightweight Python scripts that run on monitored hosts. They
 3. It monitors active network connections and cross-checks destination IPs against your IOC database
 4. If a connection to a known-malicious IP is detected, an alert is created in PwnBroker
 5. Agents that have not sent a heartbeat in 5 minutes are marked **Offline**
+6. Every 6 hours, and whenever PwnBroker asks, it sends a host inventory (below)
+
+All traffic goes from the agent to PwnBroker. The agent doesn't listen on any
+port, and PwnBroker never runs commands on the host.
+
+### Verifying Scan Findings with the Agent
+
+Install the agent on a host and PwnBroker can confirm or rule out the scan
+findings on it without an SSH login (see
+[Host checks](#host-checks-agent-or-ssh) for exactly what's checked).
+
+**What the inventory contains** (read-only, collected with fixed commands):
+
+- OS name and version, and the host's IP addresses
+- Each listening port, the program serving it, and the package that owns that program
+- Installed packages and versions (`dpkg` / `rpm`)
+- The CVE lines from the vendor changelogs of the packages serving ports, and
+  of common server packages
+- Loaded Apache modules (`apachectl -M`) and nginx's build options (`nginx -V`)
+
+To see exactly what an agent sends, run it on the host with
+`--print-inventory` (for example
+`sudo /opt/pwnbroker-agent/venv/bin/python3 /opt/pwnbroker-agent/agent.py --print-inventory`).
+
+**When findings get verified:**
+
+- As soon as an agent sends an inventory, PwnBroker re-checks every open,
+  unverified or confirmed finding on that host's addresses. A fresh install
+  settles a host's existing findings within a minute or two, with no rescan.
+- New scans of the host use the latest inventory automatically.
+- On the agent's page (**Threat Intel → Agents → host**), the
+  **Finding Verification** panel shows the inventory, how many findings it
+  confirmed and ruled out, and which package owns each listening port.
+  **Request inventory now** asks the agent for a fresh one at its next
+  check-in, and **Verify findings now** re-checks findings against the stored
+  one.
+
+**How findings are matched to the agent:** by IP address. A scan finding on
+`10.0.0.9` uses the agent whose host reports `10.0.0.9`. If two agents report
+the same address (for example identical Docker bridge addresses), neither is
+used for it. Inventories older than 7 days aren't used
+(`AGENT_INVENTORY_MAX_AGE_DAYS` in `.env`).
+
+**Platform support:** full checks on Linux with `dpkg` (Debian, Ubuntu, Kali)
+or `rpm` (RHEL, Rocky, Alma, Fedora, SUSE). On Windows and macOS the
+inventory has the OS, addresses and listening programs only, so only OS-based
+checks apply there.
+
+**Trust:** an agent's inventory can rule findings out, so only agents
+registered with your registration token are used. Keep the token private, and
+remove agents for hosts you no longer trust.
+
+**Updating existing agents:** agents installed before this feature don't send
+an inventory; their page says so. Re-run the installer (Step 3 below) to
+update one. That registers the host again, so remove its old entry (it goes
+Offline) from the Agents list afterwards. The Windows `.exe` installer
+bundles its own copy of the agent, so rebuild it (`installer/windows/`) after
+updating PwnBroker; the PowerShell script always installs the current agent.
 
 ### Deploying an Agent
 

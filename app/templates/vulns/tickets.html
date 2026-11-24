@@ -15,7 +15,7 @@
 <div class="form-card mb-6">
   <div class="flex flex-wrap gap-4 items-center">
     <span class="text-muted small font-semibold">STATUS</span>
-    {% for s, label in [('open','Open'),('patched','Patched'),('accepted_risk','Accepted Risk'),('false_positive','False Positive'),('unverified','Unverified'),('not_exploitable','Not Exploitable'),('all','All')] %}
+    {% for s, label in [('open','Open'),('patched','Patched'),('accepted_risk','Accepted Risk'),('false_positive','False Positive'),('confirmed','Confirmed'),('unverified','Unverified'),('not_exploitable','Not Exploitable'),('all','All')] %}
     <a href="{{ url_for('vulns.tickets') }}?status={{ s }}{% if sev_filter %}&severity={{ sev_filter }}{% endif %}"
        class="btn btn-sm {% if status_filter == s %}btn-primary{% else %}btn-outline-secondary{% endif %}">
       {{ label }}
@@ -36,7 +36,7 @@
   </div>
 </div>
 
-{% if status_filter in ('unverified', 'not_exploitable') %}
+{% if status_filter in ('unverified', 'confirmed', 'not_exploitable') %}
 <div class="form-card mb-6 small text-muted">
   {% if status_filter == 'unverified' %}
   <i class="bi bi-question-circle text-warning me-1"></i>
@@ -44,8 +44,15 @@
   with an SLA like any other, labelled <strong>Unverified</strong> because no active check has proven them
   on these hosts yet (the vulnerable feature may be disabled or the fix backported). Each one says why it
   couldn't be tested. A later scan that proves one drops the label; one that rules it out moves it to
-  Not Exploitable. Adding SSH credentials to a target lets scans rule out many of
-  these (vendor backports, modules not loaded).
+  Not Exploitable. Installing the PwnBroker agent on a host (or adding SSH credentials to its target)
+  settles most of these: vendor backports and unloaded modules are ruled out, and the rest are
+  Confirmed when the unpatched package is installed.
+  {% elif status_filter == 'confirmed' %}
+  <i class="bi bi-box-seam me-1" style="color:#c2410c"></i>
+  Each of these was <strong>confirmed on the host</strong> by the PwnBroker agent or an SSH login: the package
+  that owns the process listening on the port is the vulnerable version, and its full vendor changelog lists
+  no fix for the CVE. That proves the vulnerable code is installed and running; it doesn't prove the flaw is
+  reachable in this host's configuration (only a live check showing <strong>Exploitable</strong> does).
   {% else %}
   <i class="bi bi-shield-check me-1"></i>
   Each of these was <strong>ruled out</strong>: either a check for the CVE ran against the live service and

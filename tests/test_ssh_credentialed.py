@@ -108,8 +108,18 @@ class TestEvaluateHost:
         (_, status, detail, _), = evaluate_host(facts, [_finding("CVE-2022-22720")], {})
         assert status == "not_exploitable" and "apache2" in detail
 
-    def test_cve_not_in_changelog_stays_unverified_with_a_note(self):
+    def test_cve_not_in_changelog_is_confirmed_installed(self):
+        """The package owning the listener has a full changelog with no fix
+        for the CVE → the vulnerable build is installed (shown as Confirmed)."""
         facts = HostFacts(FakeSession())
+        (_, status, detail, extra), = evaluate_host(facts, [_finding("CVE-2023-99999")], {})
+        assert status == "installed"
+        assert "lists no fix for CVE-2023-99999" in detail and "apache2-bin" in extra["package"]
+
+    def test_fallback_package_is_not_confirmed(self):
+        """Without seeing the listening process, the package is only a guess
+        from the product name — note it, but don't claim Confirmed."""
+        facts = HostFacts(FakeSession(listener=False))
         (_, status, detail, _), = evaluate_host(facts, [_finding("CVE-2023-99999")], {})
         assert status is None
         assert "no vendor fix listed for CVE-2023-99999" in detail
@@ -145,12 +155,13 @@ class TestEvaluateHost:
         facts = HostFacts(FakeSession())
         (_, status, detail, _), = evaluate_host(
             facts, [_finding("CVE-2099-2", "mod_proxy and mod_lua mishandle headers.")], {})
-        assert status is None and "mod_proxy is loaded" in detail
+        assert status == "installed" and "mod_proxy is loaded" in detail
 
     def test_apache_module_list_unavailable_rules_nothing_out(self):
         facts = HostFacts(FakeSession(apache_m=""))
-        (_, status, _, _), = evaluate_host(facts, [_finding("CVE-2099-3", "mod_lua flaw")], {})
-        assert status is None
+        (_, status, detail, _), = evaluate_host(facts, [_finding("CVE-2099-3", "mod_lua flaw")], {})
+        assert status == "installed"   # not ruled out; the package itself is unpatched
+        assert "couldn't list loaded Apache modules" in detail
 
     def test_nginx_optional_module_absent_rules_out(self):
         nginx_v = "nginx version: nginx/1.18.0\nconfigure arguments: --with-http_ssl_module --with-http_v2_module\n"
@@ -204,7 +215,7 @@ class TestVerifyResultsWithCreds:
                            match_confidence="cpe", verification_status="unconfirmed",
                            description="flaw") for c in ("CVE-2024-38474", "CVE-2023-99999")]
 
-    def test_ssh_pass_rules_out_backports_and_keeps_the_rest_unverified(self, app):
+    def test_ssh_pass_rules_out_backports_and_confirms_the_rest(self, app):
         from app.scanner.verify import verify_results
         with app.app_context():
             rows = self._rows(app)
@@ -216,10 +227,11 @@ class TestVerifyResultsWithCreds:
         fixed, other = rows
         assert fixed.result_type == "not_exploitable" and fixed.verification_status == "not_exploitable"
         assert fixed.evidence["method"] == "ssh" and fixed.evidence["target"] == "audit@10.0.0.9:22"
-        assert other.result_type == "vulnerability" and other.verification_status == "unconfirmed"
-        assert "no vendor fix listed" in other.evidence["credentialed"]
-        assert summary["not_exploitable"] == 1 and summary["unconfirmed"] == 1
+        assert other.result_type == "vulnerability" and other.verification_status == "installed"
+        assert other.verification_label == "Confirmed" and "lists no fix" in other.evidence["detail"]
+        assert summary["not_exploitable"] == 1 and summary["installed"] == 1 and summary["unconfirmed"] == 0
         assert summary["credentialed"][0]["ok"] and summary["credentialed"][0]["ruled_out"] == 1
+        assert summary["credentialed"][0]["confirmed"] == 1
 
     def test_login_failure_is_recorded_not_fatal(self, app):
         from app.scanner.verify import verify_results
@@ -233,7 +245,8 @@ class TestVerifyResultsWithCreds:
                    for r in rows)
         assert "couldn't log in as audit: Authentication failed." in rows[0].evidence["credentialed"]
         assert summary["credentialed"][0] == {"host": "10.0.0.9", "ok": False, "error": "Authentication failed.",
-                                              "user": "audit", "ruled_out": 0, "checked": 2}
+                                              "user": "audit", "via": "ssh", "ruled_out": 0,
+                                              "confirmed": 0, "checked": 2}
 
     def test_without_creds_nothing_logs_in(self, app):
         from app.scanner.verify import verify_results

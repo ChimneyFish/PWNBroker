@@ -38,6 +38,10 @@ from datetime import datetime, timezone
 log = logging.getLogger(__name__)
 
 CONFIRMED, NOT_EXPLOITABLE, UNCONFIRMED = "confirmed", "not_exploitable", "unconfirmed"
+# Credentialed (agent / SSH) proof that the vulnerable, unpatched package is
+# installed and serving the port. Shown as "Confirmed"; distinct from
+# CONFIRMED, which means a live check reproduced the issue ("Exploitable").
+INSTALLED = "installed"
 
 # Version-correlated / heuristic findings — the ones that need proof before
 # they count. (ScanResult.match_confidence values.)
@@ -289,15 +293,15 @@ def verify_results(results, budget=_TOTAL_BUDGET_SECONDS, creds_of=None):
     live checks couldn't settle get a credentialed second look (vendor
     backports, loaded modules); summary["credentialed"] lists each host."""
     todo = [r for r in results if needs_verification(r)]
-    summary = {CONFIRMED: 0, NOT_EXPLOITABLE: 0, UNCONFIRMED: 0}
+    summary = {CONFIRMED: 0, NOT_EXPLOITABLE: 0, UNCONFIRMED: 0, INSTALLED: 0}
     try:
         _verify(todo, summary, budget)
-        if creds_of and todo:
-            from .ssh_verify import verify_with_ssh
+        if todo:
+            from .ssh_verify import verify_credentialed
             hints = {(r.host, r.port): (r.service or "") for r in results
                      if getattr(r, "result_type", None) == "port"}
             try:
-                summary["credentialed"] = verify_with_ssh(todo, creds_of, summary, hints)
+                summary["credentialed"] = verify_credentialed(todo, creds_of, summary, hints)
             except Exception as e:  # never lose the live-check verdicts over this
                 log.warning("credentialed checks failed: %s", e)
     finally:

@@ -5,7 +5,7 @@ import ipaddress
 import os
 from datetime import datetime, timezone, timedelta
 from flask import (Blueprint, render_template, redirect, url_for, flash,
-                   request, jsonify, Response, send_file)
+                   request, jsonify, Response, send_file, current_app)
 from flask_login import login_required, current_user
 from ..models import (ThreatConfig, EndpointAgent, AgentAlert, IOCRecord, SocCase,
                       PaloAltoFirewall, PaloAltoThreatLog)
@@ -176,7 +176,23 @@ def agents_list():
 def agent_detail(agent_db_id):
     agent  = EndpointAgent.query.get_or_404(agent_db_id)
     alerts = agent.alerts.order_by(AgentAlert.created_at.desc()).limit(100).all()
-    return render_template("threat/agent_detail.html", agent=agent, alerts=alerts)
+    inv, verified = None, {}
+    if agent.inventory:
+        try:
+            inv = json.loads(agent.inventory)
+        except ValueError:
+            inv = None
+    if agent.inventory_ips:
+        from ..models import ScanResult, VulnTicket
+        ips = agent.inventory_ips.split()
+        for t in (VulnTicket.query.join(ScanResult, VulnTicket.scan_result_id == ScanResult.id)
+                  .filter(ScanResult.host.in_(ips)).all()):
+            lab = t.scan_result.verification_label if t.scan_result else None
+            if t.status in ("open", "in_progress", "not_exploitable") and lab:
+                verified[lab] = verified.get(lab, 0) + 1
+    from ..scanner.agent_facts import max_age_days
+    return render_template("threat/agent_detail.html", agent=agent, alerts=alerts,
+                           inv=inv, verified=verified, max_age_days=max_age_days())
 
 
 @threat_bp.route("/agents/<int:agent_db_id>/delete", methods=["POST"])
@@ -419,6 +435,8 @@ def api_heartbeat():
     agent.last_seen  = now
     agent.status     = "online"
     agent.ip_address = (data.get("ip_address") or agent.ip_address or "")[:45]
+    if data.get("agent_version"):
+        agent.agent_version = str(data["agent_version"])[:20]
 
     # Check new external IPs against AbuseIPDB
     cfg         = _get_cfg()
@@ -476,7 +494,61 @@ def api_heartbeat():
                               .order_by(AgentAlert.created_at.desc())
                               .limit(10).all()
     ]
-    return jsonify({"status": "ok", "alerts": pending, "new_alerts": new_count})
+    from ..scanner.agent_facts import inventory_due, wanted_changelog_packages
+    return jsonify({"status": "ok", "alerts": pending, "new_alerts": new_count,
+                    # Older agents ignore these; current ones send a read-only
+                    # host inventory to /threat/api/inventory when asked.
+                    "send_inventory": inventory_due(agent),
+                    "changelog_packages": wanted_changelog_packages()})
+
+
+@threat_bp.route("/api/inventory", methods=["POST"])
+@csrf.exempt
+def api_inventory():
+    """Read-only host inventory from an agent — used to verify scan findings
+    on this host (see scanner/agent_facts.py)."""
+    agent, err = _agent_auth()
+    if err:
+        return err
+    from ..scanner.agent_facts import store_inventory, reverify_in_background
+    try:
+        inv = store_inventory(agent, request.get_json(silent=True))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    agent.last_seen, agent.status = datetime.now(timezone.utc), "online"
+    db.session.commit()
+    reverify_in_background(current_app._get_current_object(), agent.id)
+    return jsonify({"status": "ok", "packages": len(inv["packages"]),
+                    "listeners": len(inv["listeners"])})
+
+
+@threat_bp.route("/agents/<int:agent_db_id>/inventory/refresh", methods=["POST"])
+@login_required
+@admin_required
+def agent_inventory_refresh(agent_db_id):
+    agent = EndpointAgent.query.get_or_404(agent_db_id)
+    agent.inventory_requested = True
+    db.session.commit()
+    flash("The agent will send a fresh inventory on its next check-in (within a minute).", "success")
+    return redirect(url_for("threat.agent_detail", agent_db_id=agent.id))
+
+
+@threat_bp.route("/agents/<int:agent_db_id>/inventory/verify", methods=["POST"])
+@login_required
+@admin_required
+def agent_inventory_verify(agent_db_id):
+    agent = EndpointAgent.query.get_or_404(agent_db_id)
+    if not agent.inventory:
+        flash("This agent hasn't sent an inventory yet.", "warning")
+    else:
+        from ..scanner.agent_facts import reverify_host_findings
+        s = reverify_host_findings(agent.id)
+        if not s.get("checked"):
+            flash("No open, unverified findings on this host's addresses.", "info")
+        else:
+            flash(f"Checked {s['checked']} findings: {s.get('installed', 0)} confirmed installed, "
+                  f"{s.get('not_exploitable', 0)} ruled out.", "success")
+    return redirect(url_for("threat.agent_detail", agent_db_id=agent.id))
 
 
 def _secondary_confirmed(ioc_record):

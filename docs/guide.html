@@ -145,11 +145,11 @@ main { padding: 36px 56px 80px; min-width: 0; }
 <li class="nav-sec"><a href="#4-targets">4. Targets</a><ul><li><a href="#target-types">Target Types</a></li><li><a href="#adding-a-target">Adding a Target</a></li><li><a href="#target-detail-page">Target Detail Page</a></li><li><a href="#ssh-credentials-credentialed-checks">SSH Credentials (credentialed checks)</a></li><li><a href="#deleting-a-target">Deleting a Target</a></li></ul></li>
 <li class="nav-sec"><a href="#5-assets">5. Assets</a><ul><li><a href="#asset-inventory-assets">Asset Inventory (/assets)</a></li><li><a href="#tags">Tags</a></li><li><a href="#asset-groups">Asset Groups</a></li><li><a href="#quick-scan">Quick Scan</a></li></ul></li>
 <li class="nav-sec"><a href="#6-scans">6. Scans</a><ul><li><a href="#scan-types">Scan Types</a></li><li><a href="#running-a-scan">Running a Scan</a></li><li><a href="#scan-results">Scan Results</a></li><li><a href="#marking-findings-as-remediated">Marking Findings as Remediated</a></li><li><a href="#scheduled-scans">Scheduled Scans</a></li></ul></li>
-<li class="nav-sec"><a href="#7-vulnerability-management">7. Vulnerability Management</a><ul><li><a href="#exploitable-unverified-and-ruled-out-findings">Exploitable, Unverified and ruled-out findings</a></li><li><a href="#credentialed-checks-ssh">Credentialed checks (SSH)</a></li><li><a href="#vuln-tickets-vulnstickets">Vuln Tickets (/vulns/tickets)</a></li><li><a href="#device-view-vulnsdevice">Device View (/vulns/device/&lt;target&gt;)</a></li><li><a href="#updating-a-ticket">Updating a Ticket</a></li></ul></li>
+<li class="nav-sec"><a href="#7-vulnerability-management">7. Vulnerability Management</a><ul><li><a href="#exploitable-unverified-and-ruled-out-findings">Exploitable, Unverified and ruled-out findings</a></li><li><a href="#host-checks-agent-or-ssh">Host checks (agent or SSH)</a></li><li><a href="#vuln-tickets-vulnstickets">Vuln Tickets (/vulns/tickets)</a></li><li><a href="#device-view-vulnsdevice">Device View (/vulns/device/&lt;target&gt;)</a></li><li><a href="#updating-a-ticket">Updating a Ticket</a></li></ul></li>
 <li class="nav-sec"><a href="#8-dependency-scanner">8. Dependency Scanner</a><ul><li><a href="#supported-ecosystems">Supported Ecosystems</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#running-a-dependency-scan">Running a Dependency Scan</a></li><li><a href="#results">Results</a></li></ul></li>
 <li class="nav-sec"><a href="#9-reports">9. Reports</a><ul><li><a href="#generating-a-report">Generating a Report</a></li><li><a href="#downloading-reports">Downloading Reports</a></li><li><a href="#pushing-reports-to-a-cloud-api">Pushing Reports to a Cloud API</a></li><li><a href="#scheduled-reports">Scheduled Reports</a></li><li><a href="#atlassian-integration">Atlassian Integration</a></li></ul></li>
 <li class="nav-sec"><a href="#10-threat-intelligence">10. Threat Intelligence</a><ul><li><a href="#required-api-keys">Required API Keys</a></li><li><a href="#ioc-lookup-threatlookup">IOC Lookup (/threat/lookup)</a></li><li><a href="#otx-feed-threatfeed">OTX Feed (/threat/feed)</a></li><li><a href="#soc-triage-threattriage">SOC Triage (/threat/triage)</a></li><li><a href="#cve-database-cve-db">CVE Database (/cve-db)</a></li><li><a href="#palo-alto-firewalls-threatpaloalto">Palo Alto Firewalls (/threat/paloalto)</a></li><li><a href="#subdomain-enumeration-threatsubdomains">Subdomain Enumeration (/threat/subdomains)</a></li></ul></li>
-<li class="nav-sec"><a href="#11-endpoint-agents">11. Endpoint Agents</a><ul><li><a href="#how-agents-work">How Agents Work</a></li><li><a href="#deploying-an-agent">Deploying an Agent</a></li><li><a href="#agent-alerts">Agent Alerts</a></li><li><a href="#manual-registration-advanced">Manual Registration (advanced)</a></li></ul></li>
+<li class="nav-sec"><a href="#11-endpoint-agents">11. Endpoint Agents</a><ul><li><a href="#how-agents-work">How Agents Work</a></li><li><a href="#verifying-scan-findings-with-the-agent">Verifying Scan Findings with the Agent</a></li><li><a href="#deploying-an-agent">Deploying an Agent</a></li><li><a href="#agent-alerts">Agent Alerts</a></li><li><a href="#manual-registration-advanced">Manual Registration (advanced)</a></li></ul></li>
 <li class="nav-sec"><a href="#12-grc--governance-risk--compliance">12. GRC — Governance, Risk &amp; Compliance</a><ul><li><a href="#risk-register-grcrisks">Risk Register (/grc/risks)</a></li><li><a href="#compliance-grccompliance">Compliance (/grc/compliance)</a></li><li><a href="#policies-grcpolicies">Policies (/grc/policies)</a></li></ul></li>
 <li class="nav-sec"><a href="#13-settings">13. Settings</a><ul><li><a href="#time--ntp">Time &amp; NTP</a></li><li><a href="#email--smtp">Email / SMTP</a></li><li><a href="#threat-intelligence-apis">Threat Intelligence APIs</a></li><li><a href="#atlassian-integration_1">Atlassian Integration</a></li><li><a href="#cloud-api-integration">Cloud API Integration</a></li><li><a href="#https--tls">HTTPS / TLS</a></li></ul></li>
 <li class="nav-sec"><a href="#14-user-management">14. User Management</a><ul><li><a href="#roles">Roles</a></li><li><a href="#adding-a-user">Adding a User</a></li><li><a href="#managing-existing-users">Managing Existing Users</a></li><li><a href="#profile">Profile</a></li></ul></li>
@@ -631,8 +631,13 @@ check written for that CVE, and gets one of three verdicts:</p>
 <td>Yes — open ticket with SLA, labelled <strong>Exploitable</strong></td>
 </tr>
 <tr>
+<td><strong>Confirmed</strong></td>
+<td>The PwnBroker agent or an SSH login showed the package serving the port is the vulnerable version, and its vendor changelog lists no fix.</td>
+<td>Yes — open ticket with SLA, labelled with an orange <strong>Confirmed</strong> badge</td>
+</tr>
+<tr>
 <td><strong>Unverified</strong></td>
-<td>No safe check exists for this CVE, or the check couldn't complete. Each one says why.</td>
+<td>Nothing could prove or rule it out on this host: no safe live check exists, and there's no agent or SSH login. Each one says why.</td>
 <td>Yes — open ticket with SLA, labelled with an amber <strong>Unverified</strong> badge</td>
 </tr>
 <tr>
@@ -642,10 +647,19 @@ check written for that CVE, and gets one of three verdicts:</p>
 </tr>
 </tbody>
 </table></div>
-<p>Most CVEs have no safe remote check, so most version matches will be
-Unverified. They still count: a host running a version with a known critical
-CVE is a finding until something rules it out. The badge tells you which ones
-have proof and which ones are a version match only.</p>
+<p>Most CVEs have no safe remote check, so without an agent or SSH login most
+version matches will be Unverified. They still count: a host running a version
+with a known critical CVE is a finding until something rules it out. The badge
+tells you how much proof each one has.</p>
+<p><strong>Exploitable vs Confirmed:</strong> Exploitable means the flaw was triggered over the
+network. Confirmed means the vulnerable, unpatched code is installed and
+serving the port, but not that the flaw is reachable in this host's
+configuration. Treat both as real; Exploitable is the more urgent.</p>
+<p><strong>To verify every finding on a host, install the PwnBroker agent on it</strong> (see
+<a href="#11-endpoint-agents">Endpoint Agents</a>). The agent's host inventory settles
+almost every version-matched CVE: each one is ruled out (vendor backport,
+module not loaded, wrong OS) or Confirmed. What stays Unverified is listed
+with the reason, for example a service that isn't from a system package.</p>
 <ul>
 <li>Checks come from the nuclei template library (~4,500 CVEs), installed by
   <code>setup.sh</code> and refreshed weekly. nmap's own vuln-script verdicts count too
@@ -670,10 +684,12 @@ have proof and which ones are a version match only.</p>
   the counts automatically on first start; their tickets become Open with the
   Unverified label.</li>
 </ul>
-<h3 id="credentialed-checks-ssh">Credentialed checks (SSH)<a class="headerlink" href="#credentialed-checks-ssh" title="Link to this section">#</a></h3>
+<h3 id="host-checks-agent-or-ssh">Host checks (agent or SSH)<a class="headerlink" href="#host-checks-agent-or-ssh" title="Link to this section">#</a></h3>
 <p>Most version-matched CVEs have no safe remote check, so on their own they
-stay Unverified. With an SSH login, scans also look inside the host and rule
-out the ones that don't apply:</p>
+stay Unverified. When a host has the PwnBroker agent installed, or a scan has
+an SSH login for it, PwnBroker also looks inside the host. The agent is used
+when it has sent an inventory in the last 7 days; otherwise the SSH login is
+used. Both run the same checks. They rule out the CVEs that don't apply:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -696,18 +712,27 @@ out the ones that don't apply:</p>
 </tr>
 </tbody>
 </table></div>
-<p>Credentialed checks only ever <strong>rule findings out</strong>. They never make a
-finding count as a vulnerability on their own; that still needs a live check
-that reproduces it. Findings they can't rule out stay Unverified with a note
-saying what was found (e.g. "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix
-listed for CVE-…").</p>
+<p>If none of those apply, the finding is <strong>Confirmed</strong> when all of these hold:</p>
+<ul>
+<li>the package that owns the process listening on the finding's port was
+  identified (the agent always sees this; an SSH login needs root or
+  passwordless sudo),</li>
+<li>its full vendor changelog was available and lists no fix for the CVE, and</li>
+<li>the installed version matches the version the CVE was matched on (so an
+  upgrade since the scan isn't mistaken for the old build).</li>
+</ul>
+<p>Anything else stays Unverified with a note saying what was found (e.g.
+"apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix listed for CVE-…", when the
+package was only guessed from the product name). Host checks never mark a
+finding <strong>Exploitable</strong>; that still needs a live check that reproduces it.</p>
 <p>On <strong>New Scan</strong> / <strong>Schedule Scan</strong>, <em>Credentialed Checks (SSH)</em> chooses the login:</p>
 <ul>
 <li><strong>Use the target's saved SSH login</strong> (default): uses the login saved on the target.</li>
 <li><strong>Use these credentials for this scan</strong>: enter a login just for this scan
   (stored encrypted with the scan). For a subnet or asset group it's tried on
   every host.</li>
-<li><strong>Off</strong>: don't log in to hosts.</li>
+<li><strong>Off</strong>: don't log in to hosts. (A host's agent is still used; it needs
+  no login.)</li>
 </ul>
 <p>Each scan shows which login it used, and adds one info row per host with how
 many CVEs were ruled out, or why the login failed. <strong>Verify now</strong> reuses each
@@ -746,12 +771,16 @@ finding's scan login (or its target's). In a real test against stock Ubuntu
 </tr>
 <tr>
 <td>Not Exploitable</td>
-<td>The CVE's check ran and the issue wasn't present (no SLA)</td>
+<td>A check ruled it out: the live check ran clean, or the host check found the fix or the module isn't loaded (no SLA)</td>
 </tr>
 </tbody>
 </table></div>
-<p>Unverified is a label, not a status: an unverified ticket is Open (or In
-Progress, etc.) with an SLA like any other, plus the amber Unverified badge.</p>
+<p>Exploitable, Confirmed and Unverified are labels, not statuses: those tickets
+are Open (or In Progress, etc.) with an SLA like any other. The ticket list's
+<strong>Confirmed</strong> and <strong>Unverified</strong> filters show each group. When newer proof
+arrives for a ticket someone is already working (an Unverified finding becomes
+Confirmed or Exploitable), the ticket keeps its status and assignee, switches
+to the stronger label, and gets a note.</p>
 <p><strong>SLA tracking</strong>: Each severity level has a default SLA (Critical: 1 day, High: 7 days, Medium: 30 days, Low: 90 days). Overdue tickets are highlighted in red.</p>
 <h3 id="device-view-vulnsdevice">Device View (<code>/vulns/device/&lt;target&gt;</code>)<a class="headerlink" href="#device-view-vulnsdevice" title="Link to this section">#</a></h3>
 <p>Shows all open tickets grouped by target with a risk heat-map. Use this view to get a per-host risk summary.</p>
@@ -986,7 +1015,7 @@ firewall deletes all of its logs.</p>
 <h3 id="subdomain-enumeration-threatsubdomains">Subdomain Enumeration (<code>/threat/subdomains</code>)<a class="headerlink" href="#subdomain-enumeration-threatsubdomains" title="Link to this section">#</a></h3>
 <p>Enter a domain to enumerate subdomains using crt.sh certificate transparency logs and DNSDumpster. Results show IP addresses, record types, and first/last seen dates.</p>
 <h2 id="11-endpoint-agents">11. Endpoint Agents<a class="headerlink" href="#11-endpoint-agents" title="Link to this section">#</a></h2>
-<p>Endpoint agents are lightweight Python scripts that run on monitored hosts. They send heartbeats and report suspicious network connections back to PwnBroker.</p>
+<p>Endpoint agents are lightweight Python scripts that run on monitored hosts. They send heartbeats, report suspicious network connections, and send a host inventory that PwnBroker uses to verify scan findings.</p>
 <h3 id="how-agents-work">How Agents Work<a class="headerlink" href="#how-agents-work" title="Link to this section">#</a></h3>
 <ol>
 <li>The agent runs as a background process (service/daemon) on the endpoint</li>
@@ -994,7 +1023,57 @@ firewall deletes all of its logs.</p>
 <li>It monitors active network connections and cross-checks destination IPs against your IOC database</li>
 <li>If a connection to a known-malicious IP is detected, an alert is created in PwnBroker</li>
 <li>Agents that have not sent a heartbeat in 5 minutes are marked <strong>Offline</strong></li>
+<li>Every 6 hours, and whenever PwnBroker asks, it sends a host inventory (below)</li>
 </ol>
+<p>All traffic goes from the agent to PwnBroker. The agent doesn't listen on any
+port, and PwnBroker never runs commands on the host.</p>
+<h3 id="verifying-scan-findings-with-the-agent">Verifying Scan Findings with the Agent<a class="headerlink" href="#verifying-scan-findings-with-the-agent" title="Link to this section">#</a></h3>
+<p>Install the agent on a host and PwnBroker can confirm or rule out the scan
+findings on it without an SSH login (see
+<a href="#host-checks-agent-or-ssh">Host checks</a> for exactly what's checked).</p>
+<p><strong>What the inventory contains</strong> (read-only, collected with fixed commands):</p>
+<ul>
+<li>OS name and version, and the host's IP addresses</li>
+<li>Each listening port, the program serving it, and the package that owns that program</li>
+<li>Installed packages and versions (<code>dpkg</code> / <code>rpm</code>)</li>
+<li>The CVE lines from the vendor changelogs of the packages serving ports, and
+  of common server packages</li>
+<li>Loaded Apache modules (<code>apachectl -M</code>) and nginx's build options (<code>nginx -V</code>)</li>
+</ul>
+<p>To see exactly what an agent sends, run it on the host with
+<code>--print-inventory</code> (for example
+<code>sudo /opt/pwnbroker-agent/venv/bin/python3 /opt/pwnbroker-agent/agent.py --print-inventory</code>).</p>
+<p><strong>When findings get verified:</strong></p>
+<ul>
+<li>As soon as an agent sends an inventory, PwnBroker re-checks every open,
+  unverified or confirmed finding on that host's addresses. A fresh install
+  settles a host's existing findings within a minute or two, with no rescan.</li>
+<li>New scans of the host use the latest inventory automatically.</li>
+<li>On the agent's page (<strong>Threat Intel → Agents → host</strong>), the
+  <strong>Finding Verification</strong> panel shows the inventory, how many findings it
+  confirmed and ruled out, and which package owns each listening port.
+  <strong>Request inventory now</strong> asks the agent for a fresh one at its next
+  check-in, and <strong>Verify findings now</strong> re-checks findings against the stored
+  one.</li>
+</ul>
+<p><strong>How findings are matched to the agent:</strong> by IP address. A scan finding on
+<code>10.0.0.9</code> uses the agent whose host reports <code>10.0.0.9</code>. If two agents report
+the same address (for example identical Docker bridge addresses), neither is
+used for it. Inventories older than 7 days aren't used
+(<code>AGENT_INVENTORY_MAX_AGE_DAYS</code> in <code>.env</code>).</p>
+<p><strong>Platform support:</strong> full checks on Linux with <code>dpkg</code> (Debian, Ubuntu, Kali)
+or <code>rpm</code> (RHEL, Rocky, Alma, Fedora, SUSE). On Windows and macOS the
+inventory has the OS, addresses and listening programs only, so only OS-based
+checks apply there.</p>
+<p><strong>Trust:</strong> an agent's inventory can rule findings out, so only agents
+registered with your registration token are used. Keep the token private, and
+remove agents for hosts you no longer trust.</p>
+<p><strong>Updating existing agents:</strong> agents installed before this feature don't send
+an inventory; their page says so. Re-run the installer (Step 3 below) to
+update one. That registers the host again, so remove its old entry (it goes
+Offline) from the Agents list afterwards. The Windows <code>.exe</code> installer
+bundles its own copy of the agent, so rebuild it (<code>installer/windows/</code>) after
+updating PwnBroker; the PowerShell script always installs the current agent.</p>
 <h3 id="deploying-an-agent">Deploying an Agent<a class="headerlink" href="#deploying-an-agent" title="Link to this section">#</a></h3>
 <h4 id="step-1--download-the-agent-script">Step 1 — Download the agent script<a class="headerlink" href="#step-1--download-the-agent-script" title="Link to this section">#</a></h4>
 <p>Go to <strong>Threat Intel → Agents → Download Agent</strong>. The download page shows three options:</p>

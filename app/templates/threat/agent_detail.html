@@ -84,6 +84,84 @@
   </div>
 </div>
 
+<!-- Host inventory used to verify scan findings -->
+<div class="form-card mb-6" id="inventory">
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+    <div>
+      <h6 class="font-bold mb-1"><i class="bi bi-box-seam me-2" style="color:var(--accent)"></i>Finding Verification</h6>
+      <div class="small text-muted" style="max-width:46rem">
+        The agent sends a read-only inventory of this host (installed packages, what's listening on each
+        port, vendor changelogs, web-server modules). PwnBroker uses it to confirm or rule out scan findings
+        on this host's addresses — no SSH login needed, and PwnBroker never runs commands on the host.
+      </div>
+    </div>
+    {% if current_user.is_admin %}
+    <div class="flex gap-2">
+      <form method="POST" action="{{ url_for('threat.agent_inventory_refresh', agent_db_id=agent.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat me-1"></i>Request inventory now</button>
+      </form>
+      {% if inv %}
+      <form method="POST" action="{{ url_for('threat.agent_inventory_verify', agent_db_id=agent.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-primary"><i class="bi bi-shield-check me-1"></i>Verify findings now</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if not inv %}
+  <div class="alert alert-warning small mb-0">
+    {% if agent.inventory_requested %}Waiting for the agent to send its first inventory.
+    {% else %}No inventory received yet.{% endif %}
+    Agents installed before this feature don't send one — re-run the installer from
+    <a href="{{ url_for('threat.download') }}">Download Agent</a> to update it.
+  </div>
+  {% else %}
+  <div class="row g-3 mb-4">
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-value">{{ inv.packages | length }}</div><div class="stat-label">Packages</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-value">{{ inv.listeners | length }}</div><div class="stat-label">Listening ports</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-value" style="color:#c2410c">{{ verified.get('Confirmed', 0) }}</div><div class="stat-label">Confirmed findings</div></div></div>
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-value text-success">{{ verified.get('Not exploitable', 0) }}</div><div class="stat-label">Ruled out</div></div></div>
+  </div>
+  <table class="table table-sm table-dark mb-4" style="font-size:0.85rem">
+    <tbody>
+      <tr><td class="text-muted" style="width:12rem">Inventory received</td>
+          <td>{{ agent.inventory_at | localdt('%Y-%m-%d %H:%M') if agent.inventory_at else '—' }}
+              <span class="text-muted small">(used for {{ max_age_days }} days; refreshed every 6 hours)</span></td></tr>
+      <tr><td class="text-muted">OS</td><td>{{ inv.os.pretty or inv.os.kernel or '—' }}</td></tr>
+      <tr><td class="text-muted">Package manager</td><td>{{ inv.package_manager or 'none — only OS-level checks apply' }}</td></tr>
+      <tr><td class="text-muted">Addresses matched to scans</td><td class="font-monospace small">{{ inv.ips | join(', ') or '—' }}</td></tr>
+      <tr><td class="text-muted">Web-server modules</td><td class="small">
+        {% if inv.apache_modules %}Apache: {{ inv.apache_modules | length }} loaded{% endif %}
+        {% if inv.nginx_build %}{% if inv.apache_modules %} · {% endif %}nginx build read{% endif %}
+        {% if not inv.apache_modules and not inv.nginx_build %}—{% endif %}</td></tr>
+      {% if inv.errors %}<tr><td class="text-muted">Collection notes</td><td class="small text-warning">{{ inv.errors | join('; ') }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  {% if inv.listeners %}
+  <details>
+    <summary class="small font-semibold" style="cursor:pointer">Listening ports and owning packages</summary>
+    <div style="overflow-x:auto">
+    <table class="table table-sm table-dark mt-2 mb-0" style="font-size:0.8rem">
+      <thead><tr><th>Port</th><th>Program</th><th>Package</th><th>Version</th></tr></thead>
+      <tbody>
+      {% for l in inv.listeners | sort(attribute='port') %}
+        {% set pv = inv.packages.get(l.package) if l.package else None %}
+        <tr><td class="font-monospace">{{ l.port }}/{{ l.proto }}</td>
+            <td class="font-monospace small">{{ l.exe or '—' }}</td>
+            <td>{{ l.package or '—' }}</td>
+            <td class="font-monospace small">{{ pv[0] if pv else '—' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
+  {% endif %}
+  {% endif %}
+</div>
+
 <!-- Alerts table -->
 <div class="data-table" id="alerts-table">
   <div class="section-header px-4 pt-4 pb-2">

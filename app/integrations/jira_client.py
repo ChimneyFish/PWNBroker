@@ -50,6 +50,8 @@ def _build_issue_description(result, scan):
         blocks.append(_adf_paragraph(f"CVE: {result.cve_id}"))
     if result.cvss_score:
         blocks.append(_adf_paragraph(f"CVSS Score: {result.cvss_score}"))
+    if result.verification_label:
+        blocks.append(_adf_paragraph(f"Verification: {result.verification_label} — {result.verification_note}"))
     if result.description:
         blocks.append(_adf_heading("Description", 3))
         blocks.append(_adf_paragraph(result.description))
@@ -69,7 +71,8 @@ def create_ticket_for_finding(result, scan, cfg) -> dict:
     base = cfg.base_url.rstrip("/")
     url = f"{base}/rest/api/3/issue"
 
-    summary = f"[PwnBroker] {result.severity.upper()}: {result.title}"
+    tag = f" ({result.verification_label})" if result.verification_label else ""
+    summary = f"[PwnBroker] {result.severity.upper()}{tag}: {result.title}"
     if result.host:
         summary += f" on {result.host}"
     summary = summary[:255]
@@ -81,7 +84,9 @@ def create_ticket_for_finding(result, scan, cfg) -> dict:
             "description": _build_issue_description(result, scan),
             "issuetype": {"name": cfg.jira_issue_type or "Bug"},
             "priority": {"name": SEVERITY_PRIORITY.get(result.severity, "Medium")},
-            "labels": ["security", "pwnbroker", result.severity],
+            "labels": ["security", "pwnbroker", result.severity]
+                      + ([result.verification_label.lower().replace(" ", "-")]
+                         if result.verification_label else []),
         }
     }
 

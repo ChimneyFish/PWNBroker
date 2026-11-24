@@ -9,6 +9,11 @@
       title="Proven: {{ (ev.detail if ev else 'an active check reproduced this against the live service') }}">
   <i class="bi bi-shield-fill-exclamation me-1"></i>Exploitable
 </span>
+{%- elif r.verification_status == 'installed' -%}
+<span class="{{ cls }}" style="font-size:0.62rem;white-space:nowrap;background:rgba(234,88,12,0.14);color:#c2410c"
+      title="{{ ev.detail if ev else 'The vulnerable package version is installed on the host with no vendor fix' }}">
+  <i class="bi bi-box-seam me-1"></i>Confirmed
+</span>
 {%- elif r.verification_status == 'not_exploitable' -%}
 <span class="{{ cls }} bg-secondary bg-opacity-20 text-muted" style="font-size:0.62rem;white-space:nowrap"
       title="{{ ev.detail if ev else 'An active check showed the vulnerable behaviour is not present' }}">
@@ -27,7 +32,7 @@
 {%- set ev = r.evidence if r else None -%}
 {%- if ev -%}
 <details class="verify-evidence">
-  <summary>{% if ev.result == 'confirmed' %}Proof{% elif ev.result == 'not_exploitable' %}Why it's ruled out{% else %}Why it's unverified{% endif %}</summary>
+  <summary>{% if ev.result == 'confirmed' %}Proof{% elif ev.result == 'installed' %}What the host check found{% elif ev.result == 'not_exploitable' %}Why it's ruled out{% else %}Why it's unverified{% endif %}</summary>
   <div class="verify-evidence-body">
     <div>{{ ev.detail }}</div>
     {% if ev.credentialed %}<div class="mt-1"><i class="bi bi-key me-1"></i>{{ ev.credentialed }}</div>{% endif %}

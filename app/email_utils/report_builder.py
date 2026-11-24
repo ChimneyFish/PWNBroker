@@ -47,6 +47,43 @@ SEV_COLOR = {
 
 SEV_ORDER = ["critical", "high", "medium", "low", "info"]
 
+# Verification labels — same wording and meaning as the badge in the web UI
+# (ScanResult.verification_label).
+VERIFY_HEX = {"Exploitable": "#dc2626", "Confirmed": "#c2410c", "Unverified": "#b45309",
+              "Not exploitable": "#475569"}
+VERIFY_EXPLAINER = (
+    "Each CVE matched from a service's version is labelled. <b>EXPLOITABLE</b>: an active "
+    "check reproduced it against the live service. <b>CONFIRMED</b>: the PwnBroker agent or an "
+    "SSH login showed the vulnerable package version is installed and serving the port, with no "
+    "vendor fix. <b>UNVERIFIED</b>: the service's version is known to be affected, but nothing "
+    "could prove or rule it out on this host, so it is reported and should be treated as real "
+    "until shown otherwise."
+)
+
+
+def _verify_counts(results):
+    """(exploitable, confirmed, unverified) among vulnerability results."""
+    labels = [r.verification_label for r in results if r.result_type == "vulnerability"]
+    return labels.count("Exploitable"), labels.count("Confirmed"), labels.count("Unverified")
+
+
+def _verify_sentence(results):
+    exp, conf, unv = _verify_counts(results)
+    if not (exp or conf or unv):
+        return ""
+    parts = [f"<b>{exp}</b> {'was' if exp == 1 else 'were'} proven exploitable"]
+    if conf:
+        parts.append(f"<b>{conf}</b> {'was' if conf == 1 else 'were'} confirmed installed on the host")
+    parts.append(f"<b>{unv}</b> {'is' if unv == 1 else 'are'} unverified (version match only)")
+    return " Of these, " + (", ".join(parts[:-1]) + " and " + parts[-1]) + "."
+
+
+def _verify_tag_pdf(r):
+    label = r.verification_label
+    if not label:
+        return ""
+    return f'<br/><font color="{VERIFY_HEX[label]}" size="6.5"><b>{label.upper()}</b></font>'
+
 
 # ── Disk helpers ──────────────────────────────────────────────────────────────
 
@@ -266,6 +303,8 @@ def build_pdf_report(scans) -> bytes:
                 result_type="vulnerability", severity=sev).count()
     total_vulns = sum(totals.values())
     targets_str = ", ".join(s.target.host for s in scans)
+    all_vuln_results = [r for scan in scans
+                        for r in scan.results.filter_by(result_type="vulnerability").all()]
 
     # ── Cover ─────────────────────────────────────────────────────────────────
     _cover_page(story, S,
@@ -301,7 +340,8 @@ def build_pdf_report(scans) -> bytes:
     story.append(Spacer(1, 10))
     story.append(Paragraph(
         f"This report covers <b>{len(scans)}</b> completed scan(s) against "
-        f"<b>{targets_str}</b>. A total of <b>{total_vulns}</b> findings were identified. "
+        f"<b>{targets_str}</b>. A total of <b>{total_vulns}</b> findings were identified."
+        f"{_verify_sentence(all_vuln_results)} "
         "Immediate attention is recommended for Critical and High severity findings.",
         S["body"]))
     story.append(Spacer(1, 16))
@@ -330,9 +370,11 @@ def build_pdf_report(scans) -> bytes:
     story.append(_anchor("sec_vulns"))
     story.append(Paragraph("3. Vulnerability Findings", S["h2"]))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER, spaceAfter=6))
+    story.append(Paragraph(VERIFY_EXPLAINER, S["small"]))
+    story.append(Spacer(1, 8))
 
     for scan in scans:
-        story.append(Paragraph(f"Scan: {scan.name}", S["h3"]))
+        story.append(Paragraph(f"Scan: {h(scan.name)}", S["h3"]))
         story.append(Paragraph(
             f"Target: <b>{scan.target.host}</b>  |  "
             f"Completed: {scan.completed_at.strftime('%Y-%m-%d') if scan.completed_at else 'N/A'}",
@@ -359,13 +401,13 @@ def build_pdf_report(scans) -> bytes:
                 cve_str = (r.cve_id or "") + (f"\n{r.cvss_score}" if r.cvss_score else "")
                 tbl_data.append([
                     _sev_para(r.severity),
-                    Paragraph(h(r.title or "")[:70], S["small"]),
+                    Paragraph(h((r.title or "")[:70]) + _verify_tag_pdf(r), S["small"]),
                     Paragraph(h(r.host or ""), S["small"]),
                     Paragraph(h(cve_str), S["small"]),
                     Paragraph(h((r.description or "")[:100]), S["small"]),
                 ])
             t = Table(tbl_data,
-                      colWidths=[0.55*inch, 1.9*inch, 1.1*inch, 0.85*inch, 2.1*inch])
+                      colWidths=[0.75*inch, 1.9*inch, 1.0*inch, 1.15*inch, 1.7*inch])
             t.setStyle(_std_table_style())
             story.append(t)
         story.append(Spacer(1, 14))
@@ -388,21 +430,23 @@ def build_pdf_report(scans) -> bytes:
             sa.case({"critical": 0, "high": 1, "medium": 2, "low": 3},
                     value=ScanResult.severity)
         ).all():
-            remed_data.append((r.severity, r.title, r.host, r.remediation))
+            remed_data.append((r.severity, r.title, r.host, r.remediation, r.verification_label))
 
     if not remed_data:
         story.append(Paragraph(
             "No specific remediation guidance was captured. "
             "Refer to CVE databases and vendor advisories for each finding.", S["body"]))
     else:
-        for sev, title, host_val, remed in remed_data:
+        for sev, title, host_val, remed, vlabel in remed_data:
             col = SEV_COLOR.get((sev or "info").lower(), SLATE)
             hex_c = "#" + col.hexval()[2:]
             block = KeepTogether([
                 Table([[
                     Paragraph(f'<font color="{hex_c}"><b>{(sev or "info").upper()}</b></font>',
-                              ParagraphStyle("rs", fontSize=8, alignment=TA_CENTER)),
-                    Paragraph(f"<b>{h(title or '')}</b>  —  {h(host_val or '')}", S["body"]),
+                              ParagraphStyle("rs", fontSize=7, alignment=TA_CENTER)),
+                    Paragraph(f"<b>{h(title or '')}</b>  —  {h(host_val or '')}"
+                              + (f'  <font color="{VERIFY_HEX[vlabel]}" size="7"><b>{vlabel.upper()}</b></font>'
+                                 if vlabel else ""), S["body"]),
                 ]], colWidths=[0.65*inch, 5.85*inch],
                    style=TableStyle([
                        ("BACKGROUND", (0, 0), (-1, -1), LGRAY),
@@ -440,10 +484,10 @@ def build_csv_report(scans) -> bytes:
     writer = csv.writer(buf)
     writer.writerow([
         "Scan Name", "Target", "Scan Type", "Scan Completed",
-        "Severity", "Title", "Host", "Port", "Protocol", "Service",
+        "Severity", "Verification", "Title", "Host", "Port", "Protocol", "Service",
         "CVE ID", "CVSS Score", "Description", "Remediation",
         "Package", "Package Version", "Ecosystem", "Fixed Version",
-        "Ticket Status", "Assigned To", "Due Date", "Notes",
+        "Ticket Status", "Assigned To", "Due Date", "Notes", "Verification Detail",
     ])
 
     for scan in scans:
@@ -468,6 +512,7 @@ def build_csv_report(scans) -> bytes:
                 scan.scan_type,
                 scan.completed_at.strftime("%Y-%m-%d %H:%M") if scan.completed_at else "",
                 (r.severity or "").upper(),
+                r.verification_label or "",
                 r.title or "",
                 r.host or "",
                 r.port if r.port is not None else "",
@@ -485,6 +530,7 @@ def build_csv_report(scans) -> bytes:
                 assignee,
                 ticket.due_date.strftime("%Y-%m-%d") if ticket and ticket.due_date else "",
                 ticket.notes if ticket else "",
+                r.verification_note or "",
             ])
 
     # UTF-8 BOM so Excel opens it without mangling special characters.
@@ -512,6 +558,8 @@ def build_html_report(scans) -> str:
             totals[sev] += scan.results.filter_by(
                 result_type="vulnerability", severity=sev).count()
     total_vulns = sum(totals.values())
+    all_vuln_results = [r for scan in scans
+                        for r in scan.results.filter_by(result_type="vulnerability").all()]
 
     scan_sections = []
     for scan in scans:
@@ -529,6 +577,9 @@ def build_html_report(scans) -> str:
 
         rows_html = ""
         for r in results:
+            vl = r.verification_label
+            vtag = (f' <span class="vlabel" style="color:{VERIFY_HEX[vl]};border-color:{VERIFY_HEX[vl]}" '
+                    f'title="{h(r.verification_note or "")}">{h(vl)}</span>' if vl else "")
             sc = {"critical": "#dc2626", "high": "#ea580c", "medium": "#d97706",
                   "low": "#2563eb", "info": "#6b7280"}.get(
                       (r.severity or "info").lower(), "#6b7280")
@@ -536,7 +587,7 @@ def build_html_report(scans) -> str:
                 f"<tr>"
                 f'<td><span class="badge" style="background:{sc}">'
                 f'{h((r.severity or "info").upper())}</span></td>'
-                f"<td>{h(r.title or '')}</td>"
+                f"<td>{h(r.title or '')}{vtag}</td>"
                 f"<td>{h(r.host or '')}</td>"
                 f"<td>{h(r.cve_id or '')}</td>"
                 f"<td>{h(str(r.cvss_score) if r.cvss_score else '')}</td>"
@@ -648,6 +699,10 @@ tbody tr:hover{{background:#f0f9ff}}
         color:#fff;white-space:nowrap}}
 .desc{{color:var(--slate);font-size:12px;max-width:300px}}
 .no-findings{{color:var(--green);padding:16px 0;font-size:14px}}
+.vlabel{{display:inline-block;margin-left:6px;padding:0 6px;border:1px solid;border-radius:4px;
+         font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}}
+.verify-note{{background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:12px 16px;
+              margin:0 0 24px;font-size:13px;color:var(--slate)}}
 .report-footer{{text-align:center;padding:32px;color:var(--slate);
                 font-size:11px;border-top:1px solid var(--border);margin-top:16px}}
 @media print{{.cover{{break-after:page}}.scan-section{{break-inside:avoid}}
@@ -672,6 +727,7 @@ tbody tr:hover{{background:#f0f9ff}}
     <h2>&#128196; Table of Contents</h2>
     <ol>{toc_items}</ol>
   </div>
+  <p class="verify-note">{VERIFY_EXPLAINER}{_verify_sentence(all_vuln_results)}</p>
   {''.join(scan_sections)}
   <div class="report-footer">
     PwnBroker Security Platform &nbsp;&middot;&nbsp; Report generated {now_str}
@@ -716,6 +772,13 @@ def build_tech_overview_pdf() -> bytes:
                SEV_ORDER.index(cve_sev[r.cve_id]):
                 cve_sev[r.cve_id] = (r.severity or "info").lower()
     top_cves = sorted(cve_freq.items(), key=lambda x: -x[1])[:15]
+    # Strongest verdict seen for each CVE across hosts: Exploitable beats Unverified.
+    cve_verify = {}
+    for r in all_results:
+        lab = r.verification_label
+        rank = {"Exploitable": 3, "Confirmed": 2, "Unverified": 1}
+        if r.cve_id and lab in rank and rank[lab] > rank.get(cve_verify.get(r.cve_id), 0):
+            cve_verify[r.cve_id] = lab
 
     svc_counts = defaultdict(int)
     for r in all_results:
@@ -784,7 +847,8 @@ def build_tech_overview_pdf() -> bytes:
     story.append(Spacer(1, 10))
     story.append(Paragraph(
         f"PwnBroker has completed <b>{scanned_count}</b> scans across "
-        f"<b>{asset_count}</b> inventoried assets with <b>{total_vulns}</b> total findings. "
+        f"<b>{asset_count}</b> inventoried assets with <b>{total_vulns}</b> total findings."
+        f"{_verify_sentence(all_results)} "
         "Critical and High findings require remediation within 1 and 7 days respectively.",
         S["body"]))
     story.append(Spacer(1, 16))
@@ -809,17 +873,23 @@ def build_tech_overview_pdf() -> bytes:
     story.append(_anchor("sec_cves"))
     story.append(Paragraph("3. Top CVEs Identified", S["h2"]))
     story.append(HRFlowable(width="100%", thickness=0.5, color=BORDER, spaceAfter=6))
+    story.append(Paragraph(VERIFY_EXPLAINER, S["small"]))
+    story.append(Spacer(1, 6))
     if top_cves:
-        cve_rows = [["CVE ID", "Occurrences", "Severity", "Priority"]]
+        cve_rows = [["CVE ID", "Occurrences", "Severity", "Verification", "Priority"]]
         for cve_id, cnt in top_cves:
             sev = cve_sev.get(cve_id, "info")
             priority = ("Immediate" if sev == "critical" else "Urgent" if sev == "high"
                         else "Scheduled" if sev == "medium" else "Planned")
+            vlab = cve_verify.get(cve_id)
             cve_rows.append([
                 Paragraph(f"<b>{h(cve_id)}</b>", S["body"]),
-                str(cnt), _sev_para(sev), priority,
+                str(cnt), _sev_para(sev),
+                Paragraph(f'<font color="{VERIFY_HEX[vlab]}"><b>{vlab.upper()}</b></font>'
+                          if vlab else "—", S["small"]),
+                priority,
             ])
-        ct = Table(cve_rows, colWidths=[1.8*inch, 1*inch, 1*inch, 2*inch])
+        ct = Table(cve_rows, colWidths=[1.6*inch, 0.9*inch, 0.9*inch, 1.2*inch, 1.4*inch])
         ct.setStyle(_std_table_style())
         story.append(ct)
     else:
@@ -1089,7 +1159,8 @@ def build_executive_summary_pdf() -> bytes:
     story.append(_stat_grid([vuln_items[:4], vuln_items[4:]]))
     story.append(Spacer(1, 10))
     story.append(Paragraph(
-        f"<b>{len(all_vulns)}</b> total vulnerabilities identified across all scans. "
+        f"<b>{len(all_vulns)}</b> total vulnerabilities identified across all scans."
+        f"{_verify_sentence(all_vulns)} "
         f"Of <b>{len(tickets)}</b> tracked tickets, <b>{len(patched)}</b> patched, "
         f"<b>{len(open_tickets)}</b> open, <b>{len(overdue)}</b> past SLA deadline.",
         S["body"]))

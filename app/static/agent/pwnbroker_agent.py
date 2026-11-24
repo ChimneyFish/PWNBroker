@@ -20,12 +20,19 @@ _DEFAULT_REG_TOKEN = "__REG_TOKEN__"
 # ─────────────────────────────────────────────────────────────────────────────
 
 import os
+import re
 import sys
+import gzip
 import json
 import time
+import shutil
 import socket
 import platform
 import logging
+import subprocess
+from datetime import datetime, timezone
+
+AGENT_VERSION = "2.0.0"
 
 _PLAT = sys.platform  # win32 | darwin | linux
 
@@ -121,6 +128,7 @@ def _collect():
         pass
 
     return {
+        "agent_version":  AGENT_VERSION,
         "hostname":       socket.gethostname(),
         "ip_address":     _local_ip(),
         "os":             _PLAT,
@@ -129,6 +137,212 @@ def _collect():
         "memory_percent": psutil.virtual_memory().percent,
         "processes":      procs[:100],
         "connections":    conns[:50],
+    }
+
+
+# ── host inventory (for verifying PwnBroker scan findings) ────────────────────
+#
+# Read-only. Only fixed commands are run (package queries, `apachectl -M`,
+# `nginx -V`), never anything the server sends. The server can only ask "send
+# an inventory" and name packages whose changelogs it wants; names are checked
+# against a strict pattern before use.
+
+_CVE_RE      = re.compile(r"CVE-\d{4}-\d{4,}", re.I)
+_DEB_HEADER  = re.compile(r"^[a-z0-9][a-z0-9.+-]* \([^)]+\) ")
+_TRIMMED_RE  = re.compile(r"older changelog entries|changelog has been trimmed", re.I)
+_PKG_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+_-]{0,199}$")
+_MAX_READ    = 4 * 1024 * 1024
+
+
+def _run(argv, timeout=30):
+    """Run a fixed read-only command (no shell) → stdout+stderr text, or ''."""
+    if not shutil.which(argv[0]):
+        return ""
+    try:
+        p = subprocess.run(argv, capture_output=True, timeout=timeout, stdin=subprocess.DEVNULL,
+                           env={**os.environ, "LC_ALL": "C"})
+        return (p.stdout + p.stderr)[:_MAX_READ].decode("utf-8", "replace")
+    except Exception:
+        return ""
+
+
+def _os_release():
+    info = {}
+    try:
+        with open("/etc/os-release") as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                info[k] = v.strip().strip('"')
+    except OSError:
+        pass
+    return info
+
+
+def _package_manager():
+    if _PLAT != "linux":
+        return None
+    if shutil.which("dpkg-query"):
+        return "deb"
+    if shutil.which("rpm"):
+        return "rpm"
+    return None
+
+
+def _all_ips():
+    ips = []
+    for addrs in psutil.net_if_addrs().values():
+        for a in addrs:
+            if a.family in (socket.AF_INET, socket.AF_INET6):
+                ips.append(a.address.split("%", 1)[0])
+    return ips
+
+
+def _listeners():
+    out, seen = [], set()
+    try:
+        conns = psutil.net_connections(kind="inet")
+    except (psutil.AccessDenied, PermissionError):
+        return out
+    for c in conns:
+        tcp = c.type == socket.SOCK_STREAM
+        if not c.laddr or (tcp and c.status != psutil.CONN_LISTEN) or (not tcp and c.raddr):
+            continue
+        key = (c.laddr.port, "tcp" if tcp else "udp")
+        if key in seen:
+            continue
+        seen.add(key)
+        exe = None
+        if c.pid:
+            try:
+                exe = psutil.Process(c.pid).exe() or None
+            except (psutil.NoSuchProcess, psutil.AccessDenied, OSError):
+                pass
+        out.append({"port": key[0], "proto": key[1], "exe": exe})
+    return out
+
+
+def _owning_package(pm, path):
+    for p in dict.fromkeys([path, path[4:] if path.startswith("/usr/") else path]):
+        if pm == "deb":
+            out = _run(["dpkg", "-S", p], timeout=15)
+            if ":" in out and "no path found" not in out:
+                return out.split(":", 1)[0].split(",")[0].strip()
+        elif pm == "rpm":
+            out = _run(["rpm", "-qf", "--qf", "%{NAME}\n", p], timeout=15).strip()
+            if out and "not owned" not in out and "No such file" not in out:
+                return out.split()[0]
+    return None
+
+
+def _packages(pm):
+    pkgs = {}
+    if pm == "deb":
+        out = _run(["dpkg-query", "-W", "-f",
+                    "${db:Status-Status}\t${Package}\t${Version}\t${source:Package}\n"], timeout=60)
+        for line in out.splitlines():
+            parts = line.split("\t")
+            if len(parts) == 4 and parts[0] == "installed":
+                pkgs[parts[1]] = [parts[2], parts[3] or parts[1]]
+    elif pm == "rpm":
+        out = _run(["rpm", "-qa", "--qf", "%{NAME}\t%{VERSION}-%{RELEASE}\t%{SOURCERPM}\n"], timeout=60)
+        for line in out.splitlines():
+            parts = line.split("\t")
+            if len(parts) == 3:
+                src = re.sub(r"-[^-]+-[^-]+\.src\.rpm$", "", parts[2]) or parts[0]
+                pkgs[parts[0]] = [parts[1], src]
+    return pkgs
+
+
+def _changelog(pm, pkg, source):
+    """CVE-mentioning changelog lines with their version header."""
+    text = ""
+    if pm == "deb":
+        for d in dict.fromkeys([pkg, source]):
+            for name in ("changelog.Debian.gz", "changelog.Debian"):
+                path = os.path.join("/usr/share/doc", d, name)
+                try:
+                    opener = gzip.open if name.endswith(".gz") else open
+                    with opener(path, "rb") as f:
+                        text = f.read(_MAX_READ).decode("utf-8", "replace")
+                    break
+                except OSError:
+                    continue
+            if text:
+                break
+    elif pm == "rpm":
+        text = _run(["rpm", "-q", "--changelog", pkg], timeout=30)
+    entries, header = [], ""
+    for line in text.splitlines():
+        if _DEB_HEADER.match(line) or line.startswith("* "):
+            header = line.strip()[:200]
+        if _CVE_RE.search(line):
+            entries.append([header, line.strip()[:300]])
+    return {"found": bool(text.strip()), "trimmed": bool(_TRIMMED_RE.search(text)),
+            "entries": entries[:5000]}
+
+
+def _apache_modules():
+    for cmd in ("apache2ctl", "apachectl", "httpd"):
+        if shutil.which(cmd):
+            out = _run([cmd, "-M"], timeout=20)
+            mods = sorted(set(re.findall(r"^\s*([a-z0-9_]+)_module\b", out, re.M)))
+            return mods or None
+    return None
+
+
+def _nginx_build():
+    if not shutil.which("nginx"):
+        return None
+    out = _run(["nginx", "-V"], timeout=20)
+    for root, _, files in os.walk("/etc/nginx"):
+        for fn in files:
+            try:
+                with open(os.path.join(root, fn), errors="replace") as f:
+                    out += "".join(l for l in f if l.lstrip().startswith("load_module"))
+            except OSError:
+                pass
+    return out if "configure arguments" in out else None
+
+
+def collect_inventory(changelog_packages=()):
+    errors = []
+    osr = _os_release()
+    kernel = {"win32": "Windows", "darwin": "Darwin"}.get(_PLAT, platform.system())
+    pm = _package_manager()
+    listeners = _listeners()
+    if not listeners:
+        errors.append("couldn't list listening ports (agent not running as root/Administrator?)")
+    elif any(not l["exe"] for l in listeners):
+        n = sum(1 for l in listeners if not l["exe"])
+        errors.append(f"{n} listening port(s) owned by processes this agent can't inspect "
+                      f"(run it as root/Administrator to check them)")
+    packages = _packages(pm) if pm else {}
+    owner = {}
+    for l in listeners:
+        if l["exe"] and pm:
+            if l["exe"] not in owner:
+                owner[l["exe"]] = _owning_package(pm, l["exe"])
+            l["package"] = owner[l["exe"]]
+    want = {l.get("package") for l in listeners if l.get("package")}
+    want |= {p for p in changelog_packages if isinstance(p, str) and _PKG_NAME_RE.match(p)}
+    changelogs = {}
+    for p in sorted(want):
+        if p in packages:
+            changelogs[p] = _changelog(pm, p, packages[p][1])
+    return {
+        "schema": 1,
+        "agent_version": AGENT_VERSION,
+        "collected_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "os": {"kernel": kernel, "id": osr.get("ID", _PLAT),
+               "pretty": osr.get("PRETTY_NAME") or f"{platform.system()} {platform.release()}"},
+        "package_manager": pm,
+        "ips": _all_ips(),
+        "listeners": listeners,
+        "packages": packages,
+        "changelogs": changelogs,
+        "apache_modules": _apache_modules() if _PLAT == "linux" else None,
+        "nginx_build": _nginx_build() if _PLAT == "linux" else None,
+        "errors": errors,
     }
 
 
@@ -186,6 +400,25 @@ def heartbeat(cfg):
         return None
 
 
+def send_inventory(cfg, changelog_packages=()):
+    headers = {
+        "X-Agent-ID":    cfg["agent_id"],
+        "X-Agent-Token": cfg["token"],
+    }
+    try:
+        inv = collect_inventory(changelog_packages)
+        r = requests.post(
+            f"{cfg['server_url']}/threat/api/inventory",
+            json=inv, headers=headers,
+            timeout=120, verify=cfg.get("verify_ssl", True),
+        )
+        r.raise_for_status()
+        log.info("Sent host inventory (%d packages, %d listening ports)",
+                 len(inv["packages"]), len(inv["listeners"]))
+    except Exception as e:
+        log.warning("Inventory upload failed: %s", e)
+
+
 def _run_loop(cfg, interval=60, stop_event=None):
     log.info("Heartbeating every %ds to %s", interval, cfg["server_url"])
     while True:
@@ -193,6 +426,8 @@ def _run_loop(cfg, interval=60, stop_event=None):
         if result:
             for alert in result.get("alerts", []):
                 log.warning("ALERT [%s] %s", alert["severity"].upper(), alert["title"])
+            if result.get("send_inventory"):
+                send_inventory(cfg, result.get("changelog_packages") or ())
         # If a threading.Event is provided (service mode), use it for interruptible sleep
         if stop_event is not None:
             stop_event.wait(timeout=interval)
@@ -269,12 +504,18 @@ def main():
     parser.add_argument("--no-verify-ssl", action="store_true")
     parser.add_argument("--register",      action="store_true")
     parser.add_argument("--interval",      type=int, default=60)
+    parser.add_argument("--print-inventory", action="store_true",
+                        help="print the host inventory this agent would send, then exit")
     args = parser.parse_args()
 
     verify_ssl = not args.no_verify_ssl
     if not verify_ssl:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    if args.print_inventory:
+        print(json.dumps(collect_inventory(), indent=2))
+        return
 
     cfg = _load_config()
 

@@ -36,6 +36,9 @@ def _note(t, text):
     t.notes = f"[{ts} system] {text}\n{t.notes or ''}".strip()
 
 
+_PROOF_RANK = {"unconfirmed": 1, "installed": 2, "confirmed": 3}
+
+
 def _apply_newer_evidence(t, r, now):
     """A later scan re-tested a vuln that already has a ticket. Proof moves
     the ticket: confirmed → open, ruled out → not_exploitable. Tickets someone
@@ -43,7 +46,7 @@ def _apply_newer_evidence(t, r, now):
     to note a ruled-out result. Returns True if the ticket changed."""
     if not r.is_inferred and r.verification_status != "confirmed":
         return False
-    if r.verification_status not in ("confirmed", "not_exploitable"):
+    if r.verification_status not in ("confirmed", "installed", "not_exploitable"):
         # Still unproven: no new evidence. Only a legacy "unverified" ticket
         # moves — unverified findings are open tickets now.
         if t.status != "unverified":
@@ -53,12 +56,23 @@ def _apply_newer_evidence(t, r, now):
         t.sla_days, t.due_date = sla, (t.opened_at or now) + timedelta(days=sla)
         return True
     new = _proof_status(r)
+    why = ("a scan confirmed this is exploitable on the live service"
+           if r.verification_status == "confirmed" else
+           "the host's installed package is the vulnerable version with no vendor fix")
     if new == "open" and t.status in ("unverified", "not_exploitable"):
         sla = _SLA_DAYS.get(r.severity, 90)
         t.status, t.scan_result_id = "open", r.id
         t.opened_at, t.sla_days, t.due_date = now, sla, now + timedelta(days=sla)
         t.patched_at = None
-        _note(t, "Reopened: a scan confirmed this is exploitable on the live service.")
+        _note(t, f"Reopened: {why}.")
+        return True
+    if (new == "open" and t.status in ("open", "in_progress") and t.scan_result_id != r.id
+            and _PROOF_RANK.get(r.verification_status, 0)
+            > _PROOF_RANK.get(getattr(t.scan_result, "verification_status", None), 0)):
+        # Stronger proof for a ticket already being worked: point it at the
+        # finding that carries the proof, so its label (Exploitable/Confirmed) shows.
+        t.scan_result_id = r.id
+        _note(t, f"Verified: {why}.")
         return True
     if new == "not_exploitable" and t.status == "unverified":
         t.status, t.scan_result_id = "not_exploitable", r.id
@@ -106,6 +120,9 @@ def _auto_sync():
     def representative(rs):
         for r in rs:
             if r.verification_status == "confirmed" or not r.is_inferred:
+                return r
+        for r in rs:
+            if r.verification_status == "installed":
                 return r
         if all(r.verification_status == "not_exploitable" for r in rs):
             return rs[0]
@@ -206,11 +223,14 @@ def index():
 
     device_rows = sorted(by_device.values(), key=lambda x: x["open"], reverse=True)
     unverified      = sum(1 for t in tickets if t.is_unverified)
+    confirmed       = sum(1 for t in tickets if t.status in ("open", "in_progress") and t.scan_result
+                          and t.scan_result.verification_status == "installed")
     not_exploitable = sum(1 for t in tickets if t.status == "not_exploitable")
 
     return render_template("vulns/index.html",
                            device_rows=device_rows,
                            total_unverified=unverified,
+                           total_confirmed=confirmed,
                            total_not_exploitable=not_exploitable,
                            verify_state=_verify_state,
                            total_open=len(open_t),
@@ -243,7 +263,7 @@ def tickets():
     sev_f    = request.args.get("severity", "")
 
     q = VulnTicket.query
-    if status_f in ("open", "unverified"):
+    if status_f in ("open", "unverified", "confirmed"):
         q = q.filter(VulnTicket.status.in_(["open", "in_progress"]))
     elif status_f != "all":
         q = q.filter_by(status=status_f)
@@ -253,6 +273,9 @@ def tickets():
     all_tickets = q.order_by(VulnTicket.due_date.asc()).all()
     if status_f == "unverified":
         all_tickets = [t for t in all_tickets if t.is_unverified]
+    elif status_f == "confirmed":
+        all_tickets = [t for t in all_tickets
+                       if t.scan_result and t.scan_result.verification_status == "installed"]
     users       = User.query.order_by(User.username).all()
 
     # Build enrichment lookup keyed by cve_id
