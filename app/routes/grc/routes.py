@@ -405,7 +405,10 @@ def update_policy(policy_id):
     p = Policy.query.get_or_404(policy_id)
     p.title       = request.form.get("title", p.title).strip()
     p.category    = request.form.get("category", p.category)
-    p.description = request.form.get("description", "").strip()
+    # The Edit modal doesn't send a description — only overwrite it when the
+    # request carries one, or every status/version edit blanks it.
+    if "description" in request.form:
+        p.description = request.form.get("description", "").strip()
     p.version     = request.form.get("version", p.version).strip()
     old_status    = p.status
     p.status      = request.form.get("status", p.status)

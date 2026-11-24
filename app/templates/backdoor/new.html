@@ -38,6 +38,12 @@
             <option value="{{ t.id }}">{{ t.name }} ({{ t.host }})</option>
             {% endfor %}
           </select>
+          {% if not targets %}
+          <div class="alert alert-warning small mt-2 mb-0" id="no-targets">
+            You don't have any Local Path targets yet, so there's nothing to scan.
+            <a href="{{ url_for('targets.new') }}">Add a Local Path target</a> first.
+          </div>
+          {% endif %}
           <div class="mt-1 small text-muted">
             Only <strong>Local Path</strong>-type targets appear here.
             <a href="{{ url_for('targets.new') }}">+ Add a Local Path target</a>
@@ -55,7 +61,11 @@
         </div>
 
         <div class="flex gap-2">
+          {% if targets %}
           <button type="submit" class="btn btn-primary"><i class="bi bi-play-fill me-1"></i>Start Scan</button>
+          {% else %}
+          <button type="button" class="btn btn-primary" disabled title="Add a Local Path target first"><i class="bi bi-play-fill me-1"></i>Start Scan</button>
+          {% endif %}
           <a href="{{ url_for('backdoor.index') }}" class="btn btn-outline-secondary">Cancel</a>
         </div>
       </form>
