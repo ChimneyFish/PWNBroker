@@ -120,7 +120,11 @@
   </div>
   {% else %}
   <div class="row g-3 mb-4">
+    {% if inv.windows %}
+    <div class="col-sm-3"><div class="stat-card"><div class="stat-value">{{ (inv.programs or []) | length }}</div><div class="stat-label">Installed programs</div></div></div>
+    {% else %}
     <div class="col-sm-3"><div class="stat-card"><div class="stat-value">{{ inv.packages | length }}</div><div class="stat-label">Packages</div></div></div>
+    {% endif %}
     <div class="col-sm-3"><div class="stat-card"><div class="stat-value">{{ inv.listeners | length }}</div><div class="stat-label">Listening ports</div></div></div>
     <div class="col-sm-3"><div class="stat-card"><div class="stat-value" style="color:#c2410c">{{ verified.get('Confirmed', 0) }}</div><div class="stat-label">Confirmed findings</div></div></div>
     <div class="col-sm-3"><div class="stat-card"><div class="stat-value text-success">{{ verified.get('Not exploitable', 0) }}</div><div class="stat-label">Ruled out</div></div></div>
@@ -131,28 +135,46 @@
           <td>{{ agent.inventory_at | localdt('%Y-%m-%d %H:%M') if agent.inventory_at else '—' }}
               <span class="text-muted small">(used for {{ max_age_days }} days; refreshed every 6 hours)</span></td></tr>
       <tr><td class="text-muted">OS</td><td>{{ inv.os.pretty or inv.os.kernel or '—' }}</td></tr>
+      {% if inv.windows %}
+      <tr><td class="text-muted">Windows build</td><td class="font-monospace small">{{ inv.windows.build or 'not reported' }}
+          {% if inv.windows.installation_type %}<span class="text-muted">({{ inv.windows.installation_type }})</span>{% endif %}</td></tr>
+      <tr><td class="text-muted">Installed updates</td><td class="small">
+          {% if inv.windows.hotfixes %}{{ inv.windows.hotfixes | length }} — latest listed:
+            <span class="font-monospace">{{ inv.windows.hotfixes[-3:] | join(', ') }}</span>{% else %}—{% endif %}</td></tr>
+      {% else %}
       <tr><td class="text-muted">Package manager</td><td>{{ inv.package_manager or 'none — only OS-level checks apply' }}</td></tr>
+      {% endif %}
       <tr><td class="text-muted">Addresses matched to scans</td><td class="font-monospace small">{{ inv.ips | join(', ') or '—' }}</td></tr>
+      {% if not inv.windows %}
       <tr><td class="text-muted">Web-server modules</td><td class="small">
         {% if inv.apache_modules %}Apache: {{ inv.apache_modules | length }} loaded{% endif %}
         {% if inv.nginx_build %}{% if inv.apache_modules %} · {% endif %}nginx build read{% endif %}
         {% if not inv.apache_modules and not inv.nginx_build %}—{% endif %}</td></tr>
+      {% endif %}
       {% if inv.errors %}<tr><td class="text-muted">Collection notes</td><td class="small text-warning">{{ inv.errors | join('; ') }}</td></tr>{% endif %}
     </tbody>
   </table>
   {% if inv.listeners %}
   <details>
-    <summary class="small font-semibold" style="cursor:pointer">Listening ports and owning packages</summary>
+    <summary class="small font-semibold" style="cursor:pointer">Listening ports and {{ 'programs' if inv.windows else 'owning packages' }}</summary>
     <div style="overflow-x:auto">
     <table class="table table-sm table-dark mt-2 mb-0" style="font-size:0.8rem">
-      <thead><tr><th>Port</th><th>Program</th><th>Package</th><th>Version</th></tr></thead>
+      <thead><tr><th>Port</th><th>Program</th><th>{{ 'Product' if inv.windows else 'Package' }}</th><th>Version</th></tr></thead>
       <tbody>
       {% for l in inv.listeners | sort(attribute='port') %}
+        {% if inv.windows %}
+          {% set f = l.file or {} %}
+          <tr><td class="font-monospace">{{ l.port }}/{{ l.proto }}</td>
+              <td class="font-monospace small">{{ l.exe or 'System / not readable' }}</td>
+              <td>{{ f.product or f.description or '—' }}</td>
+              <td class="font-monospace small">{{ f.product_version or f.file_version or '—' }}</td></tr>
+        {% else %}
         {% set pv = inv.packages.get(l.package) if l.package else None %}
         <tr><td class="font-monospace">{{ l.port }}/{{ l.proto }}</td>
             <td class="font-monospace small">{{ l.exe or '—' }}</td>
             <td>{{ l.package or '—' }}</td>
             <td class="font-monospace small">{{ pv[0] if pv else '—' }}</td></tr>
+        {% endif %}
       {% endfor %}
       </tbody>
     </table>

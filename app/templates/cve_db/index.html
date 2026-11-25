@@ -10,7 +10,7 @@
   <form method="post" action="{{ url_for('cve_db.sync') }}" class="d-inline ms-1">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="full" value="1">
-    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Re-download everything from NVD and CVE.org">Full re-download</button>
+    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Re-download everything from NVD, CVE.org and Microsoft">Full re-download</button>
   </form>
   {% endif %}
 {% endblock %}
@@ -19,7 +19,8 @@
 <p class="text-muted small mb-4" style="max-width:60rem">
   PWNBroker's own copy of the <strong>NVD</strong> (nvd.nist.gov) and <strong>CVE.org</strong> (the official CVE List)
   databases. Scans match discovered services against this local copy instead of querying NVD for each service.
-  It syncs every few hours. CVE.org records fill in CVEs that NVD hasn't analysed yet.
+  It syncs every few hours. CVE.org records fill in CVEs that NVD hasn't analysed yet. Microsoft's security
+  update data (the Windows build that fixes each CVE) lets the endpoint agent prove whether a Windows host is patched.
 </p>
 
 {% if not st.ready %}
@@ -46,7 +47,7 @@
   <table class="table table-dark">
     <thead><tr><th>Source</th><th>Status</th><th>Records</th><th>Last sync</th><th>Last full download</th><th>Detail</th></tr></thead>
     <tbody>
-      {% for key, label in [("nvd", "NVD — nvd.nist.gov"), ("cveorg", "CVE.org — CVE List (cvelistV5)")] %}
+      {% for key, label in [("nvd", "NVD — nvd.nist.gov"), ("cveorg", "CVE.org — CVE List (cvelistV5)"), ("msrc", "Microsoft — Windows fixed builds (MSRC)")] %}
       {% set s = st.sources[key] %}
       <tr>
         <td class="font-semibold">{{ label }}</td>
@@ -95,20 +96,20 @@
   document.querySelectorAll('.js-time').forEach(function (el) {
     if (el.dataset.ts) el.textContent = new Date(el.dataset.ts).toLocaleString();
   });
-  var running = {{ 'true' if (st.progress or st.sources.nvd.status == 'running' or st.sources.cveorg.status == 'running') else 'false' }};
+  var running = {{ 'true' if (st.progress or st.sources.nvd.status == 'running' or st.sources.cveorg.status == 'running' or st.sources.msrc.status == 'running') else 'false' }};
   if (!running) return;
   var timer = setInterval(function () {
     fetch("{{ url_for('cve_db.status_json') }}", {credentials: 'same-origin'})
       .then(function (r) { return r.json(); })
       .then(function (s) {
-        ['nvd', 'cveorg'].forEach(function (k) {
+        ['nvd', 'cveorg', 'msrc'].forEach(function (k) {
           var src = s.sources[k], p = s.progress[k];
           document.getElementById('src-' + k + '-status').textContent = src.status.toUpperCase();
           document.getElementById('src-' + k + '-records').textContent = (src.records || 0).toLocaleString();
           document.getElementById('src-' + k + '-msg').textContent = (p && p.step) || src.message || '';
         });
         document.getElementById('st-total').textContent = s.total.toLocaleString();
-        var busy = Object.keys(s.progress).length || s.sources.nvd.status === 'running' || s.sources.cveorg.status === 'running';
+        var busy = Object.keys(s.progress).length || ['nvd', 'cveorg', 'msrc'].some(function (k) { return s.sources[k].status === 'running'; });
         if (!busy) { clearInterval(timer); location.reload(); }
       }).catch(function () {});
   }, 5000);

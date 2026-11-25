@@ -69,7 +69,7 @@ PwnBroker combines network scanning, vulnerability management, dependency auditi
 - **RAM**: 2 GB minimum, 4 GB recommended
 - **Disk**: 10 GB free, plus a few GB for the local CVE database
 - **Access**: root / sudo for initial setup
-- **Network**: outbound HTTPS for threat intel API calls and CVE database syncs (`nvd.nist.gov`, `api.github.com`, `github.com`, `raw.githubusercontent.com`)
+- **Network**: outbound HTTPS for threat intel API calls and CVE database syncs (`nvd.nist.gov`, `api.github.com`, `github.com`, `raw.githubusercontent.com`, `api.msrc.microsoft.com`)
 - **Python**: 3.11+ (3.13 tested)
 
 Optional API keys (all free tiers available):

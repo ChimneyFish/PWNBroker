@@ -206,6 +206,27 @@ def lookup_service(product: str, version: str, nmap_cpe23: str = ""):
     return results, cpe
 
 
+def affected_ranges(cve_id: str, vendor: str, product: str):
+    """The affected-version criteria for one CVE on vendor:product, as
+    (exact, start_incl, start_excl, end_incl, end_excl) tuples — NVD's when
+    NVD has analysed the CVE, else the CNA's. [] if none; None if the mirror
+    can't be read."""
+    try:
+        with _engine().connect() as conn:
+            rows = conn.execute(text(
+                "SELECT source, vendor, version, v_start_incl, v_start_excl, v_end_incl, v_end_excl "
+                "FROM mirror_cpe_matches WHERE cve_id = :c AND product = :p"),
+                {"c": (cve_id or "").upper(), "p": product}).all()
+    except Exception:
+        return None
+    vtok = _tokens(vendor)
+    nvd = [tuple(r[2:]) for r in rows if r[0] == "nvd" and r[1] == vendor]
+    if nvd:
+        return nvd
+    return [tuple(r[2:]) for r in rows
+            if r[0] == "cveorg" and (r[1] == vendor or _tokens(r[1]) & vtok)]
+
+
 def get_cve(cve_id: str):
     """Mirror record for one CVE as a dict, or None."""
     with _engine().connect() as conn:

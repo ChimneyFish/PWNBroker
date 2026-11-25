@@ -15,7 +15,7 @@ def _status_payload():
     from ..cve_mirror.sync import progress_snapshot
     s = query.stats()
     src = {}
-    for name in ("nvd", "cveorg"):
+    for name in ("nvd", "cveorg", "msrc"):
         st = s["sources"].get(name)
         src[name] = {
             "status": st.status if st else "never",

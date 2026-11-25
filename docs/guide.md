@@ -430,6 +430,25 @@ If none of those apply, the finding is **Confirmed** when all of these hold:
 - the installed version matches the version the CVE was matched on (so an
   upgrade since the scan isn't mistaken for the old build).
 
+**Windows hosts (agent only).** Windows has no package manager or vendor
+changelogs, so the agent's Windows inventory is checked differently:
+
+| Finding | How it's decided |
+|---|---|
+| **A Windows CVE** (SMB, RDP, HTTP.sys, IIS, …) | Microsoft publishes, for each CVE and each Windows version, the build that contains the fix (kept in the [CVE Database](#cve-database-cve-db)). Windows updates are cumulative, so a host at or past that build is **ruled out** (patched), and one below it is **Confirmed**. The fixing update (KB) being installed also counts as patched. |
+| **Other software** (Apache, Tomcat, OpenSSL, MySQL, …) | The program serving the finding's port is identified from its executable's version info, or from the installed program (Apps & Features) whose folder it runs from. Windows builds of this software get no distribution backports, so its version is compared with the CVE's affected range: inside it is **Confirmed**, outside it (upgraded since the scan) is **ruled out**. |
+
+These stay Unverified on Windows, with the reason:
+
+- Windows CVEs from before mid-2021. Microsoft's data has no build numbers
+  before then.
+- A Windows version Microsoft doesn't list a fix for. It may be out of
+  support, so this isn't treated as "not affected".
+- A build between Microsoft's normal and hotpatch fix builds (hotpatch-enrolled
+  servers).
+- Software found only by name in the installed programs list, not tied to the
+  process on the port. It might be a different copy.
+
 Anything else stays Unverified with a note saying what was found (e.g.
 "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix listed for CVE-…", when the
 package was only guessed from the product name). Host checks never mark a
@@ -621,6 +640,7 @@ against it, instead of asking NVD about every service it finds. Open it from
 |---|---|
 | NVD (JSON 2.0 data feeds) | CVSS scores, CWE, and NVD's analysed list of affected products and version ranges |
 | CVE.org (the official CVE List, `cvelistV5`) | Every published CVE as soon as it's assigned, with the affected versions the reporting vendor gave |
+| Microsoft (MSRC security update API) | For each Windows CVE since 2021, the Windows build that fixes it on each Windows version. The agent uses this to tell whether a Windows host is patched. |
 
 NVD's analysed version ranges are used when they exist. For CVEs NVD hasn't
 analysed yet (its backlog), the vendor's own affected-version data from
@@ -656,6 +676,7 @@ CVE.org is used, so new CVEs still match.
 | `CVE_MIRROR_SYNC` | `1` | `0` turns automatic syncing off (Sync now still works) |
 | `CVE_MIRROR_SYNC_HOURS` | `2` | Hours between update checks |
 | `CVE_MIRROR_DATABASE_URL` | `sqlite:///…/data/cve_mirror.db` | Where the CVE database is stored. It's kept separate from the main database. |
+| `MSRC_CVRF_API` | `https://api.msrc.microsoft.com/cvrf/v3.0` | Where Microsoft's security update data is fetched from |
 
 ### Palo Alto Firewalls (`/threat/paloalto`)
 
@@ -718,6 +739,10 @@ findings on it without an SSH login (see
 - The CVE lines from the vendor changelogs of the packages serving ports, and
   of common server packages
 - Loaded Apache modules (`apachectl -M`) and nginx's build options (`nginx -V`)
+- On Windows: the exact Windows build (for example `10.0.20348.2849`) and
+  edition, installed updates (`Get-HotFix`), installed programs with version,
+  publisher and folder (from the registry, as in Apps & Features), and the
+  version info of each program serving a port
 
 To see exactly what an agent sends, run it on the host with
 `--print-inventory` (for example
@@ -743,9 +768,10 @@ used for it. Inventories older than 7 days aren't used
 (`AGENT_INVENTORY_MAX_AGE_DAYS` in `.env`).
 
 **Platform support:** full checks on Linux with `dpkg` (Debian, Ubuntu, Kali)
-or `rpm` (RHEL, Rocky, Alma, Fedora, SUSE). On Windows and macOS the
-inventory has the OS, addresses and listening programs only, so only OS-based
-checks apply there.
+or `rpm` (RHEL, Rocky, Alma, Fedora, SUSE), and on Windows (agent 2.1.0 or
+later; see [Host checks](#host-checks-agent-or-ssh) for how Windows findings
+are decided). On macOS the inventory has the OS, addresses and listening
+programs only, so only OS-based checks apply there.
 
 **Trust:** an agent's inventory can rule findings out, so only agents
 registered with your registration token are used. Keep the token private, and

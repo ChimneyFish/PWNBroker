@@ -32,7 +32,7 @@ import logging
 import subprocess
 from datetime import datetime, timezone
 
-AGENT_VERSION = "2.0.0"
+AGENT_VERSION = "2.1.0"
 
 _PLAT = sys.platform  # win32 | darwin | linux
 
@@ -159,8 +159,9 @@ def _run(argv, timeout=30):
     if not shutil.which(argv[0]):
         return ""
     try:
+        extra = {"creationflags": 0x08000000} if _PLAT == "win32" else {}   # CREATE_NO_WINDOW
         p = subprocess.run(argv, capture_output=True, timeout=timeout, stdin=subprocess.DEVNULL,
-                           env={**os.environ, "LC_ALL": "C"})
+                           env={**os.environ, "LC_ALL": "C"}, **extra)
         return (p.stdout + p.stderr)[:_MAX_READ].decode("utf-8", "replace")
     except Exception:
         return ""
@@ -304,6 +305,163 @@ def _nginx_build():
     return out if "configure arguments" in out else None
 
 
+# ── Windows: build number, updates, installed programs, file versions ────────
+#
+# Read from the registry and the executables' version resources — nothing is
+# changed. The only command run is Get-HotFix (fixed text, no input).
+
+_KB_RE = re.compile(r"^KB\d{4,9}$", re.I)
+
+
+def _reg_values(parent, subkey, names, access=None):
+    import winreg
+    out = {}
+    try:
+        with winreg.OpenKey(parent, subkey, 0, access or winreg.KEY_READ) as k:
+            for n in names:
+                try:
+                    out[n] = winreg.QueryValueEx(k, n)[0]
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return out
+
+
+def _file_info(path):
+    """Version resource of an executable → {product, company, description,
+    product_version, file_version}, or {}."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        ver = ctypes.WinDLL("version")
+        ver.GetFileVersionInfoSizeW.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(wintypes.DWORD)]
+        ver.GetFileVersionInfoSizeW.restype = wintypes.DWORD
+        ver.GetFileVersionInfoW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                            ctypes.c_void_p]
+        ver.GetFileVersionInfoW.restype = wintypes.BOOL
+        ver.VerQueryValueW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR,
+                                       ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.UINT)]
+        ver.VerQueryValueW.restype = wintypes.BOOL
+
+        size = ver.GetFileVersionInfoSizeW(path, None)
+        if not size:
+            return {}
+        buf = ctypes.create_string_buffer(size)
+        if not ver.GetFileVersionInfoW(path, 0, size, buf):
+            return {}
+        ptr, n = ctypes.c_void_p(), wintypes.UINT()
+        info = {}
+
+        class _Fixed(ctypes.Structure):
+            _fields_ = [(f, wintypes.DWORD) for f in (
+                "sig", "struc", "file_ms", "file_ls", "prod_ms", "prod_ls", "mask", "flags",
+                "os", "type", "subtype", "date_ms", "date_ls")]
+
+        if ver.VerQueryValueW(buf, "\\", ctypes.byref(ptr), ctypes.byref(n)) and n.value:
+            f = ctypes.cast(ptr, ctypes.POINTER(_Fixed)).contents
+            if f.sig == 0xFEEF04BD:
+                info["file_version"] = (f"{f.file_ms >> 16}.{f.file_ms & 0xFFFF}."
+                                        f"{f.file_ls >> 16}.{f.file_ls & 0xFFFF}")
+                info["product_version"] = (f"{f.prod_ms >> 16}.{f.prod_ms & 0xFFFF}."
+                                           f"{f.prod_ls >> 16}.{f.prod_ls & 0xFFFF}")
+        langs = []
+        if (ver.VerQueryValueW(buf, "\\VarFileInfo\\Translation", ctypes.byref(ptr), ctypes.byref(n))
+                and n.value >= 4):
+            words = ctypes.cast(ptr, ctypes.POINTER(wintypes.WORD * (n.value // 2))).contents
+            langs = [(words[i], words[i + 1]) for i in range(0, len(words) - 1, 2)][:4]
+        langs += [(0x0409, 0x04B0), (0x0409, 0x04E4), (0x0000, 0x04B0)]
+        keys = {"ProductName": "product", "CompanyName": "company", "FileDescription": "description",
+                "ProductVersion": "product_version", "FileVersion": "file_version"}
+        found = set()
+        for lang, cp in langs:
+            for key, out_key in keys.items():
+                if key in found:
+                    continue
+                sub = f"\\StringFileInfo\\{lang:04x}{cp:04x}\\{key}"
+                if ver.VerQueryValueW(buf, sub, ctypes.byref(ptr), ctypes.byref(n)) and n.value:
+                    val = ctypes.wstring_at(ptr.value, n.value).split("\0", 1)[0].strip()
+                    if val:
+                        info[out_key] = val[:160]     # strings beat the numeric versions
+                        found.add(key)
+        return info
+    except Exception:
+        return {}
+
+
+def _hotfixes():
+    out = _run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                "Get-HotFix | ForEach-Object { $_.HotFixID }"], timeout=120)
+    return sorted({l.strip().upper() for l in out.splitlines() if _KB_RE.match(l.strip())})
+
+
+def _windows_info():
+    import winreg
+    cv = _reg_values(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion",
+                     ("ProductName", "DisplayVersion", "ReleaseId", "EditionID", "InstallationType",
+                      "CurrentMajorVersionNumber", "CurrentMinorVersionNumber", "CurrentVersion",
+                      "CurrentBuildNumber", "CurrentBuild", "UBR"))
+    major, minor = cv.get("CurrentMajorVersionNumber"), cv.get("CurrentMinorVersionNumber")
+    if major is None and cv.get("CurrentVersion"):
+        major, _, minor = str(cv["CurrentVersion"]).partition(".")
+    buildno = cv.get("CurrentBuildNumber") or cv.get("CurrentBuild")
+    ubr = cv.get("UBR")
+    build = ""
+    if None not in (major, minor, buildno, ubr) and "" not in (major, minor):
+        build = f"{major}.{minor}.{buildno}.{ubr}"
+    else:
+        # Older Windows has no UBR value: the kernel's file version carries it.
+        root = os.environ.get("SystemRoot", r"C:\Windows")
+        fv = _file_info(os.path.join(root, "System32", "ntoskrnl.exe")).get("file_version", "")
+        m = re.match(r"^(\d+\.\d+\.\d+\.\d+)", fv)
+        build = m.group(1) if m else ""
+    product = str(cv.get("ProductName") or "")
+    try:
+        if int(buildno) >= 22000 and product.startswith("Windows 10"):
+            product = "Windows 11" + product[len("Windows 10"):]   # registry still says 10
+    except (TypeError, ValueError):
+        pass
+    return {"build": build, "product": product,
+            "display_version": str(cv.get("DisplayVersion") or cv.get("ReleaseId") or ""),
+            "edition": str(cv.get("EditionID") or ""),
+            "installation_type": str(cv.get("InstallationType") or ""),
+            "hotfixes": _hotfixes()}
+
+
+def _programs():
+    """Apps & Features: name, version, publisher, install folder (64- and 32-bit)."""
+    import winreg
+    out, seen = [], set()
+    path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+        access = winreg.KEY_READ | view
+        try:
+            root = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, access)
+        except OSError:
+            continue
+        with root:
+            i = 0
+            while i < 20000:
+                try:
+                    sub = winreg.EnumKey(root, i)
+                except OSError:
+                    break
+                i += 1
+                v = _reg_values(root, sub, ("DisplayName", "DisplayVersion", "Publisher",
+                                            "InstallLocation", "ParentKeyName"), access)
+                name = str(v.get("DisplayName") or "").strip()
+                if not name or v.get("ParentKeyName"):        # skip updates of other programs
+                    continue
+                item = {"name": name[:200], "version": str(v.get("DisplayVersion") or "")[:64],
+                        "publisher": str(v.get("Publisher") or "")[:120],
+                        "location": str(v.get("InstallLocation") or "").strip().strip('"')[:400]}
+                key = (item["name"], item["version"], item["location"])
+                if key not in seen:
+                    seen.add(key)
+                    out.append(item)
+    return out[:5000]
+
+
 def collect_inventory(changelog_packages=()):
     errors = []
     osr = _os_release()
@@ -317,6 +475,25 @@ def collect_inventory(changelog_packages=()):
         errors.append(f"{n} listening port(s) owned by processes this agent can't inspect "
                       f"(run it as root/Administrator to check them)")
     packages = _packages(pm) if pm else {}
+    windows = programs = None
+    if _PLAT == "win32":
+        files = {}
+        for l in listeners:
+            if l["exe"]:
+                if l["exe"] not in files:
+                    files[l["exe"]] = _file_info(l["exe"])
+                if files[l["exe"]]:
+                    l["file"] = files[l["exe"]]
+        try:
+            windows = _windows_info()
+        except Exception as e:
+            errors.append(f"couldn't read the Windows version: {e}")
+        try:
+            programs = _programs()
+        except Exception as e:
+            errors.append(f"couldn't list installed programs: {e}")
+        if windows and not windows.get("hotfixes"):
+            errors.append("couldn't list installed updates (Get-HotFix)")
     owner = {}
     for l in listeners:
         if l["exe"] and pm:
@@ -333,8 +510,11 @@ def collect_inventory(changelog_packages=()):
         "schema": 1,
         "agent_version": AGENT_VERSION,
         "collected_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "os": {"kernel": kernel, "id": osr.get("ID", _PLAT),
-               "pretty": osr.get("PRETTY_NAME") or f"{platform.system()} {platform.release()}"},
+        "os": {"kernel": kernel,
+               "id": "windows" if _PLAT == "win32" else osr.get("ID", _PLAT),
+               "pretty": ((windows or {}).get("product") and " ".join(filter(None, (
+                              windows["product"], windows.get("display_version")))))
+                         or osr.get("PRETTY_NAME") or f"{platform.system()} {platform.release()}"},
         "package_manager": pm,
         "ips": _all_ips(),
         "listeners": listeners,
@@ -342,6 +522,8 @@ def collect_inventory(changelog_packages=()):
         "changelogs": changelogs,
         "apache_modules": _apache_modules() if _PLAT == "linux" else None,
         "nginx_build": _nginx_build() if _PLAT == "linux" else None,
+        "windows": windows,
+        "programs": programs or [],
         "errors": errors,
     }
 
@@ -413,8 +595,8 @@ def send_inventory(cfg, changelog_packages=()):
             timeout=120, verify=cfg.get("verify_ssl", True),
         )
         r.raise_for_status()
-        log.info("Sent host inventory (%d packages, %d listening ports)",
-                 len(inv["packages"]), len(inv["listeners"]))
+        log.info("Sent host inventory (%d packages, %d programs, %d listening ports)",
+                 len(inv["packages"]), len(inv["programs"]), len(inv["listeners"]))
     except Exception as e:
         log.warning("Inventory upload failed: %s", e)
 

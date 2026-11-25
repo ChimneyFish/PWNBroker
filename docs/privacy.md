@@ -42,7 +42,7 @@ You control this data ("Customer Data"). You decide how long to keep it and are 
 
 **Third-party services you enable.** Some features contact outside services directly from your server. Examples include vulnerability databases such as NVD, OSV and GitHub Advisories; threat-intelligence feeds such as AlienVault OTX and AbuseIPDB; certificate-transparency logs; vendor changelogs; Microsoft 365 / Graph; Jira; Confluence; and your email provider. These requests go straight from your installation to the provider, using the API keys you configure. They do not pass through us. The provider's own privacy policy governs them.
 
-**CVE database downloads.** By default the Software downloads the public CVE lists from NVD (`nvd.nist.gov`) and CVE.org (hosted on GitHub) every few hours, so it can match scan results locally. These are plain downloads of public data: no API key is used, and nothing about your network, Targets or scan results is sent. Set `CVE_MIRROR_SYNC=0` to turn automatic downloads off.
+**CVE database downloads.** By default the Software downloads the public CVE lists from NVD (`nvd.nist.gov`), CVE.org (hosted on GitHub) and Microsoft's security update data (`api.msrc.microsoft.com`) every few hours, so it can match scan results locally. These are plain downloads of public data: no API key is used, and nothing about your network, Targets or scan results is sent. Set `CVE_MIRROR_SYNC=0` to turn automatic downloads off.
 
 ## 3. Data we collect
 

@@ -64,6 +64,25 @@ jobs:
           Write-Host $ver
           if ($LASTEXITCODE -ne 0) { throw "agent.exe --help exited $LASTEXITCODE" }
 
+      # The Windows inventory (registry, version resources, Get-HotFix) can
+      # only be exercised on Windows — check the frozen exe really collects it.
+      - name: Smoke-test the Windows inventory
+        shell: pwsh
+        run: |
+          & "dist\pwnbroker_agent\pwnbroker_agent.exe" --print-inventory | Out-File -Encoding utf8 inventory.json
+          if ($LASTEXITCODE -ne 0) { throw "--print-inventory exited $LASTEXITCODE" }
+          $inv = Get-Content inventory.json -Raw | ConvertFrom-Json
+          $withFile = @($inv.listeners | Where-Object { $_.file })
+          Write-Host "OS:        $($inv.os.pretty)"
+          Write-Host "Build:     $($inv.windows.build)"
+          Write-Host "Updates:   $(@($inv.windows.hotfixes).Count)"
+          Write-Host "Programs:  $(@($inv.programs).Count)"
+          Write-Host "Listeners: $(@($inv.listeners).Count) ($($withFile.Count) with version info)"
+          Write-Host "Notes:     $($inv.errors -join '; ')"
+          if ($inv.windows.build -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "no Windows build number" }
+          if (@($inv.programs).Count -eq 0) { throw "no installed programs listed" }
+          if ($withFile.Count -eq 0) { throw "no listener has file version info" }
+
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
 

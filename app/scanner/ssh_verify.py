@@ -480,6 +480,11 @@ def _same_upstream(pkg_version, cpe):
 
 def evaluate_host(facts, findings, hints):
     """Apply credentialed checks to one host's findings → [(r, status, detail, extra)]."""
+    if getattr(facts, "windows", None):
+        # Agent inventory from a Windows host: no packages or changelogs —
+        # Microsoft's fixed builds and program versions decide instead.
+        from .windows_verify import evaluate_windows
+        return evaluate_windows(facts, findings, hints)
     out = []
     pkg_cache = {}
     for r in findings:

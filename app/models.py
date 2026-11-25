@@ -1000,6 +1000,24 @@ class MirrorCpeMatch(db.Model):
                       db.Index("ix_mirror_cpe_product", "product"))
 
 
+class MirrorMsrcFix(db.Model):
+    """The Windows build that fixes a CVE on one Windows version, from
+    Microsoft's security update documents (MSRC CVRF API). build_line is the
+    first three parts of the build ("10.0.19045" = Windows 10 22H2) and
+    fixed_ubr the update revision that carries the fix — a host on that line
+    whose build is at or past it is patched. See app/cve_mirror/msrc.py."""
+    __bind_key__  = "cvemirror"
+    __tablename__ = "mirror_msrc_fixes"
+    id            = db.Column(db.Integer, primary_key=True)
+    cve_id        = db.Column(db.String(32), nullable=False, index=True)
+    doc_id        = db.Column(db.String(16), nullable=False, index=True)   # "2024-Nov"
+    build_line    = db.Column(db.String(24), nullable=False)
+    fixed_ubr     = db.Column(db.Integer, nullable=False)
+    kb            = db.Column(db.String(16))
+    product       = db.Column(db.String(160))
+    hotpatch      = db.Column(db.Boolean, default=False)
+
+
 class MirrorSyncState(db.Model):
     __bind_key__   = "cvemirror"
     __tablename__  = "mirror_sync_state"

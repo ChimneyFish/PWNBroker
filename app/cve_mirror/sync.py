@@ -1,4 +1,4 @@
-"""Keep the local CVE mirror in step with NVD and CVE.org.
+"""Keep the local CVE mirror in step with NVD, CVE.org and Microsoft (MSRC).
 
 NVD (nvd.nist.gov JSON 2.0 feeds, no API key or rate limit involved)
     full         nvdcve-2.0-<year>.json.gz for 2002..this year (2002 also
@@ -10,6 +10,9 @@ CVE.org (github.com/CVEProject/cvelistV5 — the official CVE List)
     full         the nightly "all_CVEs_at_midnight" release bundle
     incremental  cves/deltaLog.json (~30 days of new/updated records), each
                  changed record fetched individually
+
+Microsoft (api.msrc.microsoft.com CVRF documents) — see msrc.py
+    the Windows build that fixes each CVE, per Windows version
 
 An incremental falls back to a full sync when the last good sync is older
 than the upstream's incremental window, so a mirror that was offline for a
@@ -430,7 +433,7 @@ def progress_snapshot():
     return dict(_progress)
 
 
-def run_sync(app, full=False, sources=("nvd", "cveorg")):
+def run_sync(app, full=False, sources=("nvd", "cveorg", "msrc")):
     """Sync the mirror. Safe to call from a scheduler or a request thread;
     a second concurrent call raises SyncBusy. Each source is independent —
     one failing doesn't stop the other."""
@@ -445,7 +448,8 @@ def run_sync(app, full=False, sources=("nvd", "cveorg")):
                 _progress[src] = {"step": step, "at": time.time()}
 
             try:
-                for src, fn in (("nvd", sync_nvd), ("cveorg", sync_cveorg)):
+                from .msrc import sync_msrc
+                for src, fn in (("nvd", sync_nvd), ("cveorg", sync_cveorg), ("msrc", sync_msrc)):
                     if src not in sources:
                         continue
                     t0 = time.time()

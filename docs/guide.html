@@ -721,6 +721,37 @@ used. Both run the same checks. They rule out the CVEs that don't apply:</p>
 <li>the installed version matches the version the CVE was matched on (so an
   upgrade since the scan isn't mistaken for the old build).</li>
 </ul>
+<p><strong>Windows hosts (agent only).</strong> Windows has no package manager or vendor
+changelogs, so the agent's Windows inventory is checked differently:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>How it's decided</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A Windows CVE</strong> (SMB, RDP, HTTP.sys, IIS, …)</td>
+<td>Microsoft publishes, for each CVE and each Windows version, the build that contains the fix (kept in the <a href="#cve-database-cve-db">CVE Database</a>). Windows updates are cumulative, so a host at or past that build is <strong>ruled out</strong> (patched), and one below it is <strong>Confirmed</strong>. The fixing update (KB) being installed also counts as patched.</td>
+</tr>
+<tr>
+<td><strong>Other software</strong> (Apache, Tomcat, OpenSSL, MySQL, …)</td>
+<td>The program serving the finding's port is identified from its executable's version info, or from the installed program (Apps &amp; Features) whose folder it runs from. Windows builds of this software get no distribution backports, so its version is compared with the CVE's affected range: inside it is <strong>Confirmed</strong>, outside it (upgraded since the scan) is <strong>ruled out</strong>.</td>
+</tr>
+</tbody>
+</table></div>
+<p>These stay Unverified on Windows, with the reason:</p>
+<ul>
+<li>Windows CVEs from before mid-2021. Microsoft's data has no build numbers
+  before then.</li>
+<li>A Windows version Microsoft doesn't list a fix for. It may be out of
+  support, so this isn't treated as "not affected".</li>
+<li>A build between Microsoft's normal and hotpatch fix builds (hotpatch-enrolled
+  servers).</li>
+<li>Software found only by name in the installed programs list, not tied to the
+  process on the port. It might be a different copy.</li>
+</ul>
 <p>Anything else stays Unverified with a note saying what was found (e.g.
 "apache2-bin 2.4.52-1ubuntu4.26 has no vendor fix listed for CVE-…", when the
 package was only guessed from the product name). Host checks never mark a
@@ -937,6 +968,10 @@ against it, instead of asking NVD about every service it finds. Open it from
 <td>CVE.org (the official CVE List, <code>cvelistV5</code>)</td>
 <td>Every published CVE as soon as it's assigned, with the affected versions the reporting vendor gave</td>
 </tr>
+<tr>
+<td>Microsoft (MSRC security update API)</td>
+<td>For each Windows CVE since 2021, the Windows build that fixes it on each Windows version. The agent uses this to tell whether a Windows host is patched.</td>
+</tr>
 </tbody>
 </table></div>
 <p>NVD's analysed version ranges are used when they exist. For CVEs NVD hasn't
@@ -990,6 +1025,11 @@ CVE.org is used, so new CVEs still match.</p>
 <td><code>sqlite:///…/data/cve_mirror.db</code></td>
 <td>Where the CVE database is stored. It's kept separate from the main database.</td>
 </tr>
+<tr>
+<td><code>MSRC_CVRF_API</code></td>
+<td><code>https://api.msrc.microsoft.com/cvrf/v3.0</code></td>
+<td>Where Microsoft's security update data is fetched from</td>
+</tr>
 </tbody>
 </table></div>
 <h3 id="palo-alto-firewalls-threatpaloalto">Palo Alto Firewalls (<code>/threat/paloalto</code>)<a class="headerlink" href="#palo-alto-firewalls-threatpaloalto" title="Link to this section">#</a></h3>
@@ -1039,6 +1079,10 @@ findings on it without an SSH login (see
 <li>The CVE lines from the vendor changelogs of the packages serving ports, and
   of common server packages</li>
 <li>Loaded Apache modules (<code>apachectl -M</code>) and nginx's build options (<code>nginx -V</code>)</li>
+<li>On Windows: the exact Windows build (for example <code>10.0.20348.2849</code>) and
+  edition, installed updates (<code>Get-HotFix</code>), installed programs with version,
+  publisher and folder (from the registry, as in Apps &amp; Features), and the
+  version info of each program serving a port</li>
 </ul>
 <p>To see exactly what an agent sends, run it on the host with
 <code>--print-inventory</code> (for example
@@ -1062,9 +1106,10 @@ the same address (for example identical Docker bridge addresses), neither is
 used for it. Inventories older than 7 days aren't used
 (<code>AGENT_INVENTORY_MAX_AGE_DAYS</code> in <code>.env</code>).</p>
 <p><strong>Platform support:</strong> full checks on Linux with <code>dpkg</code> (Debian, Ubuntu, Kali)
-or <code>rpm</code> (RHEL, Rocky, Alma, Fedora, SUSE). On Windows and macOS the
-inventory has the OS, addresses and listening programs only, so only OS-based
-checks apply there.</p>
+or <code>rpm</code> (RHEL, Rocky, Alma, Fedora, SUSE), and on Windows (agent 2.1.0 or
+later; see <a href="#host-checks-agent-or-ssh">Host checks</a> for how Windows findings
+are decided). On macOS the inventory has the OS, addresses and listening
+programs only, so only OS-based checks apply there.</p>
 <p><strong>Trust:</strong> an agent's inventory can rule findings out, so only agents
 registered with your registration token are used. Keep the token private, and
 remove agents for hosts you no longer trust.</p>

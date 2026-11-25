@@ -31,6 +31,10 @@ _MAX_PACKAGES = 30000
 _MAX_ENTRIES = 5000                   # CVE changelog lines per package
 _MAX_LISTENERS = 2000
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+_:~-]{0,199}$")
+_MAX_PROGRAMS = 5000
+_WIN_BUILD_RE = re.compile(r"^\d+\.\d+\.\d+\.\d+$")
+_KB_RE = re.compile(r"^KB\d{4,9}$", re.I)
+_FILE_KEYS = ("product", "company", "description", "product_version", "file_version")
 
 
 def max_age_days():
@@ -91,9 +95,15 @@ def normalize_inventory(data):
         if not 0 < port < 65536:
             continue
         pkg = l.get("package")
-        listeners.append({"port": port, "proto": "udp" if l.get("proto") == "udp" else "tcp",
-                          "exe": _s(l.get("exe"), 512) or None,
-                          "package": pkg if isinstance(pkg, str) and _NAME_RE.match(pkg) else None})
+        item = {"port": port, "proto": "udp" if l.get("proto") == "udp" else "tcp",
+                "exe": _s(l.get("exe"), 512) or None,
+                "package": pkg if isinstance(pkg, str) and _NAME_RE.match(pkg) else None}
+        fi = l.get("file")
+        if isinstance(fi, dict):
+            fi = {k: _s(fi.get(k), 160).strip() for k in _FILE_KEYS if fi.get(k)}
+            if fi:
+                item["file"] = fi
+        listeners.append(item)
 
     packages = {}
     raw = data.get("packages") if isinstance(data.get("packages"), dict) else {}
@@ -117,6 +127,28 @@ def normalize_inventory(data):
         changelogs[name] = {"found": bool(val.get("found")), "trimmed": bool(val.get("trimmed")),
                             "entries": entries}
 
+    windows = None
+    win = data.get("windows")
+    if isinstance(win, dict):
+        build = _s(win.get("build"), 40).strip()
+        windows = {
+            "build": build if _WIN_BUILD_RE.match(build) else "",
+            "product": _s(win.get("product"), 120),
+            "display_version": _s(win.get("display_version"), 20),
+            "edition": _s(win.get("edition"), 60),
+            "installation_type": _s(win.get("installation_type"), 30),
+            "hotfixes": sorted({h.upper() for h in (win.get("hotfixes") or [])[:5000]
+                                if isinstance(h, str) and _KB_RE.match(h)}),
+        }
+
+    programs = []
+    for p in (data.get("programs") or [])[:_MAX_PROGRAMS]:
+        if isinstance(p, dict) and isinstance(p.get("name"), str) and p["name"].strip():
+            programs.append({"name": _s(p["name"], 200).strip(),
+                             "version": _s(p.get("version"), 64).strip(),
+                             "publisher": _s(p.get("publisher"), 120).strip(),
+                             "location": _s(p.get("location"), 400).strip()})
+
     mods = data.get("apache_modules")
     mods = sorted({m for m in mods if isinstance(m, str) and re.match(r"^[a-z0-9_]{1,64}$", m)}
                   )[:500] if isinstance(mods, list) else None
@@ -135,6 +167,8 @@ def normalize_inventory(data):
         "changelogs": changelogs,
         "apache_modules": mods,
         "nginx_build": nginx,
+        "windows": windows,
+        "programs": programs,
         "errors": [_s(e, 300) for e in (data.get("errors") or [])[:20]],
     }
 
@@ -168,16 +202,23 @@ class AgentHostFacts:
         self.kernel = osd.get("kernel") or ""
         self.os_id = osd.get("id") or ""
         self.os = osd.get("pretty") or "this host"
+        self.windows = inv.get("windows") or None      # set → windows_verify applies
+        self.programs = inv.get("programs") or []
         at = agent.inventory_at
         self.label = f"agent on {agent.hostname or 'host'}" + (
             f", inventory {at.strftime('%Y-%m-%d %H:%M')} UTC" if at else "")
 
-    def listener_package(self, port):
+    def listener(self, port):
+        """The listener record on `port` (TCP preferred), or None."""
         best = None
         for l in self.inv.get("listeners") or []:
             if l["port"] == int(port):
                 if l["proto"] == "tcp" or best is None:
                     best = l
+        return best
+
+    def listener_package(self, port):
+        best = self.listener(port)
         if not best:
             return None, None
         return best.get("package"), best.get("exe")

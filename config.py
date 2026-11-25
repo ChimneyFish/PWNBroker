@@ -87,6 +87,7 @@ class Config:
     NVD_FEED_URL = os.environ.get("NVD_FEED_URL", "https://nvd.nist.gov/feeds/json/cve/2.0")
     CVEORG_RELEASES_API = os.environ.get(
         "CVEORG_RELEASES_API", "https://api.github.com/repos/CVEProject/cvelistV5/releases/latest")
+    MSRC_CVRF_API = os.environ.get("MSRC_CVRF_API", "https://api.msrc.microsoft.com/cvrf/v3.0")
     CVEORG_DELTA_LOG_URL = os.environ.get(
         "CVEORG_DELTA_LOG_URL", "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/deltaLog.json")
 
